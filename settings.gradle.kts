@@ -8,8 +8,8 @@ pluginManagement {
 
 rootProject.name = "ably-java"
 
-include("java")
-include("android")
+include("core")
+include("core-android")
 include("gradle-lint")
 include("network-client-core")
 include("network-client-default")

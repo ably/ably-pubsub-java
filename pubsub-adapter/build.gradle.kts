@@ -9,9 +9,9 @@ kotlin {
 }
 
 dependencies {
-    compileOnly(project(":java"))
+    compileOnly(project(":core"))
     testImplementation(kotlin("test"))
-    testImplementation(project(":java"))
+    testImplementation(project(":core"))
     testImplementation(libs.nanohttpd)
     testImplementation(libs.coroutine.core)
     testImplementation(libs.coroutine.test)

@@ -212,7 +212,7 @@ dependencies {
     // consumed elsewhere via testImplementation(project(":uts")). `api` for types that appear in
     // infra signatures; `implementation` for internals. Invariant I1: :uts never depends on
     // :liveobjects.
-    api(project(":java"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
+    api(project(":core"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
     api(project(":network-client-core"))     // HttpEngine / WebSocketEngine SPIs the mocks implement
     implementation(libs.ktor.client.core)    // proxy infra uses ktor internally — must NOT leak to consumers
     implementation(libs.ktor.client.cio)
