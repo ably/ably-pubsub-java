@@ -39,6 +39,6 @@ jobs:
       - name: Upload Documentation
         uses: ably/sdk-upload-action@4e694297f208b72b5a9f6b1248a1556f19f821d6 # v2
         with:
-          sourcePath: java/build/docs/javadoc
+          sourcePath: core/build/docs/javadoc
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: javadoc

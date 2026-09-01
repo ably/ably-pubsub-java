@@ -13,7 +13,7 @@ java {
 
 dependencies {
     // `api` for types that appear in infra signatures; `implementation` for internals.
-    api(project(":java"))
+    api(project(":core"))
     api(project(":network-client-core"))
     // ktor stays implementation — the proxy infra uses it internally; it must NOT leak to consumers.
     implementation(libs.ktor.client.core)
