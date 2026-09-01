@@ -24,3 +24,23 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
       - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests runLiveObjectsUnitTests :uts:runUtsUnitTests
+
+  # Continuously proves the release pre-flight and that every published module
+  # builds a publishable artifact set, so version/coordinate regressions surface
+  # on PRs rather than on release day.
+  release-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+        with:
+          persist-credentials: false
+      - name: Set up the JDK
+        uses: actions/setup-java@17f84c3641ba7b8f6deff6309fc4c864478f5d62 # v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
+      - run: ./gradlew verifyReleaseArtifacts publishToMavenLocal
