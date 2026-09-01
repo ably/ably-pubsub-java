@@ -10,6 +10,8 @@ rootProject.name = "ably-java"
 
 include("core")
 include("core-android")
+include("device")
+include("server")
 include("gradle-lint")
 include("network-client-core")
 include("network-client-default")
