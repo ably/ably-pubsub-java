@@ -5,7 +5,7 @@
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Ensure you have added suitable tests and the test suite is passing(`./gradlew java:testRestSuite java:testRealtimeSuite android:connectedAndroidTest`)
+4. Ensure you have added suitable tests and the test suite is passing(`./gradlew core:testRestSuite core:testRealtimeSuite core-android:connectedAndroidTest`)
 5. Push to the branch (`git push origin my-new-feature`)
 6. Create a new Pull Request
 
@@ -23,11 +23,11 @@ but on Windows there is a batch file:
 
 The JRE-specific library JAR is built with:
 
-    ./gradlew java:jar
+    ./gradlew core:jar
 
 The Android-specific library AAR is built with:
 
-    ./gradlew android:assemble
+    ./gradlew core-android:assemble
 
 (The `ANDROID_HOME` environment variable must be set appropriately.)
 
@@ -186,9 +186,9 @@ but on Windows there is a batch file:
 Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
 for the JRE-specific library:
 
-    ./gradlew java:testRestSuite
+    ./gradlew core:testRestSuite
 
-    ./gradlew java:testRealtimeSuite
+    ./gradlew core:testRealtimeSuite
 
 To run tests against a specific host, specify in the environment:
 
@@ -199,12 +199,12 @@ Tests will run against the sandbox environment by default.
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.
 
-    ./gradlew android:connectedAndroidTest
+    ./gradlew core-android:connectedAndroidTest
 
 We also have a small, fledgling set of unit tests which do not communicate with Ably's servers.
 The plan is to expand this collection of tests in due course:
 
-    ./gradlew java:runUnitTests
+    ./gradlew core:runUnitTests
 
 ### Interactive push tests
 
@@ -225,7 +225,7 @@ signing.keyId=XXXXXXXX
 signing.password=ably-debug-key
 signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 ```
-- Run `./gradlew android:assembleRelease` or `./gradlew android:assembleDebug`.
+- Run `./gradlew core-android:assembleRelease` or `./gradlew core-android:assembleDebug`.
 
 ## Using `ably-java` / `ably-android` locally in other projects
 
@@ -262,7 +262,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 
 If you've not configured the signing key in your [Gradle properties](https://docs.gradle.org/current/userguide/build_environment.html#sec:gradle_configuration_properties) then release builds will complain:
 
-    Cannot perform signing task ':java:signArchives' because it has no configured signatory
+    Cannot perform signing task ':core:signArchives' because it has no configured signatory
 
 You need to [configure Signatory credentials](https://docs.gradle.org/current/userguide/signing_plugin.html#sec:signatory_credentials), for example via the `gradle.properties` file in your `GRADLE_USER_HOME` folder (usually `~/.gradle`).
 

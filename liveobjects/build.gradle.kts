@@ -11,11 +11,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly(project(":java"))
+    compileOnly(project(":core"))
     implementation(libs.bundles.common)
     implementation(libs.coroutine.core)
 
-    testImplementation(project(":java"))
+    testImplementation(project(":core"))
     testImplementation(libs.bundles.kotlin.tests)  // keeps the JUnit4 API for the ~9 org.junit.* files
     // Shared UTS test infra + the exported (`api`) test toolkit: JUnit 5 (api+params+engine via the
     // aggregator), the kotlin.test Jupiter binding and coroutines all arrive transitively from :uts,
