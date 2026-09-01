@@ -50,10 +50,10 @@ jobs:
           arch: ${{ steps.get-avd-arch.outputs.arch }}
           target: default
           # Print emulator logs if tests fail
-          script: ./gradlew :android:connectedAndroidTest ${{ matrix.android-api-level == 19 && '-PhttpURLConnection' || '' }} || (adb logcat -d System.out:I && exit 1)
+          script: ./gradlew :core-android:connectedAndroidTest ${{ matrix.android-api-level == 19 && '-PhttpURLConnection' || '' }} || (adb logcat -d System.out:I && exit 1)
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: android-build-reports-${{ matrix.android-api-level }}
-          path: android/build/reports/
+          path: core-android/build/reports/
