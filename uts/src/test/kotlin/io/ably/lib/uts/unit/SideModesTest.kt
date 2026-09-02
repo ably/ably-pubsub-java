@@ -11,8 +11,9 @@ package io.ably.lib.uts.unit
  * quietly constructs plain core clients, turning the server CI leg into a duplicate of the
  * core leg.
  *
- * The side entry is a versionless flag — a bare token, per ably/ably-common#361 — so the
- * assertions also fail if a `/version` form regresses. Mirrors ably-js's side_modes.test.ts.
+ * The side entry is registered in the ably-common agents registry as a versionless flag — a
+ * bare token — so the assertions also fail if a `/version` form regresses. Mirrors ably-js's
+ * side_modes.test.ts.
  */
 
 import io.ably.lib.rest.AblyBase
