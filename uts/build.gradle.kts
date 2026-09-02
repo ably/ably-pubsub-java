@@ -14,6 +14,9 @@ java {
 dependencies {
     // `api` for types that appear in infra signatures; `implementation` for internals.
     api(project(":core"))
+    // The server door package, so the suite can run through its side-stamping builders
+    // (`-Duts.side=server`) as well as the core constructors. See ClientFactories.kt.
+    implementation(project(":server"))
     api(project(":network-client-core"))
     // ktor stays implementation — the proxy infra uses it internally; it must NOT leak to consumers.
     implementation(libs.ktor.client.core)
@@ -50,6 +53,16 @@ tasks.withType<Test>().configureEach {
         providers.systemProperty("uts.proxy.localPath")
             .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
             .getOrElse(""),
+    )
+
+    // Which package's entry points the suite constructs clients through: `core` (default) or
+    // `server` (the io.ably.pubsub:server builders). Forwarded explicitly for the same reason
+    // as uts.proxy.localPath above. See ClientFactories.kt.
+    systemProperty(
+        "uts.side",
+        providers.systemProperty("uts.side")
+            .orElse(providers.environmentVariable("UTS_SIDE"))
+            .getOrElse("core"),
     )
 }
 
