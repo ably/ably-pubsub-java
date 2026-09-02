@@ -1,16 +1,16 @@
 package io.ably.lib.uts.integration.proxy.realtime
 
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.rest.AblyRest
 import io.ably.lib.rest.Auth
 import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.integration.AblyJwt
 import io.ably.lib.uts.infra.integration.SandboxApp
 import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ably.lib.uts.infra.integration.proxy.ProxySession
 import io.ably.lib.uts.infra.integration.proxy.connectThroughProxy
 import io.ably.lib.uts.infra.pollUntil
-import io.ably.lib.uts.infra.unit.assumeSideSupportsTokenAuth
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
+import io.ably.lib.uts.infra.unit.utsSide
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
@@ -56,19 +56,23 @@ class AuthReauthTest {
      */
     @Test
     fun `RTN22, RTC8a - server-initiated re-authentication`() = runTest {
-        assumeSideSupportsTokenAuth()
         // No proxy rules: the AUTH injection is triggered imperatively after the SDK connects.
         val session = ProxySession.create(rules = emptyList())
 
         // Re-authentication is observed via an authCallback. The spec generates a JWT from the
-        // sandbox key parts; the idiomatic ably-java equivalent is a locally-signed TokenRequest
-        // produced from the same key — no external JWT library required. The realtime client then
-        // exchanges it for a token (through the proxy), satisfying RTC8a.
-        val tokenSigner = AblyRest(app.defaultKey)
+        // sandbox key parts, and so does this test (AblyJwt: HS256 via JDK crypto, no external
+        // library). A JWT rather than a native TokenRequest is load-bearing on the server UTS
+        // leg: a token-authenticated client may declare the server side only via the signed
+        // x-ably-clientType claim, which the native token format cannot carry yet — so the JWT
+        // carries the claim on the server leg, and this test runs on every leg.
         val authCallbackCount = AtomicInteger(0)
         val authCallback = Auth.TokenCallback { params ->
             authCallbackCount.incrementAndGet()
-            tokenSigner.auth.createTokenRequest(params, null)
+            AblyJwt.sign(
+                app.defaultKey,
+                clientId = params.clientId,
+                clientType = if (utsSide == "server") "server" else null,
+            )
         }
 
         // Keep the JSON protocol (ClientOptionsBuilder default): the proxy injects/inspects frames
@@ -130,13 +134,12 @@ class AuthReauthTest {
                 "Expected at least one client-to-server AUTH frame carrying auth details",
             )
         } finally {
-            // Nest teardown so session/tokenSigner are always cleaned up even if close-wait times out.
+            // Nest teardown so the session is always cleaned up even if close-wait times out.
             try {
                 client.close()
                 awaitState(client, ConnectionState.closed, 10.seconds)
             } finally {
                 session.close()
-                runCatching { tokenSigner.close() }
             }
         }
     }
