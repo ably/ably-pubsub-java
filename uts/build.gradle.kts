@@ -6,6 +6,9 @@ plugins {
 
 dependencies {
     testImplementation(project(":core"))
+    // The server door package, so the suite can run through its side-stamping builders
+    // (`-Duts.side=server`) as well as the core constructors. See ClientFactories.kt.
+    testImplementation(project(":server"))
     testImplementation(project(":network-client-core"))
     // Runtime-only so compile-time stays decoupled from the plugin internals; the LiveObjects test
     // helpers reach the internal wire/message classes (e.g. for build_public_object_message) by reflection.
@@ -38,6 +41,16 @@ tasks.withType<Test>().configureEach {
         providers.systemProperty("uts.proxy.localPath")
             .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
             .getOrElse(""),
+    )
+
+    // Which package's entry points the suite constructs clients through: `core` (default) or
+    // `server` (the io.ably.pubsub:server builders). Forwarded explicitly for the same reason
+    // as uts.proxy.localPath above. See ClientFactories.kt.
+    systemProperty(
+        "uts.side",
+        providers.systemProperty("uts.side")
+            .orElse(providers.environmentVariable("UTS_SIDE"))
+            .getOrElse("core"),
     )
 }
 

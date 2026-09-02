@@ -144,3 +144,7 @@ jobs:
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
       - run: ./gradlew :uts:runUtsIntegrationTests
+
+      # A second leg through the server door's builders — see the uts.side handling in
+      # uts/.../ClientFactories.kt and the matching leg in check.yml.
+      - run: ./gradlew :uts:runUtsIntegrationTests -Duts.side=server

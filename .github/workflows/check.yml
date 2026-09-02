@@ -25,6 +25,13 @@ jobs:
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
       - run: ./gradlew checkWithCodenarc checkstyleMain checkstyleTest runUnitTests runLiveObjectsUnitTests :uts:runUtsUnitTests
 
+      # A second UTS leg through the server door's builders (see the uts.side handling in
+      # uts/.../ClientFactories.kt): the builders stamp a side-declaring agent entry and pass
+      # everything else through, so conformance must be identical on both legs; SideModesTest
+      # fails a leg whose stamp does not match. There is no device leg on the JVM — the device
+      # door is an Android artifact, covered by the instrumentation tests in emulate.yml.
+      - run: ./gradlew :uts:runUtsUnitTests -Duts.side=server
+
   # Continuously proves the release pre-flight and that every published module
   # builds a publishable artifact set, so version/coordinate regressions surface
   # on PRs rather than on release day.
