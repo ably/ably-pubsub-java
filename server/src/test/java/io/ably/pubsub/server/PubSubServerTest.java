@@ -155,7 +155,7 @@ public class PubSubServerTest {
             assertFalse("side flag must be versionless in: " + agentHeader,
                 agentHeader.contains(Side.SERVER_AGENT_IDENTIFIER + "/"));
             assertTrue("missing core base identifier in: " + agentHeader,
-                agentHeader.contains("ably-java/"));
+                agentHeader.contains("ably-pubsub-java/"));
         } finally {
             httpServer.stop(0);
         }

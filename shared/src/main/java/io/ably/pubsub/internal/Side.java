@@ -48,7 +48,7 @@ public final class Side {
      * The side entry is a <em>versionless flag</em> — a bare token on the wire, like the
      * platform's own {@code browser} entry — registered as such in the ably-common agents
      * registry (see ably/ably-common#361). Identity, version and support status keep
-     * travelling on the SDK's own {@code ably-java/<version>} entry alongside it;
+     * travelling on the SDK's own {@code ably-pubsub-java/<version>} entry alongside it;
      * {@link io.ably.lib.util.AgentHeaderCreator} emits a map entry with a {@code null}
      * value as a bare token.
      * <p>
