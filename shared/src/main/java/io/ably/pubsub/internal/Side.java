@@ -12,7 +12,7 @@ import java.util.Map;
  * rather than published, so that the two artifacts can share this code without a third
  * artifact existing for it to live in.
  * <p>
- * PDR-091 keeps {@code io.ably.pubsub:core} itself as the shared core, so nothing here may
+ * The package split keeps {@code io.ably.pubsub:core} itself as the shared core, so nothing here may
  * grow into a general abstraction over the core: it exists only to stamp the side a package
  * declares.
  */
@@ -47,7 +47,7 @@ public final class Side {
      * <p>
      * The side entry is a <em>versionless flag</em> — a bare token on the wire, like the
      * platform's own {@code browser} entry — registered as such in the ably-common agents
-     * registry (see ably/ably-common#361). Identity, version and support status keep
+     * registry. Identity, version and support status keep
      * travelling on the SDK's own {@code ably-pubsub-java/<version>} entry alongside it;
      * {@link io.ably.lib.util.AgentHeaderCreator} emits a map entry with a {@code null}
      * value as a bare token.

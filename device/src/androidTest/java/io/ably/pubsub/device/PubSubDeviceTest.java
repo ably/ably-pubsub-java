@@ -17,7 +17,7 @@ import org.junit.Test;
  * MAU-priced accounts, so these tests are deliberately strict: if one fails, billing
  * classification is broken, not just a header.
  * <p>
- * The side entry is a versionless flag — a bare token on the wire, per ably/ably-common#361
+ * The side entry is a versionless flag — a bare token on the wire, registered as such in the ably-common agents registry
  * — so the assertions also fail if a version (or any {@code /suffix}) reappears on it.
  */
 public class PubSubDeviceTest {

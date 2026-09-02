@@ -27,7 +27,7 @@ import org.junit.Test;
  * MAU-priced accounts, what earns the server exemption), so these tests are deliberately
  * strict: if one fails, billing classification is broken, not just a header.
  * <p>
- * The side entry is a versionless flag — a bare token on the wire, per ably/ably-common#361
+ * The side entry is a versionless flag — a bare token on the wire, registered as such in the ably-common agents registry
  * — so the assertions also fail if a version (or any {@code /suffix}) reappears on it.
  */
 public class PubSubServerTest {
@@ -149,7 +149,7 @@ public class PubSubServerTest {
             assertNotNull("no Ably-Agent header observed", agentHeader);
             List<String> tokens = Arrays.asList(agentHeader.split(" "));
             // The flag must be present as a bare token: `name/anything` means the
-            // versionless stamp regressed (see ably/ably-common#361).
+            // versionless stamp regressed (the registry entry is versionless).
             assertTrue("missing bare side flag in: " + agentHeader,
                 tokens.contains(Side.SERVER_AGENT_IDENTIFIER));
             assertFalse("side flag must be versionless in: " + agentHeader,
