@@ -11,9 +11,10 @@ import javax.crypto.spec.SecretKeySpec
  * notably `x-ably-clientType=server`: on token auth the realtime service accepts a
  * server-side declaration only from that signed claim (a `-server` agent entry alone is
  * rejected with error 40167), and the native token format cannot carry the claim yet. So a
- * JWT is the one way a token-authenticated client can declare the server side, and JWT-based
- * tests can run on the server UTS leg while native-token tests remain skipped (see
- * assumeSideSupportsTokenAuth).
+ * JWT is the one way a token-authenticated client can declare the server side, which lets
+ * JWT-based tests run on the server UTS leg. (Native-token tests instead keep their
+ * token-consuming client on the core constructors, modelling the device the token was minted
+ * for — see TokenRequestTest.)
  */
 object AblyJwt {
     /**

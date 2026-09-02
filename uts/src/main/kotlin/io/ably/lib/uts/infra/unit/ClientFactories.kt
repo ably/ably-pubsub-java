@@ -37,24 +37,6 @@ class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
  */
 val utsSide: String = System.getProperty("uts.side").let { if (it.isNullOrEmpty()) "core" else it }
 
-/**
- * Call at the top of any test whose client authenticates with a native Ably token.
- *
- * Realtime rejects a token-authenticated connection that declares the server side through the
- * agent entry alone: error 40167, "a connection or request may only declare itself as a server
- * via a signed x-ably-clientType token claim". The native Ably token format cannot carry that
- * claim yet, so until the platform supports it, native-token conformance runs on the core leg
- * only and is skipped (not failed) on the server leg. Key-auth tests are unaffected — on
- * API-key auth the agent entry is the accepted declaration — and JWT-based tests can carry the
- * claim already (see AblyJwt), so they run on every leg instead of calling this.
- */
-fun assumeSideSupportsTokenAuth() = org.junit.jupiter.api.Assumptions.assumeTrue(
-    utsSide == "core",
-    "native-token conformance is skipped on the '$utsSide' leg: realtime requires a signed " +
-        "x-ably-clientType token claim (40167) to declare the server side on token auth, " +
-        "and the native token format cannot carry that claim yet",
-)
-
 fun TestRealtimeClient(block: ClientOptionsBuilder.() -> Unit): AblyRealtime {
     val options = ClientOptionsBuilder().apply(block)
     return when (utsSide) {
