@@ -4,6 +4,7 @@ import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.rest.Auth
 import io.ably.lib.uts.infra.awaitState
 import io.ably.lib.uts.infra.integration.SandboxApp
+import io.ably.lib.uts.infra.unit.assumeSideSupportsTokenAuth
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import io.ably.lib.uts.infra.unit.TestRestClient
 import kotlinx.coroutines.runBlocking
@@ -52,6 +53,7 @@ class TokenRequestTest {
      */
     @Test
     fun `RSA9a, RSA9g - createTokenRequest produces server-accepted token`() = runTest {
+        assumeSideSupportsTokenAuth()
         // Client A signs TokenRequests locally with the API key (no network).
         val creator = TestRestClient {
             key = app.defaultKey
@@ -85,6 +87,7 @@ class TokenRequestTest {
      */
     @Test
     fun `RSA9 - createTokenRequest with clientId`() = runTest {
+        assumeSideSupportsTokenAuth()
         val testClientId = "token-request-client-" + UUID.randomUUID()
 
         val creator = TestRestClient {

@@ -9,6 +9,7 @@ import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ably.lib.uts.infra.integration.proxy.ProxySession
 import io.ably.lib.uts.infra.integration.proxy.connectThroughProxy
 import io.ably.lib.uts.infra.pollUntil
+import io.ably.lib.uts.infra.unit.assumeSideSupportsTokenAuth
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -55,6 +56,7 @@ class AuthReauthTest {
      */
     @Test
     fun `RTN22, RTC8a - server-initiated re-authentication`() = runTest {
+        assumeSideSupportsTokenAuth()
         // No proxy rules: the AUTH injection is triggered imperatively after the SDK connects.
         val session = ProxySession.create(rules = emptyList())
 
