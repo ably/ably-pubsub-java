@@ -21,6 +21,7 @@ import io.ably.lib.uts.infra.unit.MockHttpClient
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import io.ably.lib.uts.infra.unit.TestRestClient
 import io.ably.lib.uts.infra.unit.utsSide
+import io.ably.pubsub.internal.Side
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -65,19 +66,25 @@ class SideModesTest {
      */
     private fun assertStamp(agent: String) {
         val tokens = agent.split(" ")
+        // The family identifier (ably-pubsub-java/<version>) shares the ably-pubsub- prefix
+        // with the side flags, so the side checks match the exact identifiers, never the prefix.
+        val sideTokens = tokens.filter {
+            it == Side.DEVICE_AGENT_IDENTIFIER || it == Side.SERVER_AGENT_IDENTIFIER ||
+                it.startsWith(Side.DEVICE_AGENT_IDENTIFIER + "/") || it.startsWith(Side.SERVER_AGENT_IDENTIFIER + "/")
+        }
         when (utsSide) {
-            "core" -> assertFalse(
-                tokens.any { it.startsWith("ably-pubsub-") },
+            "core" -> assertTrue(
+                sideTokens.isEmpty(),
                 "core mode must not stamp a side entry, got: $agent",
             )
             "server" -> {
-                assertTrue(tokens.contains("ably-pubsub-server"), "expected the bare server side flag in: $agent")
-                assertFalse(agent.contains("ably-pubsub-server/"), "the side flag must be versionless in: $agent")
-                assertFalse(tokens.any { it.startsWith("ably-pubsub-device") }, "a server client must not carry the device entry: $agent")
+                assertTrue(tokens.contains(Side.SERVER_AGENT_IDENTIFIER), "expected the bare server side flag in: $agent")
+                assertFalse(agent.contains(Side.SERVER_AGENT_IDENTIFIER + "/"), "the side flag must be versionless in: $agent")
+                assertFalse(tokens.any { it.startsWith(Side.DEVICE_AGENT_IDENTIFIER) }, "a server client must not carry the device entry: $agent")
             }
             else -> throw IllegalArgumentException("Unknown uts.side '$utsSide'")
         }
-        assertTrue(agent.contains("ably-java/"), "the core base identifier must always be present in: $agent")
+        assertTrue(agent.contains("ably-pubsub-java/"), "the family identifier must always be present in: $agent")
     }
 
     @Test
