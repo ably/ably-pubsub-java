@@ -87,6 +87,10 @@ public class DebugOptions extends ClientOptions {
         copied.authParams = authParams;
         copied.queryTime = queryTime;
         copied.useTokenAuth = useTokenAuth;
+        copied.headers = headers;
+        copied.fallbackHosts = fallbackHosts;
+        copied.transportParams = transportParams;
+        copied.agents = agents;
         return copied;
     }
 }
