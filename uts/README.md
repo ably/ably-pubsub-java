@@ -813,12 +813,20 @@ Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is an An
 so its door cannot run on the JVM this suite uses. Its stamping contract is covered by the
 instrumentation tests in the `device` module (`emulate.yml`).
 
-**Token-auth tests are skipped on the server leg.** Realtime rejects a token-authenticated
-connection that declares the server side through the agent entry alone (error 40167: the side
-must come from a signed `x-ably-clientType` token claim — PDR-091 deferred decision D2, not yet
-implemented anywhere the test infra can reach). Tests whose clients use token auth call
-`assumeSideSupportsTokenAuth()` and are reported as skipped, not failed, in server mode. When D2
-lands, mint the claim in the test infra and delete the assumption.
+**Token auth on the server leg.** Realtime rejects a token-authenticated connection that
+declares the server side through the agent entry alone (error 40167: on token auth the side
+must come from a signed `x-ably-clientType` token claim). The suite handles this per token
+format, with nothing skipped:
+
+- **JWTs** can carry the claim already: tests that authenticate the client under test with a
+  token mint one via `AblyJwt` (HS256, JDK crypto), adding `x-ably-clientType=server` on the
+  server leg (see `AuthReauthTest`).
+- **Native tokens** cannot carry the claim yet, so a client may not authenticate *itself* with
+  one while declaring the server side. `TokenRequestTest` therefore splits its clients across
+  the seam, matching how the feature is really used: the **minting** client (the
+  `createTokenRequest` surface under test) goes through the door on every leg, and the
+  **consuming** client — modelling the device the token was minted for — is always a plain
+  core client.
 
 Notes:
 - `ProxyManager` **advises** running proxy suites single-fork (`maxParallelForks = 1`) because they
