@@ -64,14 +64,15 @@ public final class PubSubServer {
 
     /**
      * Resolves the caller's input exactly as the core constructors would, then stamps the
-     * server-side agent entry. Resolution happens at {@code build()} time so the caller's
-     * input is read once, when the client is constructed.
+     * server-side agent entry (a versionless flag — see {@link Side}). Resolution happens
+     * at {@code build()} time so the caller's input is read once, when the client is
+     * constructed.
      */
     private static ClientOptions stampedOptions(ClientOptions options, String keyOrToken) throws AblyException {
         if (keyOrToken != null) {
-            return Side.optionsWithSideAgent(keyOrToken, Side.SERVER_AGENT_IDENTIFIER, BuildConfig.VERSION);
+            return Side.optionsWithSideAgent(keyOrToken, Side.SERVER_AGENT_IDENTIFIER);
         }
-        return Side.optionsWithSideAgent(options, Side.SERVER_AGENT_IDENTIFIER, BuildConfig.VERSION);
+        return Side.optionsWithSideAgent(options, Side.SERVER_AGENT_IDENTIFIER);
     }
 
     /**

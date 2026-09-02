@@ -1,5 +1,4 @@
 plugins {
-    alias(libs.plugins.build.config)
     alias(libs.plugins.maven.publish)
     checkstyle
     `java-library`
@@ -19,12 +18,6 @@ dependencies {
     testImplementation(libs.bundles.tests)
 }
 
-buildConfig {
-    useJavaOutput()
-    packageName = "io.ably.pubsub.server"
-    buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
-}
-
 sourceSets {
     named("main") {
         java {
@@ -33,10 +26,6 @@ sourceSets {
             srcDirs("src/main/java", "../shared/src/main/java")
         }
     }
-}
-
-tasks.checkstyleMain.configure {
-    exclude("io/ably/pubsub/server/BuildConfig.java")
 }
 
 tasks.register<Test>("runUnitTests") {

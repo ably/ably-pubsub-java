@@ -8,7 +8,6 @@ android {
     defaultConfig {
         minSdk = 19
         compileSdk = 34
-        buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -21,10 +20,6 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
-    }
-
-    buildFeatures {
-        buildConfig = true
     }
 
     lint {

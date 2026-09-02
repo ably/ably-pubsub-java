@@ -62,11 +62,12 @@ public final class PubSubDevice {
          * @throws AblyException if the options, key or token are rejected.
          */
         public AblyRealtime build() throws AblyException {
+            // The side entry is a versionless flag — see Side.
             final ClientOptions stamped;
             if (keyOrToken != null) {
-                stamped = Side.optionsWithSideAgent(keyOrToken, Side.DEVICE_AGENT_IDENTIFIER, BuildConfig.VERSION);
+                stamped = Side.optionsWithSideAgent(keyOrToken, Side.DEVICE_AGENT_IDENTIFIER);
             } else {
-                stamped = Side.optionsWithSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER, BuildConfig.VERSION);
+                stamped = Side.optionsWithSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER);
             }
             return new AblyRealtime(stamped);
         }

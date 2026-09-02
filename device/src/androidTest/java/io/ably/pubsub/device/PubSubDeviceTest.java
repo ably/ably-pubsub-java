@@ -16,6 +16,9 @@ import org.junit.Test;
  * The agent entries asserted here are what the platform reads to classify traffic on
  * MAU-priced accounts, so these tests are deliberately strict: if one fails, billing
  * classification is broken, not just a header.
+ * <p>
+ * The side entry is a versionless flag — a bare token on the wire, per ably/ably-common#361
+ * — so the assertions also fail if a version (or any {@code /suffix}) reappears on it.
  */
 public class PubSubDeviceTest {
 
@@ -27,10 +30,18 @@ public class PubSubDeviceTest {
         return options;
     }
 
+    /** The stamped entry is present as a versionless flag, and the other side's is absent. */
+    private static void assertDeviceFlag(Map<String, String> agents) {
+        assertTrue("expected the device side flag", agents.containsKey(Side.DEVICE_AGENT_IDENTIFIER));
+        assertNull("the side flag is versionless", agents.get(Side.DEVICE_AGENT_IDENTIFIER));
+        assertFalse("a device client must not carry the server entry",
+            agents.containsKey(Side.SERVER_AGENT_IDENTIFIER));
+    }
+
     @Test
     public void client_stampsDeviceAgent() throws Exception {
         AblyRealtime client = PubSubDevice.clientBuilder(offlineOptions(FAKE_KEY)).build();
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.DEVICE_AGENT_IDENTIFIER));
+        assertDeviceFlag(client.options.agents);
     }
 
     @Test
@@ -38,7 +49,7 @@ public class PubSubDeviceTest {
         ClientOptions builtOptions = PubSubDevice.clientBuilder(FAKE_KEY).build().options;
         assertEquals(FAKE_KEY, builtOptions.key);
         assertNull(builtOptions.token);
-        assertEquals(BuildConfig.VERSION, builtOptions.agents.get(Side.DEVICE_AGENT_IDENTIFIER));
+        assertDeviceFlag(builtOptions.agents);
     }
 
     @Test
@@ -46,16 +57,16 @@ public class PubSubDeviceTest {
         ClientOptions options = offlineOptions(FAKE_KEY);
         Map<String, String> callerAgents = new HashMap<>();
         callerAgents.put("some-sdk", "1.2.3");
-        callerAgents.put(Side.DEVICE_AGENT_IDENTIFIER, "not-the-real-version");
+        callerAgents.put(Side.DEVICE_AGENT_IDENTIFIER, "not-the-real-form");
         options.agents = callerAgents;
 
         AblyRealtime client = PubSubDevice.clientBuilder(options).build();
         assertEquals("1.2.3", client.options.agents.get("some-sdk"));
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.DEVICE_AGENT_IDENTIFIER));
+        // The stamp replaces the caller's value: the flag is present and back to versionless.
+        assertDeviceFlag(client.options.agents);
 
         // the caller's own map is untouched
         assertTrue(options.agents == callerAgents);
-        assertEquals("not-the-real-version", callerAgents.get(Side.DEVICE_AGENT_IDENTIFIER));
-        assertFalse(callerAgents.containsValue(BuildConfig.VERSION));
+        assertEquals("not-the-real-form", callerAgents.get(Side.DEVICE_AGENT_IDENTIFIER));
     }
 }

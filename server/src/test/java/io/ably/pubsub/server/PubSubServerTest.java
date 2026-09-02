@@ -15,7 +15,9 @@ import io.ably.lib.types.ClientOptions;
 import io.ably.pubsub.internal.Side;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
@@ -24,6 +26,9 @@ import org.junit.Test;
  * The agent entries asserted here are what the platform reads to classify traffic (and, on
  * MAU-priced accounts, what earns the server exemption), so these tests are deliberately
  * strict: if one fails, billing classification is broken, not just a header.
+ * <p>
+ * The side entry is a versionless flag — a bare token on the wire, per ably/ably-common#361
+ * — so the assertions also fail if a version (or any {@code /suffix}) reappears on it.
  */
 public class PubSubServerTest {
 
@@ -36,16 +41,24 @@ public class PubSubServerTest {
         return options;
     }
 
+    /** The stamped entry is present as a versionless flag, and the other side's is absent. */
+    private static void assertServerFlag(Map<String, String> agents) {
+        assertTrue("expected the server side flag", agents.containsKey(Side.SERVER_AGENT_IDENTIFIER));
+        assertNull("the side flag is versionless", agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertFalse("a server client must not carry the device entry",
+            agents.containsKey(Side.DEVICE_AGENT_IDENTIFIER));
+    }
+
     @Test
     public void httpClient_stampsServerAgent() throws AblyException {
         AblyRest client = PubSubServer.httpClientBuilder(offlineOptions(FAKE_KEY)).build();
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertServerFlag(client.options.agents);
     }
 
     @Test
     public void realtimeClient_stampsServerAgent() throws AblyException {
         AblyRealtime client = PubSubServer.realtimeClientBuilder(offlineOptions(FAKE_KEY)).build();
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertServerFlag(client.options.agents);
     }
 
     @Test
@@ -53,7 +66,7 @@ public class PubSubServerTest {
         AblyRest client = PubSubServer.httpClientBuilder(FAKE_KEY).build();
         assertEquals(FAKE_KEY, client.options.key);
         assertNull(client.options.token);
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertServerFlag(client.options.agents);
     }
 
     @Test
@@ -61,7 +74,7 @@ public class PubSubServerTest {
         AblyRest client = PubSubServer.httpClientBuilder(FAKE_TOKEN).build();
         assertEquals(FAKE_TOKEN, client.options.token);
         assertNull(client.options.key);
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertServerFlag(client.options.agents);
     }
 
     @Test
@@ -71,16 +84,17 @@ public class PubSubServerTest {
         options.agents.put("some-sdk", "1.2.3");
         AblyRest client = PubSubServer.httpClientBuilder(options).build();
         assertEquals("1.2.3", client.options.agents.get("some-sdk"));
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        assertServerFlag(client.options.agents);
     }
 
     @Test
     public void callerCannotOverrideTheSideEntry() throws AblyException {
         ClientOptions options = offlineOptions(FAKE_KEY);
         options.agents = new HashMap<>();
-        options.agents.put(Side.SERVER_AGENT_IDENTIFIER, "not-the-real-version");
+        options.agents.put(Side.SERVER_AGENT_IDENTIFIER, "not-the-real-form");
         AblyRest client = PubSubServer.httpClientBuilder(options).build();
-        assertEquals(BuildConfig.VERSION, client.options.agents.get(Side.SERVER_AGENT_IDENTIFIER));
+        // The stamp replaces the caller's value: the flag is present and back to versionless.
+        assertServerFlag(client.options.agents);
     }
 
     @Test
@@ -107,8 +121,8 @@ public class PubSubServerTest {
 
     /**
      * Wire-level assertion: the Ably-Agent header actually sent over HTTP carries the
-     * side-declaring entry alongside the core's base identifier. This is the value billing
-     * classification reads.
+     * side-declaring flag as a bare token alongside the core's base identifier. This is the
+     * value billing classification reads.
      */
     @Test
     public void httpRequests_carryTheServerAgentHeaderOnTheWire() throws Exception {
@@ -133,8 +147,13 @@ public class PubSubServerTest {
 
             String agentHeader = observedAgentHeader.get();
             assertNotNull("no Ably-Agent header observed", agentHeader);
-            assertTrue("missing side-declaring entry in: " + agentHeader,
-                agentHeader.contains(Side.SERVER_AGENT_IDENTIFIER + "/" + BuildConfig.VERSION));
+            List<String> tokens = Arrays.asList(agentHeader.split(" "));
+            // The flag must be present as a bare token: `name/anything` means the
+            // versionless stamp regressed (see ably/ably-common#361).
+            assertTrue("missing bare side flag in: " + agentHeader,
+                tokens.contains(Side.SERVER_AGENT_IDENTIFIER));
+            assertFalse("side flag must be versionless in: " + agentHeader,
+                agentHeader.contains(Side.SERVER_AGENT_IDENTIFIER + "/"));
             assertTrue("missing core base identifier in: " + agentHeader,
                 agentHeader.contains("ably-java/"));
         } finally {

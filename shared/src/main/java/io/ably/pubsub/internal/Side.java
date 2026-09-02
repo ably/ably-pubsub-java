@@ -45,6 +45,13 @@ public final class Side {
      * Returns a copy of the caller's options carrying the agent entry that declares this
      * package's side.
      * <p>
+     * The side entry is a <em>versionless flag</em> — a bare token on the wire, like the
+     * platform's own {@code browser} entry — registered as such in the ably-common agents
+     * registry (see ably/ably-common#361). Identity, version and support status keep
+     * travelling on the SDK's own {@code ably-java/<version>} entry alongside it;
+     * {@link io.ably.lib.util.AgentHeaderCreator} emits a map entry with a {@code null}
+     * value as a bare token.
+     * <p>
      * The copy is made with {@link ClientOptions#copy()} and a fresh agents map, so the
      * caller's options and their own {@code agents} map are both left untouched. The
      * caller's {@code agents} entries are preserved alongside the side stamp, so an SDK
@@ -59,10 +66,9 @@ public final class Side {
      *
      * @param options the options the caller passed to the door's builder, or {@code null}.
      * @param identifier the side-declaring agent identifier to stamp.
-     * @param version the version of the package doing the stamping.
      * @return a stamped copy of the options, or {@code null} if {@code options} was {@code null}.
      */
-    public static ClientOptions optionsWithSideAgent(ClientOptions options, String identifier, String version) {
+    public static ClientOptions optionsWithSideAgent(ClientOptions options, String identifier) {
         if (options == null) {
             return null;
         }
@@ -71,28 +77,27 @@ public final class Side {
         if (options.agents != null) {
             agents.putAll(options.agents);
         }
-        agents.put(identifier, version);
+        agents.put(identifier, null);
         stamped.agents = agents;
         return stamped;
     }
 
     /**
-     * As {@link #optionsWithSideAgent(ClientOptions, String, String)}, for the API key or
+     * As {@link #optionsWithSideAgent(ClientOptions, String)}, for the API key or
      * token string form the core constructors also accept. Reuses the core's own
      * key-versus-token disambiguation ({@link ClientOptions#ClientOptions(String)}: an Ably
      * API key always contains a colon, an Ably token never does).
      *
      * @param keyOrToken the Ably API key or token string the caller passed to the door's builder.
      * @param identifier the side-declaring agent identifier to stamp.
-     * @param version the version of the package doing the stamping.
      * @return stamped options constructed from the key or token.
      * @throws AblyException if the key or token string is rejected by the core.
      */
-    public static ClientOptions optionsWithSideAgent(String keyOrToken, String identifier, String version)
+    public static ClientOptions optionsWithSideAgent(String keyOrToken, String identifier)
         throws AblyException {
         ClientOptions options = new ClientOptions(keyOrToken);
         options.agents = new LinkedHashMap<>();
-        options.agents.put(identifier, version);
+        options.agents.put(identifier, null);
         return options;
     }
 }
