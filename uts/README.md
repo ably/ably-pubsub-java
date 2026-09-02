@@ -813,6 +813,13 @@ Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is an An
 so its door cannot run on the JVM this suite uses. Its stamping contract is covered by the
 instrumentation tests in the `device` module (`emulate.yml`).
 
+**Token-auth tests are skipped on the server leg.** Realtime rejects a token-authenticated
+connection that declares the server side through the agent entry alone (error 40167: the side
+must come from a signed `x-ably-clientType` token claim — PDR-091 deferred decision D2, not yet
+implemented anywhere the test infra can reach). Tests whose clients use token auth call
+`assumeSideSupportsTokenAuth()` and are reported as skipped, not failed, in server mode. When D2
+lands, mint the claim in the test infra and delete the assumption.
+
 Notes:
 - `ProxyManager` **advises** running proxy suites single-fork (`maxParallelForks = 1`) because they
   share the control port (10100). This is not currently set in `uts/build.gradle.kts`; it isn't
