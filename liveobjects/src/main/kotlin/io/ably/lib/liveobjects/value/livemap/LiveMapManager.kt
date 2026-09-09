@@ -56,44 +56,48 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
   /**
    * @spec RTLM15 - Applies operations to LiveMap
    */
-  internal fun applyOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
+  internal fun applyOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     return when (operation.action) {
       WireObjectOperationAction.MapCreate -> {
         val update = applyMapCreate(operation, message) // RTLM15d1
         liveMap.notifyUpdated(update) // RTLM15d1a
-        true // RTLM15d1b
+        update // RTLM15d1b - RTLM7f: return the LiveMapUpdate
       }
       WireObjectOperationAction.MapSet -> {
         if (operation.mapSet != null) {
           val update = applyMapSet(operation.mapSet, message.serial, message) // RTLM15d6
           liveMap.notifyUpdated(update) // RTLM15d6a
-          true // RTLM15d6b
+          update // RTLM15d6b - RTLM7f: return the LiveMapUpdate
         } else {
-          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
+          // Log a warning and skip only this operation - throwing would abort every
+          // sibling operation in the same ProtocolMessage batch
+          Log.w(tag, "No payload found for ${operation.action} op for LiveMap objectId=${objectId}, skipping")
+          ObjectUpdate.NoOp
         }
       }
       WireObjectOperationAction.MapRemove -> {
         if (operation.mapRemove != null) {
           val update = applyMapRemove(operation.mapRemove, message.serial, message.serialTimestamp, message) // RTLM15d7
           liveMap.notifyUpdated(update) // RTLM15d7a
-          true // RTLM15d7b
+          update // RTLM15d7b - RTLM7f: return the LiveMapUpdate
         } else {
-          throw objectError("No payload found for ${operation.action} op for LiveMap objectId=${objectId}")
+          Log.w(tag, "No payload found for ${operation.action} op for LiveMap objectId=${objectId}, skipping")
+          ObjectUpdate.NoOp
         }
       }
       WireObjectOperationAction.ObjectDelete -> {
         val update = liveMap.tombstone(message.serialTimestamp, message) // RTLM15d5
         liveMap.notifyUpdated(update) // RTLM15d5c
-        true // RTLM15d5b
+        update // RTLM15d5b - RTLM7f: return the LiveMapUpdate
       }
       WireObjectOperationAction.MapClear -> {
         val update = applyMapClear(message) // RTLM15d8
         liveMap.notifyUpdated(update) // RTLM15d8a
-        true // RTLM15d8b
+        update // RTLM15d8b - RTLM7f: return the LiveMapUpdate
       }
       else -> {
         Log.w(tag, "Invalid ${operation.action} op for LiveMap objectId=${objectId}") // RTLM15d4
-        false
+        ObjectUpdate.NoOp
       }
     }
   }
@@ -401,9 +405,7 @@ internal class LiveMapManager(private val liveMap: InternalLiveMap): LiveMapChan
       }
     }
 
-    // An empty diff means nothing actually changed (e.g. clearing an already-empty root
-    // map on a channel with no objects). Return the no-op update so notifyUpdated()
-    // short-circuits and no change event is emitted. Spec: RTLM22b/RTO4b.
+    // RTLM22c - exception to RTLM22b: if the computed update has no changed keys (empty), no key changed, so return a no-op update (per RTLO4b4b) instead of a MapUpdate
     return if (update.isEmpty()) noOpMapUpdate else ObjectUpdate.MapUpdate(update)
   }
 

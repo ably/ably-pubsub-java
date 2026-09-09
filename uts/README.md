@@ -2,8 +2,9 @@
 
 > A practical, end-to-end explanation of the **Universal Test Specification (UTS)** and how it is
 > realised in the `ably-java` repository. Written for a developer who has never touched UTS before
-> and needs to understand *what it is*, *why it exists*, and *exactly how the Java/Kotlin code under
-> `uts/` makes the unit, direct-sandbox, and proxy-integration tests work*.
+> and needs to understand *what it is*, *why it exists*, and *exactly how the shared Kotlin
+> infrastructure in the `:uts` module — plus the reference smoke tests that exercise it — makes the
+> unit, direct-sandbox, and proxy-integration tiers work*.
 
 ---
 
@@ -17,9 +18,9 @@
 6. [Unit-Test Infrastructure (mocked transports)](#6-unit-test-infrastructure-mocked-transports)
 7. [Proxy-Integration Infrastructure (real backend + fault injection)](#7-proxy-integration-infrastructure-real-backend--fault-injection)
 8. [Shared Async Helpers](#8-shared-async-helpers)
-9. [Walkthrough: the Unit Test (`ConnectionRecoveryTest`)](#9-walkthrough-the-unit-test-connectionrecoverytest)
-10. [Walkthrough: the Direct-Sandbox Integration Test (`ChannelHistoryTest`)](#10-walkthrough-the-direct-sandbox-integration-test-channelhistorytest)
-11. [Walkthrough: the Proxy Test (`AuthReauthTest`)](#11-walkthrough-the-proxy-test-authreauthtest)
+9. [Walkthrough: the Unit Smoke Test (`UnitInfraSmokeTest`)](#9-walkthrough-the-unit-smoke-test-unitinfrasmoketest)
+10. [Walkthrough: the Direct-Sandbox Smoke Test (`IntegrationInfraSmokeTest`)](#10-walkthrough-the-direct-sandbox-smoke-test-integrationinfrasmoketest)
+11. [Walkthrough: the Proxy Smoke Test (`ProxyInfraSmokeTest`)](#11-walkthrough-the-proxy-smoke-test-proxyinfrasmoketest)
 12. [Deviations: when the SDK disagrees with the spec](#12-deviations-when-the-sdk-disagrees-with-the-spec)
 13. [How to Run the Tests](#13-how-to-run-the-tests)
 14. [Quick Reference / Cheat-Sheet](#14-quick-reference--cheat-sheet)
@@ -54,8 +55,8 @@ UTS fixes this by separating **what to test** from **how to test it in a given l
                        ▼
         ┌──────────────────────────────┐
         │   Derived tests               │   ← concrete, runnable tests in the SDK's language
-        │   (this repo: Kotlin in uts/) │     e.g. ConnectionRecoveryTest.kt
-        └──────────────────────────────┘
+        │   (Kotlin, in ably-java)      │     spec suites: :java / :liveobjects;
+        └──────────────────────────────┘     shared infra + smoke examples: :uts
 ```
 
 Three concepts you will see constantly:
@@ -64,8 +65,8 @@ Three concepts you will see constantly:
 |------|---------|
 | **Spec point** | A tagged requirement in the features spec, e.g. `RTN16g`, `RTN22`, `RTL4f`. Test names embed these. |
 | **UTS spec** | A markdown file of portable pseudocode describing the setup, steps, and assertions for one feature. The *source of truth for what to test.* |
-| **Derived test** | A faithful translation of a UTS spec into a real test in a specific SDK/language. This is what lives in `ably-java/uts/`. |
-| **Deviation** | A documented case where the SDK's actual behaviour diverges from the spec. Recorded in `deviations.md`. |
+| **Derived test** | A faithful translation of a UTS spec into a real test in a specific SDK/language. These live in the owning module's test source set (`:java` for realtime/rest, `:liveobjects` for objects); the shared infra they use lives in `:uts`. |
+| **Deviation** | A documented case where the SDK's actual behaviour diverges from the spec. Recorded in the owning module's `deviations.md` (`:java` and `:liveobjects` — see §12). |
 
 The golden rule (from [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)): **translate the UTS spec faithfully** — same
 structure, same assertions, same naming — don't optimise or skip steps. Every derived test carries a
@@ -81,14 +82,16 @@ three example tests this guide walks through span all three tiers.
 
 | Tier | Transport | Backend | Purpose | Example in this repo |
 |------|-----------|---------|---------|----------------------|
-| **Unit** | **Mocked** (`MockWebSocket`, `MockHttpClient`) | none | Client-side logic: state machines, request formation, response parsing, timer behaviour. Fast & deterministic. | `unit/realtime/ConnectionRecoveryTest.kt` |
-| **Direct sandbox integration** | Real network | Real Ably sandbox | Happy-path interop: connect, publish, subscribe. No fault injection. | `integration/standard/realtime/ChannelHistoryTest.kt` |
-| **Proxy integration** | Real network **through a programmable proxy** | Real Ably sandbox | Fault behaviour: dropped connections, injected errors, timeouts, re-auth. | `integration/proxy/realtime/AuthReauthTest.kt` |
+| **Unit** | **Mocked** (`MockWebSocket`, `MockHttpClient`) | none | Client-side logic: state machines, request formation, response parsing, timer behaviour. Fast & deterministic. | `unit/UnitInfraSmokeTest.kt` |
+| **Direct sandbox integration** | Real network | Real Ably sandbox | Happy-path interop: connect, publish, subscribe. No fault injection. | `integration/standard/IntegrationInfraSmokeTest.kt` |
+| **Proxy integration** | Real network **through a programmable proxy** | Real Ably sandbox | Fault behaviour: dropped connections, injected errors, timeouts, re-auth. | `integration/proxy/ProxyInfraSmokeTest.kt` |
 
-Each tier folder is further organised **by module** (`realtime`, `liveobjects`, …): `unit/<module>/`,
-`integration/standard/<module>/`, and `integration/proxy/<module>/`. So a feature's tests sit together
-by SDK area — the three example tests live at `unit/realtime/`, `integration/standard/realtime/`, and
-`integration/proxy/realtime/`.
+The three examples above are `:uts`'s own **tier smoke tests** (§9–§11) — the reference shapes this
+guide walks through. The real, spec-derived suites live **by module**, in the module that owns the
+code under test: realtime/rest under `:java` (`lib/src/test/kotlin/io/ably/lib/uts/…`), objects under
+`:liveobjects` (`liveobjects/.../uts/…`). `:uts`'s own test tree holds only the tier smoke examples;
+so a feature's tests always sit with the SDK code they exercise (see §4.2 "Where every module's UTS
+tests live").
 
 Key principles (from [`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md)):
 
@@ -103,7 +106,7 @@ Key principles (from [`integration-testing.md`](https://github.com/ably/specific
   understands **text** WebSocket frames and so can't inspect or modify binary msgpack. The tests therefore
   force JSON regardless of SDK support
   ([`integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) §Protocol Variants,
-  [`helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)).
+  [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)).
 
 ---
 
@@ -156,15 +159,18 @@ segregation exists because proxy tests have different infra needs, CI cadence, a
 A big table mapping every features-spec group (`RSC`, `RTN`, `RTL`, `RTP`, …) to the UTS specs that
 cover it, with a per-tier summary (`unit:✓ proxy:✓`). This is the tracker for "what's done and
 what's missing". The reference tests this guide walks through correspond to these rows:
-- `RTN16` (connection recovery) → unit spec `connection_recovery_test.md` → **`ConnectionRecoveryTest.kt`**.
+- `RTN16` (connection recovery) → unit spec `connection_recovery_test.md` →
+  **`ConnectionRecoveryTest.kt`** (`:java`, `lib/src/test/kotlin/io/ably/lib/uts/unit/realtime/`).
 - `RTL10d` (channel history) → direct-sandbox spec
-  `realtime/integration/channel_history_test.md` → **`ChannelHistoryTest.kt`**.
+  `realtime/integration/channel_history_test.md` → **`ChannelHistoryTest.kt`**
+  (`:java`, `.../integration/standard/realtime/`).
 - `RTN22` / `RTC8a` (server-initiated re-auth) → proxy spec
-  `realtime/integration/proxy/auth_reauth.md` → **`AuthReauthTest.kt`**.
+  `realtime/integration/proxy/auth_reauth.md` → **`AuthReauthTest.kt`**
+  (`:java`, `.../integration/proxy/realtime/`).
 
 > There is also a fifth, *referenced* spec:
-> [`realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md)
-> (in the spec repo under `uts/realtime/integration/helpers/`). It defines the proxy's control API, rule format,
+> [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)
+> (in the spec repo under `uts/docs/`). It defines the proxy's control API, rule format,
 > action types, and the **protocol message action-number table** (CONNECTED=4, ATTACH=10, AUTH=17,
 > …). The Kotlin `ProxySession` is the client for exactly that API.
 
@@ -172,106 +178,168 @@ what's missing". The reference tests this guide walks through correspond to thes
 
 ## 4. The Java Setup: the `uts/` module
 
-The `uts/` directory is a **standalone Gradle module** (`include("uts")` in
-`settings.gradle.kts`) whose only job is to host UTS-derived tests. It contains *no production code* —
-everything lives under `uts/src/test/`.
+The `uts/` directory is a **standalone Gradle module** (`include("uts")` in `settings.gradle.kts`)
+that is the repo's **shared UTS test-support library** plus a small set of reference examples. Its
+**main** source set *is* the shared test infrastructure — `uts/src/main/kotlin/io/ably/lib/uts/infra/`
+— so any other Gradle module consumes it with a plain `testImplementation(project(":uts"))` (this
+module's own tests see it automatically). Its **test** source set holds only the three tier **smoke
+tests** (§9–§11): the permanent acceptance gate for the infra and the worked examples this guide
+teaches from.
+
+Two things this means — and a correction to how the module used to be described. First, the infra is
+**this module's main/production code**, not a `testFixtures` variant and not test-only: `:uts`'s main
+artifact *is* the infra. Second, `:uts` does **not** host the spec-derived UTS suites — those live in
+their owning modules (`:java` for realtime/rest, `:liveobjects` for objects; see §4.2). `:uts` keeps
+only the infra and the tier smoke examples.
 
 ### 4.1 `uts/build.gradle.kts`
 ```kotlin
-plugins { alias(libs.plugins.kotlin.jvm) }
+plugins {
+    `java-library`                          // provides the `api` configuration (kotlin.jvm alone
+                                            // applies only the plain `java` plugin)
+    alias(libs.plugins.kotlin.jvm)          // Kotlin/JVM — `java-test-fixtures` is REMOVED
+}
+
+java {
+    // Declare Java-8 outgoing variants so :java's 8-requesting configurations can consume
+    // project(":uts").
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 dependencies {
-    testImplementation(project(":java"))                 // the SDK under test
-    testImplementation(project(":network-client-core"))  // HttpEngine / WebSocketEngine interfaces
-    testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter-params")  // @ParameterizedTest / @ValueSource (version from the JUnit BOM)
-    testImplementation(libs.mockk)
-    testImplementation(libs.coroutine.core)              // kotlinx.coroutines
-    testImplementation(libs.coroutine.test)              // runTest, virtual time
-    testImplementation(libs.ktor.client.core)            // HTTP client for proxy/sandbox control
-    testImplementation(libs.ktor.client.cio)
+    // The shared UTS infra (src/main/kotlin/io/ably/lib/uts/infra/**) — this module's main artifact,
+    // consumed elsewhere via testImplementation(project(":uts")). `api` for types that appear in
+    // infra signatures; `implementation` for internals. Invariant I1: :uts never depends on
+    // :liveobjects.
+    api(project(":java"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
+    api(project(":network-client-core"))     // HttpEngine / WebSocketEngine SPIs the mocks implement
+    implementation(libs.ktor.client.core)    // proxy infra uses ktor internally — must NOT leak to consumers
+    implementation(libs.ktor.client.cio)
+
+    // The UTS test toolkit — exported (api) so any module consuming the infra via
+    // testImplementation(project(":uts")) transitively gets JUnit 5, the kotlin.test Jupiter binding,
+    // and coroutines (runTest etc.). :uts's own smoke tests inherit it from main's api — nothing to declare.
+    api(platform(libs.junit.bom))
+    api(libs.junit.jupiter)
+    api(libs.junit.jupiter.params)                  // @ParameterizedTest / @ValueSource
+    api(kotlin("test-junit5"))
+    api(libs.coroutine.core)
+    api(libs.coroutine.test)                        // runTest, virtual time
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()                                   // JUnit 5
+    useJUnitPlatform()                       // JUnit 5
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
-    // Propagate a local proxy build override (see ProxyManager):
-    systemProperty("uts.proxy.localPath", /* -Duts.proxy.localPath=… or $UTS_PROXY_LOCAL_PATH */ …)
+    // Propagate a local proxy-build override (see ProxyManager): -Duts.proxy.localPath=… or
+    // $UTS_PROXY_LOCAL_PATH.
+    systemProperty(
+        "uts.proxy.localPath",
+        providers.systemProperty("uts.proxy.localPath")
+            .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
+            .getOrElse(""),
+    )
 }
+
+tasks.register<Test>("runUtsUnitTests")        { filter { includeTestsMatching("io.ably.lib.uts.unit.*") } }
+tasks.register<Test>("runUtsIntegrationTests") { filter { includeTestsMatching("io.ably.lib.uts.integration.*") } }
+
+kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_1_8) } }
 ```
 Takeaways:
-- Tests are **Kotlin + JUnit 5**, using **kotlinx.coroutines** for async control and **Ktor** as the
-  HTTP client that talks to the sandbox REST API and the proxy control API.
-- `junit-jupiter-params` adds **`@ParameterizedTest`** — used by integration specs to run their
-  `json` / `msgpack` protocol variants as a single test parameterised on `useBinaryProtocol` (see §10.3).
-  Its version is managed by the JUnit 5 BOM that `kotlin("test")` brings onto the test classpath, so no
-  explicit version is pinned.
-- It depends on `:java` (the SDK) and `:network-client-core` (the pluggable transport interfaces the
-  mocks implement).
-- The `--add-opens java.base/java.time` and `java.base/java.lang` flags grant reflective access into
-  those JDK packages for the test runtime. They mirror the same flags set in `java/build.gradle.kts`
-  for the SDK's own test module (which additionally opens `java.net` and `java.lang.reflect`).
+- `:uts` is a `java-library` + `kotlin.jvm` module. `java-test-fixtures` is **gone** — the infra is
+  plain `src/main`, so consumers use `testImplementation(project(":uts"))` (no `testFixtures(...)`
+  wrapper). `java-library` is what now supplies the `api` configuration.
+- The module compiles to **Java 8** bytecode (source/target + `jvmTarget = JVM_1_8`), so `:java`
+  (which requests Java-8 variants) can consume it. **mockk is not a dependency** — the infra imports
+  no test library at all.
+- It depends on `:java` (the SDK under test) and `:network-client-core` (the pluggable transport SPIs
+  the mocks implement), both via `api` because they appear in infra signatures.
+- Tests are **Kotlin + JUnit 5**, using **kotlinx.coroutines** for async control and **Ktor** for the
+  sandbox REST API and proxy control API. `junit-jupiter-params` (version from the JUnit BOM) adds
+  **`@ParameterizedTest`** for the protocol-variant integration tests (§10.3).
+- `runUtsUnitTests` / `runUtsIntegrationTests` are package-filtered `Test` tasks (§13). The
+  `--add-opens java.base/java.time` and `java.base/java.lang` flags grant the test runtime reflective
+  access into those JDK packages, mirroring `java/build.gradle.kts`.
 - A system property carries an optional path to a **locally built** proxy binary (so you can test
   against an unreleased proxy).
 
 ### 4.2 Directory layout
 
-Everything lives under the `io.ably.lib.uts` package, split cleanly into **infrastructure** (`infra/`,
-no `@Test`s) and the **tests** themselves. Tests are organised **by tier, then by module**: `unit/` for
-mocked-transport tests, and `integration/` for real-backend tests — the latter splitting again into
-`standard/` (direct sandbox, happy-path) and `proxy/` (sandbox through the fault-injecting proxy). Under
-each, a per-module folder (`realtime`, `liveobjects`, …) holds the actual test classes:
+Everything lives under the `io.ably.lib.uts` package, split cleanly between the **main** source set —
+the shared **infrastructure** (`infra/`, no `@Test`s) — and the **test** source set — the three tier
+**smoke tests**. The infra is organised by tier: `infra/unit/` for mocked transports, and
+`infra/integration/` for real-backend helpers — the latter with an `infra/integration/proxy/`
+sub-package for the fault-injecting proxy — plus one shared `infra/Utils.kt` serving every tier:
 
 ```text
-uts/src/test/kotlin/io/ably/lib/uts/
-├── deviations.md                        # the catalogue of SDK-vs-spec divergences
-│
-├── infra/                               # ── TEST INFRASTRUCTURE (no @Test methods) ──
-│   ├── Utils.kt                         #   awaitState / awaitChannelState / pollUntil (shared)
-│   │
-│   ├── unit/                            #   UNIT infra (mocked transports)
-│   │   ├── ClientFactories.kt           #     TestRealtimeClient / TestRestClient / ClientOptionsBuilder
-│   │   ├── MockWebSocket.kt             #     fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
-│   │   ├── MockWebSocketEngineFactory.kt#     plugs the mock into the SDK's WebSocketEngine SPI
-│   │   ├── MockHttpClient.kt            #     fake HTTP engine + HttpMockConfig
-│   │   ├── MockHttpEngine.kt            #     plugs the mock into the SDK's HttpEngine SPI
-│   │   ├── MockEvent.kt                 #     sealed log of everything on a mock transport
-│   │   ├── PendingConnection.kt         #     interface: a connection attempt awaiting a response
-│   │   ├── DefaultPendingConnection.kt  #     WS implementation of PendingConnection
-│   │   ├── PendingRequest.kt            #     interface: an in-flight HTTP request awaiting a response
-│   │   ├── DefaultPendingRequest.kt     #     HTTP implementation of PendingRequest
-│   │   ├── FakeClock.kt                 #     virtual clock + virtual timers (deterministic time)
-│   │   └── Utils.kt                     #     ConnectionDetails { } builder (reflective constructor)
-│   │
-│   └── integration/                     #   INTEGRATION infra (real backend)
-│       ├── SandboxApp.kt                #     provisions/deletes a sandbox app
-│       └── proxy/
-│           ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
-│           └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
-│
-├── unit/                                # ── UNIT TESTS (mock transport) ── · per module
-│   ├── realtime/
-│   │   └── ConnectionRecoveryTest.kt    #   ← the UNIT test (RTN16*)
-│   └── liveobjects/                     #   (further modules as coverage grows)
-│
-└── integration/                         # ── INTEGRATION TESTS (real backend) ── · per module
-    ├── standard/                        #   direct sandbox: happy-path, no fault injection
-    │   ├── realtime/
-    │   │   └── ChannelHistoryTest.kt    #   ← the DIRECT-SANDBOX test (RTL10d)
-    │   └── liveobjects/
-    └── proxy/                           #   sandbox through the fault-injecting uts-proxy
-        ├── realtime/
-        │   └── AuthReauthTest.kt        #   ← the PROXY test (RTN22, RTC8a)
-        └── liveobjects/
+uts/src/main/kotlin/io/ably/lib/uts/         # ── shared infra, consumed via testImplementation(project(":uts")) ──
+└── infra/                               # ── TEST INFRASTRUCTURE (no @Test methods) ──
+    ├── Utils.kt                         #   awaitState / awaitChannelState / pollUntil (shared)
+    │
+    ├── unit/                            #   UNIT infra (mocked transports)
+    │   ├── ClientFactories.kt           #     TestRealtimeClient / TestRestClient / ClientOptionsBuilder
+    │   ├── MockWebSocket.kt             #     fake WS transport + WebSocketMockConfig + CONNECTED_MESSAGE
+    │   ├── MockWebSocketEngineFactory.kt#     plugs the mock into the SDK's WebSocketEngine SPI
+    │   ├── MockHttpClient.kt            #     fake HTTP engine + HttpMockConfig
+    │   ├── MockHttpEngine.kt            #     plugs the mock into the SDK's HttpEngine SPI
+    │   ├── MockEvent.kt                 #     sealed log of everything on a mock transport
+    │   ├── PendingConnection.kt         #     interface: a connection attempt awaiting a response
+    │   ├── DefaultPendingConnection.kt  #     WS implementation of PendingConnection
+    │   ├── PendingRequest.kt            #     interface: an in-flight HTTP request awaiting a response
+    │   ├── DefaultPendingRequest.kt     #     HTTP implementation of PendingRequest
+    │   ├── FakeClock.kt                 #     virtual clock + virtual timers (deterministic time)
+    │   └── Utils.kt                     #     ConnectionDetails { } builder (reflective constructor)
+    │
+    └── integration/                     #   INTEGRATION infra (real backend)
+        ├── SandboxApp.kt                #     provisions/deletes a sandbox app
+        └── proxy/
+            ├── ProxyManager.kt          #       downloads/launches the uts-proxy binary
+            └── ProxySession.kt          #       proxy session: rules, actions, log + connectThroughProxy
+
+uts/src/test/kotlin/io/ably/lib/uts/         # ── the tier SMOKE TESTS (infra acceptance + worked examples) ──
+├── unit/
+│   └── UnitInfraSmokeTest.kt            #   ← UNIT smoke: mock WS + HTTP + FakeClock (§9)
+└── integration/
+    ├── standard/
+    │   └── IntegrationInfraSmokeTest.kt #   ← DIRECT-SANDBOX smoke: SandboxApp (§10)
+    └── proxy/
+        └── ProxyInfraSmokeTest.kt       #   ← PROXY smoke: ProxyManager + ProxySession (§11)
 ```
 
-The mental model: **`infra/unit/` powers the unit tests, `infra/integration/` powers both integration
-kinds (`standard` + `proxy`), and `infra/Utils.kt` serves all of them.** Every tier is sub-divided **by
-module** (`realtime`, `liveobjects`, …) so a feature's tests sit together regardless of SDK area. The
-top-level `unit/` ↔ `infra/unit/` and `integration/` ↔ `infra/integration/` pairing is what the
-`runUtsUnitTests` / `runUtsIntegrationTests` Gradle tasks key off (§13) — `runUtsIntegrationTests`
-covers **both** `integration/standard/` and `integration/proxy/`.
+The mental model: **`infra/unit/` powers the unit tier, `infra/integration/` powers both integration
+kinds (`standard` + `proxy`), and `infra/Utils.kt` serves all of them.** The top-level `unit/` ↔
+`infra/unit/` and `integration/` ↔ `infra/integration/` pairing is what the `runUtsUnitTests` /
+`runUtsIntegrationTests` Gradle tasks key off (§13) — `runUtsIntegrationTests` covers **both**
+`integration/standard/` and `integration/proxy/`.
+
+#### Where every module's UTS tests live
+
+The infra is shared, but the actual UTS suites live **in the module that owns the code under test**;
+`:uts` itself holds only the infra and one smoke example per tier:
+
+| Module | UTS tests | Location | Run with |
+|---|---|---|---|
+| `:java` | realtime (and future rest) — unit, integration, proxy | `lib/src/test/kotlin/io/ably/lib/uts/{unit, integration/standard, integration/proxy}/realtime/` | `:java:runUtsUnitTests` / `:java:runUtsIntegrationTests` |
+| `:liveobjects` | objects — unit, integration, proxy | `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit, integration, proxy}/` | `:liveobjects:runLiveObjectsUnitTests` / `:liveobjects:runLiveObjectsIntegrationTests` |
+| `:uts` | **none** — shared infra + one smoke test per tier | `uts/src/main/.../infra/**` + `uts/src/test/.../{unit, integration/standard, integration/proxy}/` | `:uts:runUtsUnitTests` / `:uts:runUtsIntegrationTests` |
+
+Every consuming module gets the infra via `testImplementation(project(":uts"))`. The objects suites
+additionally reach `:liveobjects`-internal CRDT state (`InternalLiveMap`/`InternalLiveCounter`/
+`ObjectsPool`), which is why they live in `:liveobjects`'s own test source set — including the objects
+**unit** tier, whose internal-graph specs cannot be expressed from outside that module. See
+`.claude/skills/uts-to-kotlin/uts-package-mapping.json` and `MOVE_COMMON_INFRA/`.
+
+> **Future work — publishing `:uts` for out-of-repo consumers.** Promoting the infra into `:uts`'s
+> own main source set (rather than a separate `:test-support` module) leaves it *publishable later
+> without restructuring* — but publishing is a deliberate commitment, not a default. The trigger is a
+> consumer outside this repo, in practice the **Chat SDK**: if Chat lands in-repo it just consumes
+> `testImplementation(project(":uts"))` like every other module and nothing changes; if Chat is a
+> separate repo, decide *deliberately* between publishing `:uts` as a versioned artifact, source-copying
+> the infra, or a shared git submodule. Publishing turns test infra into a maintained artifact with a
+> release cadence and compatibility expectations, so that choice (and the release-train / API-hygiene
+> checklist it implies) stays gated and unscheduled until the trigger fires.
 
 ---
 
@@ -409,9 +477,16 @@ responses back — all without a socket.
 
 ### 6.4 `FakeClock` — deterministic time
 `FakeClock` implements the SDK's `Clock`. Time is frozen until you call `advance(ms)`; on each
-advance it fires any due virtual timers **synchronously**, and wakes any `waitOn` sleepers. This is
+advance it fires any due virtual timers **synchronously**, and wakes any `waitOn` sleepers. `advance`
+runs due work **to quiescence** — it re-scans until a full pass fires nothing, so cascades due within
+the advanced interval (a zero-delay reschedule, or a timer created by fired work) also run in that same
+`advance` (the spec run-to-quiescence Guarantee; see §9.3). This is
 how the unit test drives reconnection backoff and `connectionStateTtl` expiry **without real
-sleeping**:
+sleeping**. Caveat: `waitOn(target, timeout)` still performs a real `target.wait(timeout)`, so a
+sleeper also wakes once `timeout` ms of wall-clock elapse — `advance()` makes it wake *sooner*, but is
+not a hard gate (the **advisory** model of the spec's `mock_websocket.md` §Fake-time semantics).
+Drive transitions by owning the resulting attempt (`awaitConnectionAttempt()`), never
+by asserting a wait has *not* yet returned.
 ```kotlin
 val fakeClock = FakeClock()
 val client = TestRealtimeClient { enableFakeTimers(fakeClock); … }
@@ -529,92 +604,154 @@ technique used by `liveobjects/.../TestUtils.kt`). See Appendix B.1.
 
 ---
 
-## 9. Walkthrough: the Unit Test (`ConnectionRecoveryTest`)
+## 9. Walkthrough: the Unit Smoke Test (`UnitInfraSmokeTest`)
 
-**File:** `uts/.../uts/unit/realtime/ConnectionRecoveryTest.kt` (package `io.ably.lib.uts.unit.realtime`)
-**Tier:** Unit (mocked WebSocket, no network).
-**Spec area:** RTN16 — connection recovery via the `recover` option and `createRecoveryKey()`.
+**File:** `uts/src/test/kotlin/io/ably/lib/uts/unit/UnitInfraSmokeTest.kt` (package `io.ably.lib.uts.unit`)
+**Tier:** Unit (mocked WebSocket + mocked HTTP, no network).
+**Purpose:** the permanent acceptance test for the unit-tier infra — it drives a real SDK through
+`MockWebSocket`, `MockHttpClient` and `FakeClock` end-to-end. It carries **no** `@UTS` marker (it is
+not derived from a spec) and must never trip the spec-parity tooling; it is the reference shape a
+future unit-tier UTS test should take.
 
-It contains six tests; each carries an `@UTS realtime/unit/RTN16…/…` tag. Here's what each proves and
-the technique it uses:
+> The real spec-derived unit suites this pattern scales to live in `:java`
+> (`lib/src/test/kotlin/io/ably/lib/uts/unit/realtime/`, e.g. `ConnectionRecoveryTest`) and
+> `:liveobjects` — see §13.
 
-### 9.1 `RTN16g, RTN16g1` — recovery-key structure (incl. Unicode)
-Connects (mock returns CONNECTED with a known key), attaches two channels — one ASCII, one Unicode
-(`channel-éàü-世界`) — feeding each an `ATTACHED` with a `channelSerial` via `sendToClient`. Then calls
-`connection.createRecoveryKey()`, decodes it with `RecoveryKeyContext.decode`, and asserts the
-connection key, `msgSerial == 0`, and both channel serials survive — including a full
-**encode→decode round-trip** to prove the Unicode name isn't corrupted (RTN16g1).
-*Technique: callback-style `onConnectionAttempt`, `sendToClient` for ATTACHED, `awaitChannelState`.*
+It has **three** `@Test` methods: two end-to-end transport tests (§9.1, §9.2) that between them exercise
+every teaching point of §5–§8, plus a focused `FakeClock` run-to-quiescence acceptance test (§9.3).
 
-### 9.2 `RTN16g2` — `createRecoveryKey()` returns null in inactive states
-The most elaborate test — it walks the connection through **five** states and asserts the key is null
-in each inactive one:
-- **INITIALIZED** (before connect) → null.
-- **CONNECTED** → non-null (sanity).
-- **CLOSING / CLOSED** → null (close nulls the key immediately).
-- **FAILED** → null. *(Contains a documented **deviation** — see §12: the spec's fatal error
-  code 50000/500 isn't treated as fatal by the SDK, and `send_to_client_and_close` races the FAILED
-  transition; the test uses code 40000/400 and plain `sendToClient`.)*
-- **SUSPENDED** → null. Built with a `FakeClock`: connect succeeds, then `simulateDisconnect()`,
-  then a coroutine **refuses every reconnection attempt** while `fakeClock.advance(2.seconds)` loops
-  until the short `connectionStateTtl` (800 ms) expires and the client gives up to SUSPENDED.
-*Technique: this is the textbook example of **await-style** mocking — the first connection succeeds
-via `awaitConnectionAttempt()`, but reconnections need the *refused* response, so a separate
-`refuseJob` coroutine drives them; mixing this with fake timers gives deterministic SUSPENDED.*
+### 9.1 `unit infra drives the full mock-WebSocket connection lifecycle` — await style throughout
+One long **await-style** test that walks the SDK through the whole transport lifecycle:
 
-### 9.3 `RTN16k` — `recover` adds the `recover` query param
-Constructs the client with `recover = <recoveryKey>`, captures `conn.queryParams` on each connection
-attempt, then `simulateDisconnect()` and reconnect. Asserts the **first** attempt carries
-`recover=<key>` (and no `resume`), while the **second** (post-reconnect) carries `resume=<new key>`
-(and no `recover`) — i.e. recover is a one-shot bootstrap, subsequent reconnections use resume.
+1. **Connect (await style).** A `launch`ed coroutine calls `awaitConnectionAttempt()`, captures the
+   `PendingConnection`, then answers `respondWithSuccess(CONNECTED_MESSAGE)`:
+   ```kotlin
+   val firstConnection = CompletableDeferred<PendingConnection>()
+   launch {
+       val conn = mock.awaitConnectionAttempt()
+       firstConnection.complete(conn)
+       conn.respondWithSuccess(CONNECTED_MESSAGE)
+   }
+   client.connect()
+   awaitState(client, ConnectionState.connected)
+   ```
+   It then asserts the captured connection's **query params** (`format == "json"`, `key` present —
+   the same technique a `recover`/`resume` test uses), that `CONNECTED_MESSAGE`'s `test-connection-id`
+   reached `client.connection.id`, and the event ordering (`events[0] is ConnectionAttempt`,
+   `events[1] is ConnectionEstablished`).
+2. **Server-initiated ATTACHED with a Unicode round-trip.** It attaches a channel whose name carries
+   Unicode (`smoke-üñîçöðé-…`), asserts the **outbound** ATTACH frame via `awaitNextMessageFromClient()`,
+   then feeds an ATTACHED back with `sendToClient` and checks the `channelSerial` round-tripped in:
+   ```kotlin
+   ch.attach()
+   val attachFrame = mock.awaitNextMessageFromClient()
+   assertEquals(ProtocolMessage.Action.attach, attachFrame.action)
+   mock.sendToClient(ProtocolMessage().apply {
+       action = ProtocolMessage.Action.attached
+       channel = channelName
+       channelSerial = "serial-1"
+   })
+   awaitChannelState(ch, ChannelState.attached)
+   ```
+3. **Publish**, asserting the full MESSAGE frame (`action`, `channel`, `messages[0].name`/`data`) again
+   via `awaitNextMessageFromClient()`.
+4. **Disconnect.** `simulateDisconnect()`, await DISCONNECTED, and assert the drop was recorded. Note
+   we do **not** snapshot the `ConnectionAttempt` count here: `FakeClock.waitOn(target, timeout)` does a
+   real `target.wait(timeout)`, so the disconnected-retry fires on its own after ~`disconnectedRetryTimeout`
+   ms of wall-clock even without an `advance()`. `advance()` only wins that race sooner — it is not a
+   hard gate — so a "still exactly one attempt" assertion would be racy on a loaded runner. Ownership
+   of attempt #2 belongs to the next step, which gates on it deterministically.
+5. **FakeClock-driven reconnect.** A coroutine loops `fakeClock.advance(2.seconds)` then answers the
+   next attempt (received via the buffered `awaitConnectionAttempt()`, so it cannot be missed) with a
+   short-TTL CONNECTED; the test awaits CONNECTED again and asserts a second `ConnectionAttempt`.
+6. **Refuse → SUSPENDED (the centrepiece).** After another `simulateDisconnect()`, a `refuseJob`
+   coroutine advances the clock and `respondWithRefused()`s every reconnection attempt until the short
+   `connectionStateTtl` (800 ms, from the short-lived CONNECTED) expires and the client gives up to
+   SUSPENDED; the test asserts `connection.createRecoveryKey()` is null in SUSPENDED.
 
-### 9.4 `RTN16f` — `recover` initialises `msgSerial` *(env-gated deviation)*
-Asserts the recovered `msgSerial` (42) is preserved. The SDK resets it to 0, so the spec-correct
-assertion `assertEquals(42L, …)` runs only under `RUN_DEVIATIONS`; otherwise a regression-guard
-`assertEquals(0L, …)` runs. (See §12.)
+*Why await-style throughout?* The initial connect, the FakeClock reconnect, and the refuse branch each
+need a **different** answer per attempt — a single `onConnectionAttempt` callback answers every attempt
+uniformly, and the two styles cannot be mixed on one mock. (This is the same reason `:java`'s
+`ConnectionRecoveryTest` is await-style.) *Technique on show: await-style `awaitConnectionAttempt` /
+`awaitNextMessageFromClient`, `sendToClient` for server frames, `events` for assertions, `FakeClock`
+for deterministic backoff, and a Unicode channel-name round-trip.*
 
-### 9.5 `RTN16f1` — malformed `recover` key degrades gracefully
-`recover = "this-is-not-valid-json!!!"`. Asserts the client still connects normally with a fresh
-identity, **no** `recover`/`resume` query params, and exactly one connection attempt — i.e. a bad key
-is logged and ignored, not fatal.
+### 9.2 `unit infra serves a token-auth HTTP request through the mock engine` — callback WS + HTTP mock
+The second test finally gives §6.3's `MockHttpClient` a worked example, and demonstrates the
+**callback style** on the WebSocket side (every attempt is answered identically, so a callback is the
+right tool):
+```kotlin
+val mockWs = MockWebSocket { onConnectionAttempt = { it.respondWithSuccess(CONNECTED_MESSAGE) } }
+val mockHttp = MockHttpClient { onConnectionAttempt = { it.respondWithSuccess() } }
+val client = TestRealtimeClient {
+    authUrl = "https://auth.example.test/token"
+    install(mockWs)
+    install(mockHttp)
+    autoConnect = false
+}
+```
+The auth HTTP request is then handled **await style** — a `launch`ed coroutine `awaitRequest()`s it,
+asserts the outbound request shape, and feeds a canned `TokenDetails` JSON back:
+```kotlin
+launch {
+    val request = mockHttp.awaitRequest()
+    captured.complete(request.method to request.url.path)
+    request.respondWith(200, tokenJson, mapOf("Content-Type" to "application/json"))
+}
+client.connect()
+awaitState(client, ConnectionState.connected)
+```
+It asserts the request was a `GET /token` and that the SDK reached CONNECTED with the fetched token.
 
-### 9.6 `RTN16j` — `recover` instantiates channels with their serials (RTN16i too)
-Recovery key carries three channels (incl. Unicode). Asserts each `channels.get(name).properties.
-channelSerial` matches the key, that the channels are **NOT auto-attached** (state INITIALIZED —
-RTN16i), and that a manual `attach()` sends an ATTACH frame carrying the recovered serial (verified
-via `awaitNextMessageFromClient()`).
+> ⚠️ **Trap (documented inline in the test):** `MockEvent.HttpRequest` is declared in the `MockEvent`
+> sealed class but is **never emitted** by the HTTP mock — asserting on
+> `events.filterIsInstance<MockEvent.HttpRequest>()` would silently pass on an empty list. Assert via
+> `MockHttpClient.awaitRequest()` / the `PendingRequest` instead (as this test does).
 
-**What this test teaches about the infra:** callback vs await styles side by side, `FakeClock`-driven
-SUSPENDED, `sendToClient` for server frames, `events`/`awaitNextMessageFromClient` for inspecting
-client output, and the env-gated deviation pattern.
+**What these two tests teach about the infra:** callback vs await styles side by side (WS callback in
+§9.2, WS await throughout §9.1), `FakeClock`-driven reconnect and SUSPENDED, `sendToClient` for server
+frames, `events` / `awaitNextMessageFromClient` for inspecting client output, and the full HTTP-mock
+connect→request two-phase flow. The `RUN_DEVIATIONS` env-gated deviation pattern is **not** here (the
+smoke tests carry no deviations) — that teaching lives in §12.
+
+### 9.3 `FakeClock advance runs cascaded work to quiescence in one call` — the run-to-quiescence Guarantee
+A focused, SDK-free test that pins the `FakeClock` contract §6.4 depends on: a single `advance(ms)` runs
+**all** work due within the advanced interval, including cascades. It schedules a task that reschedules
+itself at zero delay and a task that creates a brand-new timer mid-advance, then asserts one `advance`
+fires the whole cascade (not just the first pass). This is the infra-level guarantee the reconnect/backoff
+walkthroughs in §9.1 rely on; it exercises `FakeClock` directly because the Guarantee is about `advance`
+alone reaching quiescence.
 
 ---
 
-## 10. Walkthrough: the Direct-Sandbox Integration Test (`ChannelHistoryTest`)
+## 10. Walkthrough: the Direct-Sandbox Smoke Test (`IntegrationInfraSmokeTest`)
 
-**File:** `uts/.../uts/integration/standard/realtime/ChannelHistoryTest.kt` (package `io.ably.lib.uts.integration.standard.realtime`)
+**File:** `uts/src/test/kotlin/io/ably/lib/uts/integration/standard/IntegrationInfraSmokeTest.kt` (package `io.ably.lib.uts.integration.standard`)
 **Tier:** Direct-sandbox integration (real network, real Ably sandbox, **no** proxy, **no** fault injection).
-**Spec point:** RTL10d — messages published by one realtime client are retrievable from a *separate*
-client's `history()`.
+**Purpose:** the permanent acceptance test for the middle-tier infra — `SandboxApp` +
+`TestRealtimeClient`/`TestRestClient` wired straight to the sandbox. No `@UTS` marker.
 
-This is the reference for the **middle tier**. Like a proxy test it talks to the real backend, but it
-connects *straight* to `SandboxApp.sandboxHost` — there is no `ProxyManager`, no `ProxySession`, and no
-`connectThroughProxy` wiring. It's the shape every happy-path interop spec
-(connect/publish/subscribe/presence) follows.
+> The real spec-derived direct-sandbox suites this pattern scales to live in `:java`
+> (`lib/src/test/kotlin/io/ably/lib/uts/integration/standard/realtime/`, e.g. `ChannelHistoryTest`)
+> and `:liveobjects` — see §13.
+
+It talks to the real backend but connects *straight* to `SandboxApp.sandboxHost` — no `ProxyManager`,
+no `ProxySession`, no `connectThroughProxy`. It's the shape every happy-path interop spec
+(connect/publish/subscribe/history) follows.
 
 ### 10.1 Suite setup/teardown
-Same `@TestInstance(PER_CLASS)` + `runBlocking` pattern as the proxy test, but provisioning **`SandboxApp`
-only** — no `ProxyManager.ensureProxy()`:
+`@TestInstance(PER_CLASS)` + `runBlocking`, provisioning **`SandboxApp` only** — no
+`ProxyManager.ensureProxy()`:
 ```kotlin
 @BeforeAll fun setUpAll()    = runBlocking { app = SandboxApp.create() }
 @AfterAll  fun tearDownAll() = runBlocking { if (::app.isInitialized) app.delete() }
 ```
 
-### 10.2 The client — wired straight to the sandbox
-A tiny `newClient` helper points the **real** transport at the sandbox host (no proxy in between). Setting
+### 10.2 The clients — wired straight to the sandbox
+Two tiny helpers point the **real** transports at the sandbox host (no proxy in between). Setting
 explicit hosts auto-disables fallback hosts (REC2c2), so there's nothing else to configure:
 ```kotlin
-private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+private fun newRealtimeClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
     key = app.defaultKey
     realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
     restHost     = SandboxApp.sandboxHost
@@ -622,8 +759,8 @@ private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeCl
     autoConnect  = false
 }
 ```
-(`TestRealtimeClient` is the same builder the unit tests use — it just isn't fed any mocks here, so it
-drives the SDK's real network transport instead of a `MockWebSocket`.)
+(`TestRealtimeClient`/`TestRestClient` are the same builders the unit tests use — here fed no mocks, so
+they drive the SDK's real network transport instead of a `MockWebSocket`.)
 
 ### 10.3 Protocol variants — the `@ParameterizedTest` pattern
 The spec declares a `PROTOCOL` dimension (`json` / `msgpack`) and says *each test runs once per variant*.
@@ -632,7 +769,7 @@ module depends on `junit-jupiter-params` (§4.1):
 ```kotlin
 @ParameterizedTest(name = "useBinaryProtocol={0}")
 @ValueSource(booleans = [false, true])   // false = JSON, true = msgpack
-fun `RTL10d - history contains messages published by another client`(useBinaryProtocol: Boolean) = runTest {
+fun `sandbox infra works end to end`(useBinaryProtocol: Boolean) = runTest {
     …
 }
 ```
@@ -640,17 +777,26 @@ A plain `@Test` test (no protocol dimension) stays a `@Test` — reach for `@Par
 spec actually declares variants.
 
 ### 10.4 The scenario — real publish, real history
-Two independent clients on the same app: the publisher's *confirmed* messages must appear in the
-subscriber's history. The integration-specific techniques on show:
+One realtime client and one REST client on the same app: the publisher's *confirmed* messages must
+appear in the REST `history()`. The integration-specific techniques on show:
+- **A recorded state sequence, not just the final state.** `client.connection.on { states.add(it.current) }`
+  is registered *before* connect, then the test asserts `states.contains(connecting)` and
+  `states.last() == connected`.
 - **Awaiting a publish ack.** Realtime publish is fire-and-forget, so to honour the spec's `AWAIT publish`
-  the test wraps the (non-deprecated) `publish(name, data, Callback<PublishResult>)` overload in a
-  `suspendCancellableCoroutine` (`awaitPublish`), resuming on `onSuccess` and failing on `onError`. This is
-  the integration analogue of the unit test's `awaitNextMessageFromClient()`.
-- **`AWAIT attach()`** → `attach()` then `awaitChannelState(channel, ChannelState.attached)`.
+  an `awaitPublish` extension wraps the `publish(name, data, Callback<PublishResult>)` overload in a
+  `suspendCancellableCoroutine`, resuming on `onSuccess` and failing on `onError`. The test publishes
+  **three** messages, each ack-awaited. This is the integration analogue of the unit test's
+  `awaitNextMessageFromClient()`.
+- **`AWAIT attach()`** → `attach()` then `awaitChannelState(channel, ChannelState.attached, 15.seconds)`.
 - **Polling real REST state.** `history()` is a blocking REST call against the sandbox and the message
-  store is eventually-consistent, so the test
-  `pollUntil(10.seconds, 500.milliseconds) { subChannel.history(null).items().size == 3 }` — never a fixed
-  sleep (the same anti-flake rule as the other tiers).
+  store is eventually-consistent, so — never a fixed sleep (the same anti-flake rule as the other tiers):
+  ```kotlin
+  pollUntil(15.seconds, 500.milliseconds) {
+      val result = rest.channels.get(channelName).history(null)
+      history = result
+      result.items().size == 3
+  }
+  ```
 - **Order assertion.** History defaults to newest-first, so `items[0]` is `event3` … `items[2]` is `event1`.
 
 **What this test teaches about the infra:** `SandboxApp`-only provisioning, the direct-sandbox client
@@ -660,18 +806,22 @@ REST `history()` call.
 
 ---
 
-## 11. Walkthrough: the Proxy Test (`AuthReauthTest`)
+## 11. Walkthrough: the Proxy Smoke Test (`ProxyInfraSmokeTest`)
 
-**File:** `uts/.../uts/integration/proxy/realtime/AuthReauthTest.kt` (package `io.ably.lib.uts.integration.proxy.realtime`)
+**File:** `uts/src/test/kotlin/io/ably/lib/uts/integration/proxy/ProxyInfraSmokeTest.kt` (package `io.ably.lib.uts.integration.proxy`)
 **Tier:** Proxy integration (real sandbox + uts-proxy).
-**Spec points:** RTN22 (server-initiated re-authentication) and RTC8a (the client sends an AUTH
-frame with renewed auth details). Unit-test counterparts: `server_initiated_reauth_test.md`,
-`realtime_authorize.md`.
+**Purpose:** the permanent acceptance test for the proxy infra — `ProxyManager` + `ProxySession` +
+`SandboxApp` + client wiring through the proxy, exercising **both** fault-injection styles. No `@UTS`
+marker.
+
+> The real spec-derived proxy suites this pattern scales to live in `:java`
+> (`lib/src/test/kotlin/io/ably/lib/uts/integration/proxy/realtime/`, e.g. `AuthReauthTest`) and
+> `:liveobjects` — see §13.
 
 ### 11.1 Suite setup/teardown
 ```kotlin
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)   // one instance, so @BeforeAll can be non-static
-class AuthReauthTest {
+class ProxyInfraSmokeTest {
     @BeforeAll fun setUpAll() = runBlocking {
         ProxyManager.ensureProxy()                // download+launch proxy if needed
         app = SandboxApp.create()                 // provision a real sandbox app
@@ -679,81 +829,106 @@ class AuthReauthTest {
     @AfterAll fun tearDownAll() = runBlocking { if (::app.isInitialized) app.delete() }
 }
 ```
+It has **two** `@Test` methods, one per fault-injection style.
 
-### 11.2 The test, step by step
-1. **Create a session with no rules** — the fault will be injected *imperatively* later (late
-   injection — the connect handshake runs against the real server unmodified):
-   ```kotlin
-   val session = ProxySession.create(rules = emptyList())
-   ```
-2. **Auth via `authCallback`** — the spec generates a JWT from the sandbox key; the idiomatic
-   ably-java equivalent is a locally-signed `TokenRequest` from the same key (no external JWT
-   library). A counter records how many times the callback is invoked:
-   ```kotlin
-   val tokenSigner = AblyRest(app.defaultKey)
-   val authCallback = Auth.TokenCallback { params ->
-       authCallbackCount.incrementAndGet()
-       tokenSigner.auth.createTokenRequest(params, null)
-   }
-   ```
-3. **Build the client through the proxy** and connect (JSON stays on so the proxy can inspect
-   frames):
-   ```kotlin
-   val client = TestRealtimeClient {
-       this.authCallback = authCallback
-       connectThroughProxy(session)
-       autoConnect = false
-   }
-   client.connect()
-   awaitState(client, ConnectionState.connected, 15.seconds)
-   ```
-4. **Snapshot identity** — `connection.id` and the callback count, and assert the callback already
-   ran ≥ 1 (initial auth).
-5. **Start recording state changes**, then **inject a server-initiated AUTH** (protocol action 17)
-   imperatively — simulating Ably asking the client to re-authenticate:
-   ```kotlin
-   session.triggerAction(mapOf("type" to "inject_to_client",
-                               "message" to mapOf("action" to 17)))
-   ```
-6. **Wait for the re-auth round-trip** with `pollUntil { stateChanges.size > 1 }` (real network, so
-   poll — don't sleep).
-7. **Assertions** prove RTN22 + RTC8a:
-   - `authCallback` was invoked **again** (count incremented) → re-auth was triggered.
-   - Connection is still **CONNECTED** and `connection.id` is **unchanged** → re-auth does not
-     reconnect.
-   - **No** transitions away from CONNECTED were recorded.
-   - The **proxy event log** contains a client→server **AUTH frame (action 17) carrying non-null
-     `auth` details** (RTC8a) — verified by filtering `session.getLog()`.
-8. **Nested teardown** in `finally`: close the client and wait for CLOSED, then always close the
-   session and the token signer.
+### 11.2 Late imperative injection — `triggerAction`
+The first test creates a **rule-less pass-through** session, authenticates through the proxy (basic key
+auth is TLS-only, so a token is signed locally by an `AblyRest(app.defaultKey)` in the `authCallback`),
+and connects:
+```kotlin
+val session = ProxySession.create(rules = emptyList())
+```
+Once CONNECTED, it proves the **typed proxy log** — the handshake recorded a `ws_connect` and a
+server→client CONNECTED frame (protocol action 4):
+```kotlin
+val log = session.getLog()
+assertTrue(log.any { it.type == "ws_connect" })
+assertTrue(
+    log.any {
+        it.type == "ws_frame" &&
+            it.direction == "server_to_client" &&
+            it.message?.get("action")?.asInt == 4
+    },
+)
+```
+Only *after* the real handshake does it inject the fault — the **late imperative** way, firing an
+action on the live connection right now, then observing DISCONNECTED and recovery:
+```kotlin
+session.triggerAction(mapOf("type" to "disconnect"))
+pollUntil(20.seconds) { states.contains(ConnectionState.disconnected) }
+awaitState(client, ConnectionState.connected, 20.seconds)
+```
 
-**What this test teaches about the infra:** `ProxyManager.ensureProxy` + `SandboxApp` setup,
-`connectThroughProxy`, **late imperative fault injection** via `triggerAction`, real-network waiting
-with `pollUntil`, and **proxy-log assertions** as the primary verification (`getLog()` →
-filter by `type`/`direction`/`message.action`).
+### 11.3 Declarative-rule injection — `wsFrameToClientRule`
+The second test uses the *other* style — a **declarative rule** supplied at session creation that
+rewrites the first ATTACHED frame (protocol action 11) into a disconnect, one-shot (`times = 1`):
+```kotlin
+val session = ProxySession.create(
+    rules = listOf(
+        wsFrameToClientRule(action = mapOf("type" to "disconnect"), messageAction = 11, times = 1),
+    ),
+)
+```
+It connects, attaches a channel, the rule fires on the ATTACHED so the client observes a DISCONNECTED
+transition, then recovers (reconnects and the channel re-attaches once the one-shot rule is spent):
+```kotlin
+channel.attach()
+pollUntil(20.seconds) { states.contains(ConnectionState.disconnected) }
+awaitState(client, ConnectionState.connected, 20.seconds)
+awaitChannelState(channel, ChannelState.attached, 20.seconds)
+```
+Rules evaluate for *every* matching frame (until `times` is exhausted), so a declarative rule is the
+right tool when the fault must land on a frame the test can't easily await; the imperative
+`triggerAction` is the right tool for a fault at a precise moment on an already-live connection.
+
+### 11.4 Teardown
+Both tests tear down in a nested `finally`: close the client, then always `session.close()` (`DELETE
+/sessions/{id}`) and the token signer.
+
+**What these tests teach about the infra:** `ProxyManager.ensureProxy` + `SandboxApp` setup,
+`connectThroughProxy`, **both** fault-injection styles (declarative `wsFrameToClientRule` at creation
+and late imperative `triggerAction`), real-network waiting with `pollUntil`, and **proxy-log
+assertions** as the primary verification (`getLog()` → filter by `type`/`direction`/`message.action`).
 
 ---
 
 ## 12. Deviations: when the SDK disagrees with the spec
 
-`uts/.../io/ably/lib/uts/deviations.md` is the single catalogue of every place the ably-java SDK behaves
-differently from the features spec, discovered during translation. Each entry records: the **spec
-point**, **what the spec requires**, **what the SDK does**, the **root cause** (file/function, where
-known), the **workaround in tests**, and the **affected tests**.
+Deviations live **with their tests**, not in `:uts` (whose smoke tests carry none by design). There are
+two catalogues:
+
+- `lib/src/test/kotlin/io/ably/lib/uts/deviations.md` — the **realtime/rest** tiers, hosted in `:java`.
+- `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` — **all three objects tiers**
+  (unit, integration, proxy), hosted in `:liveobjects`.
+
+Each entry records the **spec point**, **what the spec requires**, **what the SDK does**, the **root
+cause** (file/function, where known), the **workaround in tests**, and the **affected tests**.
 
 The mechanism (from [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)): the test keeps the **spec-correct** assertion but
 gates it behind the `RUN_DEVIATIONS` env var, with a regression-guard assertion for the SDK's actual
 behaviour running by default. Normal runs stay green; `RUN_DEVIATIONS=1` turns the failing assertions
-on so the gap is reproducible and the test flips automatically once the SDK is fixed.
+on so the gap is reproducible and the test flips automatically once the SDK is fixed. In code (from
+`:java`'s `ConnectionRecoveryTest`, RTN16f):
+```kotlin
+if (System.getenv("RUN_DEVIATIONS") != null) {
+    assertEquals(42L, currentRecoveryKey.msgSerial)   // spec-correct: recover preserves msgSerial
+} else {
+    assertEquals(0L, currentRecoveryKey.msgSerial)    // regression guard: the SDK's actual behaviour
+}
+```
+Run it with `RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTest*"` (§13).
 
-Current entries relevant to the walkthrough tests:
+Representative entries from the realtime catalogue (`lib/.../deviations.md`):
 
 | Spec point | Gist | Touches |
 |------------|------|---------|
-| **RTN16f** | SDK resets `msgSerial` to 0 on connect even with `recover`; spec says preserve it (42). | `ConnectionRecoveryTest` (§9.4) — `assertEquals(42L,…)` gated, `assertEquals(0L,…)` default guard. |
-| **RTN16g2** | Spec's fatal error 50000/500 isn't fatal to the SDK (`isFatalError()` needs code 40000–49999 or status < 500); also `send_to_client_and_close` races the FAILED transition. | `ConnectionRecoveryTest` (§9.2) — uses 40000/400 + plain `sendToClient`. |
-| **RTL13b** | `ATTACHING → SUSPENDED` via `realtimeRequestTimeout` not implemented for channel attach. | various channel tests (not the walkthroughs here). |
-| **RTL13c** | `channelRetryTimeout` not cancelled when the connection leaves CONNECTED. | various channel tests; assertions gated behind `RUN_DEVIATIONS`. |
+| **RTN16f** | SDK resets `msgSerial` to 0 on connect even with `recover`; spec says preserve it (42). | `ConnectionRecoveryTest` (`:java`) — `assertEquals(42L,…)` gated, `assertEquals(0L,…)` default guard. |
+| **RTN16g2** | Spec's fatal error 50000/500 isn't fatal to the SDK (`isFatalError()` needs code 40000–49999 or status < 500); also `send_to_client_and_close` races the FAILED transition. | `ConnectionRecoveryTest` (`:java`) — uses 40000/400 + plain `sendToClient`. |
+| **RTL13b / RTL13c** | Channel-state reattach / `channelRetryTimeout` gaps. Retained as confirmed SDK gaps; the citing channel tests aren't in the suite yet (only `ConnectionRecoveryTest` is translated). | pending the channels-module translation. |
+
+The objects catalogue additionally records the typed-SDK / language adaptations (RTTS API
+partitioning, compile-time-forbidden inputs, internal-wire visibility) and the intentional RTO18d
+listener-dedup divergence — see `liveobjects/.../deviations.md`.
 
 > These deviations are **valuable output**, not failures — each one is a precise, reproducible bug
 > report the SDK team can act on, and the gated test becomes the acceptance test for the fix.
@@ -762,40 +937,56 @@ Current entries relevant to the walkthrough tests:
 
 ## 13. How to Run the Tests
 
-There are two custom Gradle tasks (registered in `uts/build.gradle.kts`), filtered by package — they
-mirror `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests` in the `liveobjects` module:
+Each module registers package-filtered Gradle tasks. `:uts` registers `runUtsUnitTests` /
+`runUtsIntegrationTests` (in `uts/build.gradle.kts`); `:java` registers the same-named tasks for its
+realtime suites; `:liveobjects` registers `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests`.
+
+| What | Command |
+|---|---|
+| `:uts` smoke (unit, offline) | `./gradlew :uts:runUtsUnitTests` |
+| `:uts` smoke (integration + proxy) | `./gradlew :uts:runUtsIntegrationTests` |
+| realtime UTS unit | `./gradlew :java:runUtsUnitTests` |
+| realtime UTS integration + proxy | `./gradlew :java:runUtsIntegrationTests` |
+| objects UTS unit | `./gradlew :liveobjects:runLiveObjectsUnitTests` |
+| objects UTS integration + proxy | `./gradlew :liveobjects:runLiveObjectsIntegrationTests` |
+
+Each `runUts*` / `runLiveObjects*` task is package-filtered (`io.ably.lib.uts.unit.*` /
+`io.ably.lib.uts.integration.*` for `:uts` and `:java`; `io.ably.lib.liveobjects.uts.*` for
+`:liveobjects`). The `…IntegrationTests` tasks cover **both** the direct-sandbox
+(`integration/standard/`) and proxy (`integration/proxy/`) tiers — proxy tests additionally
+download/launch the uts-proxy.
 
 ```bash
-# Unit tests only — io.ably.lib.uts.unit.*  (fast, no network). This is the PR gate.
-./gradlew :uts:runUtsUnitTests
-
-# Integration tests only — io.ably.lib.uts.integration.*  (real sandbox; covers both
-# integration/standard/ and integration/proxy/ — proxy tests also download/launch the uts-proxy).
-./gradlew :uts:runUtsIntegrationTests
-
-# Everything (the default Test task still runs both):
+# All :uts smoke tests (every tier), or one class:
 ./gradlew :uts:test
+./gradlew :uts:runUtsUnitTests --tests "io.ably.lib.uts.unit.UnitInfraSmokeTest"
+./gradlew :java:runUtsIntegrationTests --tests "io.ably.lib.uts.integration.proxy.realtime.AuthReauthTest"
 
-# Just one test class (works with any of the tasks above):
-./gradlew :uts:runUtsUnitTests --tests "io.ably.lib.uts.unit.realtime.ConnectionRecoveryTest"
-./gradlew :uts:runUtsIntegrationTests --tests "io.ably.lib.uts.integration.proxy.realtime.AuthReauthTest"
-
-# Turn on the spec-correct (currently failing) deviation assertions:
-RUN_DEVIATIONS=1 ./gradlew :uts:runUtsUnitTests --tests "*ConnectionRecoveryTest*"
+# Turn on the spec-correct (currently failing) deviation assertions (§12):
+RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTest*"
 
 # Run proxy tests against a locally built proxy instead of a GitHub release:
 ./gradlew :uts:runUtsIntegrationTests -Duts.proxy.localPath=/path/to/uts-proxy   # or .tar.gz
 #   (equivalently: export UTS_PROXY_LOCAL_PATH=/path/to/uts-proxy)
 ```
 
-**Where CI runs them:** `runUtsUnitTests` is part of the `check.yml` gate (alongside
-`runLiveObjectsUnitTests`); `runUtsIntegrationTests` runs in the `check-uts` job of
-`integration-test.yml` (alongside `check-liveobjects`).
+> **Unqualified task names collide — intentionally.** `./gradlew runUtsUnitTests` (no module prefix)
+> runs the task in **both** `:uts` and `:java` (Gradle matches the task name across every project that
+> declares it). That's intended and harmless — both unit tiers are offline — and mirrors the existing
+> `runUnitTests` precedent (registered in both `:java` and `:pubsub-adapter`). Qualify with `:uts:` /
+> `:java:` to target one. The `RUN_DEVIATIONS`, `-Duts.proxy.localPath` and `UTS_PROXY_LOCAL_PATH`
+> knobs are valid for **all three** modules.
+
+**Where CI runs them:** `check.yml` runs
+`… runUnitTests runLiveObjectsUnitTests :java:runUtsUnitTests :uts:runUtsUnitTests` as the PR gate
+(all offline unit tiers); `integration-test.yml`'s `check-uts` job runs
+`:java:runUtsIntegrationTests :uts:runUtsIntegrationTests`, and its `check-liveobjects` job runs
+`runLiveObjectsIntegrationTests`.
 
 Notes:
 - `ProxyManager` **advises** running proxy suites single-fork (`maxParallelForks = 1`) because they
   share the control port (10100). This is not currently set in `uts/build.gradle.kts`; it isn't
-  exercised yet because there is only one proxy test class.
+  exercised yet because there is only one proxy smoke class.
 - Proxy/sandbox tests need outbound network (sandbox + GitHub releases on first run; the binary is
   then cached under `~/.cache/uts-proxy/`).
 - Before pushing, run the project's static-analysis gate (from `CLAUDE.md`):
@@ -919,8 +1110,9 @@ sees the control plane; the test never speaks the data plane directly.
 
 ## 16. Appendix B: Per-File API Reference
 
-A one-stop table of every Kotlin source file under `uts/src/test/` and the SDK seams they use, so
-nothing is left implicit.
+A one-stop table of every Kotlin source file under `uts/src/main/` (the `infra/` tree) and
+`uts/src/test/` (the three tier smoke tests) and the SDK seams they use, so nothing is left
+implicit.
 
 ### B.1 Unit-test infrastructure — `io.ably.lib.uts.infra.unit`
 
@@ -952,17 +1144,18 @@ nothing is left implicit.
 | File | Key public surface | Role |
 |------|--------------------|------|
 | `infra/Utils.kt` | `awaitState(client,target,timeout=5s)`, `awaitChannelState(channel,target,timeout=5s)`, `pollUntil(timeout=15s,interval=100ms){ }` | Shared wall-clock coroutine waits (package `io.ably.lib.uts.infra`); listener registered before state check. |
-| `unit/realtime/ConnectionRecoveryTest.kt` | 6 `@Test`s: RTN16g/g1, RTN16g2, RTN16k, RTN16f, RTN16f1, RTN16j | Unit tier (`io.ably.lib.uts.unit.realtime`) — connection recovery (mocked WS, FakeClock, env-gated deviations). |
-| `integration/standard/realtime/ChannelHistoryTest.kt` | 1 `@ParameterizedTest` (RTL10d) × {JSON, msgpack} | Direct-sandbox tier (`io.ably.lib.uts.integration.standard.realtime`) — cross-client history durability (`SandboxApp`, no proxy; awaited publish + `pollUntil` on `history()`). |
-| `integration/proxy/realtime/AuthReauthTest.kt` | 1 `@Test` (two `@UTS`: RTN22, RTC8a) | Integration tier (`io.ably.lib.uts.integration.proxy.realtime`) — server-initiated re-authentication. |
-| `deviations.md` | RTN16f, RTN16g2, RTL13b, RTL13c | Catalogue of SDK-vs-spec divergences. |
+| `unit/UnitInfraSmokeTest.kt` | 3 `@Test`s: full mock-WS lifecycle (await style), token-auth via mock HTTP (callback WS), FakeClock run-to-quiescence | Unit-tier infra acceptance (`io.ably.lib.uts.unit`) — MockWebSocket/MockHttpClient/FakeClock end-to-end. **No** `@UTS`. |
+| `integration/standard/IntegrationInfraSmokeTest.kt` | 1 `@ParameterizedTest` × {JSON, msgpack} | Direct-sandbox infra acceptance (`io.ably.lib.uts.integration.standard`) — SandboxApp + realtime/REST round-trip, awaited publish + `pollUntil` on `history()`. **No** `@UTS`. |
+| `integration/proxy/ProxyInfraSmokeTest.kt` | 2 `@Test`s: late imperative disconnect, declarative ws-frame rule | Proxy infra acceptance (`io.ably.lib.uts.integration.proxy`) — ProxyManager + ProxySession, both fault-injection styles, proxy-log asserts. **No** `@UTS`. |
 
-> **Coverage note:** this guide walks through **one reference test per tier** — `ConnectionRecoveryTest`
-> (unit, §9), `ChannelHistoryTest` (direct-sandbox, §10), and `AuthReauthTest` (proxy, §11). The `uts/`
-> module additionally carries LiveObjects tests across the same tiers, and the infrastructure under
-> `infra/unit/` and `infra/integration/` is built out beyond what any single test exercises (full HTTP
-> mock, all four rule builders, REST proxy wiring, etc.), anticipating the broader UTS coverage
-> catalogued in [`completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md).
+> **Coverage note:** this guide walks through the **three tier smoke tests** — `UnitInfraSmokeTest`
+> (unit, §9), `IntegrationInfraSmokeTest` (direct-sandbox, §10), and `ProxyInfraSmokeTest` (proxy, §11)
+> — the permanent acceptance gate for the shared infra and the worked examples the walkthroughs teach
+> from. The infra under `infra/unit/` and `infra/integration/` is built out beyond what the smokes
+> exercise (full HTTP mock, all four rule builders, REST proxy wiring, etc.), anticipating the broader
+> UTS coverage catalogued in [`completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md). The real spec-derived suites that consume this
+> infra live in `:java` (`lib/src/test/kotlin/io/ably/lib/uts/…`) and `:liveobjects`
+> (`liveobjects/.../uts/…`) — see §13.
 
 ---
 
@@ -974,11 +1167,11 @@ nothing is left implicit.
 | Translating specs, deviation patterns, decision tree | [`uts/docs/writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md) |
 | Integration/proxy policy, late fault injection, tiers | [`uts/docs/integration-testing.md`](https://github.com/ably/specification/blob/main/uts/docs/integration-testing.md) |
 | Coverage matrix | [`uts/docs/completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md) |
-| Proxy control API, rule format, action numbers | [`uts/realtime/integration/helpers/proxy.md`](https://github.com/ably/specification/blob/main/uts/realtime/integration/helpers/proxy.md) |
+| Proxy control API, rule format, action numbers | [`uts/docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md) |
 | SDK seams | `lib/.../debug/DebugOptions.java`, `lib/.../util/Clock.java` |
 | Module wiring | `uts/build.gradle.kts`, `settings.gradle.kts` |
-| Unit mocks | `uts/.../uts/infra/unit/*` |
-| Integration helpers | `uts/.../uts/infra/integration/*` (+ `…/integration/proxy/*`) |
-| Async helpers | `uts/.../uts/infra/Utils.kt` (awaits), `…/uts/infra/unit/Utils.kt` (ConnectionDetails builder) |
-| The three example tests | `…/uts/unit/realtime/ConnectionRecoveryTest.kt`, `…/uts/integration/standard/realtime/ChannelHistoryTest.kt`, `…/uts/integration/proxy/realtime/AuthReauthTest.kt` |
-| Deviations | `uts/.../io/ably/lib/uts/deviations.md` |
+| Unit mocks | `uts/src/main/.../uts/infra/unit/*` |
+| Integration helpers | `uts/src/main/.../uts/infra/integration/*` (+ `…/integration/proxy/*`) |
+| Async helpers | `uts/src/main/.../uts/infra/Utils.kt` (awaits), `…/infra/unit/Utils.kt` (ConnectionDetails builder) |
+| The three tier smoke tests | `uts/src/test/.../uts/unit/UnitInfraSmokeTest.kt`, `…/uts/integration/standard/IntegrationInfraSmokeTest.kt`, `…/uts/integration/proxy/ProxyInfraSmokeTest.kt` |
+| Deviations | `lib/src/test/kotlin/io/ably/lib/uts/deviations.md` (realtime/rest, `:java`), `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` (objects, `:liveobjects`) |

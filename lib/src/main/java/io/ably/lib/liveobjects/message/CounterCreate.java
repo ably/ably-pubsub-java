@@ -1,6 +1,6 @@
 package io.ably.lib.liveobjects.message;
 
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Payload of a {@link ObjectOperationAction#COUNTER_CREATE} operation, describing the
@@ -15,7 +15,8 @@ public interface CounterCreate {
      *
      * <p>Spec: CCR2a
      *
-     * @return the initial counter value
+     * @return the initial counter value, or {@code null} if absent from the operation
+     *         (such an operation marks the create as merged without changing the value, per RTLC16d)
      */
-    @NotNull Double getCount();
+    @Nullable Double getCount();
 }

@@ -2,7 +2,9 @@ package io.ably.lib.liveobjects
 
 import io.ably.lib.liveobjects.state.ObjectStateChange
 import io.ably.lib.liveobjects.state.ObjectStateEvent
+import io.ably.lib.realtime.ChannelState
 import io.ably.lib.types.AblyException
+import io.ably.lib.types.ErrorInfo
 import io.ably.lib.util.EventEmitter
 import io.ably.lib.util.Log
 import kotlinx.coroutines.*
@@ -65,11 +67,25 @@ internal abstract class ObjectsStateCoordinator : ObjectStateChange, HandlesObje
   private val externalObjectStateEmitter = ObjectsStateEmitter()
 
   /**
-   * Pending publishAndApply waiters (RTO20e): each suspends until SYNCED, and is failed (RTO20e1) — rather
-   * than orphaned — if the channel enters DETACHED/SUSPENDED/FAILED while waiting. All access happens on the
-   * single sequential scope (see [DefaultRealtimeObject]), so no additional synchronization is required.
+   * Pending sync waiters: both get() (RTO23c/RTO23c1) and publishAndApply (RTO20e/RTO20e1) park here until
+   * SYNCED. Each suspends until SYNCED, and is failed — rather than orphaned — if the channel enters
+   * DETACHED/SUSPENDED/FAILED while waiting. Each waiter carries its own [SyncWaiter.failureDescription]
+   * message prefix so [failSyncWaiters] builds the caller-specific 92008 error (RTO23c1's "object could not
+   * be retrieved" vs RTO20e1's "operation could not be applied locally"). All access happens on the single
+   * sequential scope (see [DefaultRealtimeObject]), so no additional synchronization is required.
    */
-  private val pendingSyncWaiters = mutableSetOf<CompletableDeferred<Unit>>()
+  private val pendingSyncWaiters = mutableSetOf<SyncWaiter>()
+
+  /**
+   * A parked sync waiter. Its [deferred] resolves on SYNCED, or is failed by [failSyncWaiters] with an error
+   * whose message begins with [failureDescription] — the caller-specific RTO23c1 (get) / RTO20e1
+   * (publishAndApply) prefix. Mirrors ably-js's shared `_waitForSyncedOrChannelFailure(failureDescription)`
+   * helper, where the only per-caller difference is that prefix.
+   */
+  private class SyncWaiter(
+    val failureDescription: String,
+    val deferred: CompletableDeferred<Unit> = CompletableDeferred(),
+  )
 
   override fun on(event: ObjectStateEvent, listener: ObjectStateChange.Listener): Subscription {
     externalObjectStateEmitter.on(event, listener)
@@ -90,66 +106,72 @@ internal abstract class ObjectsStateCoordinator : ObjectStateChange, HandlesObje
   }
 
   override suspend fun ensureSynced(currentState: ObjectsState) {
-    // MUST be called on the sequential scope: the state check and the once(SYNCED) registration
-    // below are atomic only because SYNCED transitions run on that same scope. Off it, a SYNCED
-    // fired between the check and once() would be lost and this would suspend forever.
+    // MUST be called on the sequential scope: the state check and the waiter registration in
+    // awaitSyncCompletion below are atomic only because SYNCED transitions run on that same scope.
+    // Off it, a SYNCED fired between the check and the registration would be lost and this would
+    // suspend forever.
     if (currentState != ObjectsState.Synced) {
-      val deferred = CompletableDeferred<Unit>()
-      val syncedListener = ObjectStateChange.Listener {
-        Log.v(tag, "Objects state changed to SYNCED, resuming ensureSynced")
-        deferred.complete(Unit)
-      }
-      internalObjectStateEmitter.once(ObjectStateEvent.SYNCED, syncedListener)
-      try {
-        deferred.await()
-      } finally {
-        // off() the one-shot on either path (same cleanup pattern as awaitSyncCompletion) so it never
-        // lingers if the waiting coroutine is cancelled (e.g. dispose while a get() awaits sync).
-        internalObjectStateEmitter.off(ObjectStateEvent.SYNCED, syncedListener)
-      }
+      // RTO23c1 - route get()'s wait through the same [pendingSyncWaiters] machinery publishAndApply uses (RTO20e/RTO20e1) so [failSyncWaiters] fails it with the 92008 error instead of orphaning it on DETACHED/SUSPENDED/FAILED
+      awaitSyncCompletion("the object could not be retrieved")
     }
   }
 
   /**
    * Suspends until objects transition to SYNCED (via a one-shot SYNCED listener), or throws if the channel
-   * leaves a usable state while waiting ([failSyncWaiters], RTO20e1). Unlike [ensureSynced], the waiter is
-   * tracked in [pendingSyncWaiters] so it can be failed rather than orphaned across re-syncs (the SYNCED
-   * event resolves whichever sync ultimately completes, regardless of how many sync cycles occur while
-   * waiting).
+   * leaves a usable state while waiting ([failSyncWaiters], RTO20e1/RTO23c1). Shared by get() (RTO23c) and
+   * publishAndApply (RTO20e); the two callers differ only in [failureDescription], the message prefix used to
+   * build the failure error (see [SyncWaiter]). Unlike [ensureSynced], the waiter is tracked in
+   * [pendingSyncWaiters] so it can be failed rather than orphaned across re-syncs (the SYNCED event resolves
+   * whichever sync ultimately completes, regardless of how many sync cycles occur while waiting).
    *
-   * Spec: RTO20e, RTO20e1
+   * @param failureDescription caller-specific prefix for the 92008 error message if the wait is failed —
+   *   "the object could not be retrieved" for get() (RTO23c1) or "the operation could not be applied locally"
+   *   for publishAndApply (RTO20e1).
+   *
+   * Spec: RTO20e, RTO20e1, RTO23c, RTO23c1
    */
-  protected suspend fun awaitSyncCompletion() {
-    val deferred = CompletableDeferred<Unit>()
-    pendingSyncWaiters.add(deferred)
-    // Keep a reference to the one-shot listener so it can be removed on either resolution path (mirrors
-    // ably-js publishAndApply's cleanup()). The once() semantics already drop it when SYNCED fires, but we
-    // off() it explicitly in finally so it never lingers when the wait ends via failSyncWaiters (RTO20e1).
+  protected suspend fun awaitSyncCompletion(failureDescription: String) {
+    val waiter = SyncWaiter(failureDescription)
+    pendingSyncWaiters.add(waiter)
+    // off() the one-shot in finally (not just once()'s auto-drop on SYNCED) so it never lingers when the wait ends via failSyncWaiters (RTO20e1/RTO23c1)
     val syncedListener = ObjectStateChange.Listener {
-      Log.v(tag, "Objects state changed to SYNCED, resuming pending publishAndApply")
-      deferred.complete(Unit)
+      Log.v(tag, "Objects state changed to SYNCED, resuming parked sync waiter")
+      waiter.deferred.complete(Unit)
     }
     internalObjectStateEmitter.once(ObjectStateEvent.SYNCED, syncedListener)
     try {
-      deferred.await()
+      waiter.deferred.await()
     } finally {
-      pendingSyncWaiters.remove(deferred)
+      pendingSyncWaiters.remove(waiter)
       internalObjectStateEmitter.off(ObjectStateEvent.SYNCED, syncedListener)
     }
   }
 
   /**
-   * Fails every pending [awaitSyncCompletion] waiter — called when the channel enters
-   * DETACHED/SUSPENDED/FAILED while a publishAndApply is waiting for SYNCED. Matches ably-js, which only
-   * catches channel-state transitions that fire after a waiter has started waiting (once() semantics).
+   * Fails every pending [awaitSyncCompletion] waiter — called from [DefaultRealtimeObject.handleStateChange]
+   * when the channel enters DETACHED/SUSPENDED/FAILED while a get() or publishAndApply is waiting for SYNCED.
+   * The failure site supplies only the [state] context and the channel's [reason]; each waiter then builds
+   * its own AblyException, prefixing its caller-specific [SyncWaiter.failureDescription] (RTO23c1 vs RTO20e1)
+   * onto the shared 92008 / statusCode 400 / cause=reason error that both spec points mandate identically.
+   * Mirrors ably-js, which only catches channel-state transitions that fire after a waiter has started
+   * waiting (once() semantics).
    *
-   * Spec: RTO20e1
+   * Spec: RTO20e1, RTO23c1
    */
-  fun failSyncWaiters(error: AblyException) {
+  fun failSyncWaiters(state: ChannelState, reason: ErrorInfo?) {
     if (pendingSyncWaiters.isEmpty()) return
     val waiters = pendingSyncWaiters.toList()
     pendingSyncWaiters.clear()
-    waiters.forEach { it.completeExceptionally(error) }
+    val cause = reason?.let { AblyException.fromErrorInfo(it) }
+    waiters.forEach { waiter ->
+      val error = ablyException(
+        "${waiter.failureDescription}: channel entered $state whilst waiting for objects sync",
+        ObjectErrorCode.PublishAndApplyFailedDueToChannelState,
+        ObjectHttpStatusCode.BadRequest,
+        cause = cause,
+      )
+      waiter.deferred.completeExceptionally(error)
+    }
   }
 
   override fun disposeObjectsStateListeners() = offAll()

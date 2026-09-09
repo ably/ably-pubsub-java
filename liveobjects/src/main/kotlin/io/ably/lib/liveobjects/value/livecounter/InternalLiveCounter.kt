@@ -72,7 +72,7 @@ internal class InternalLiveCounter private constructor(
     return liveCounterManager.applyState(wireObjectState, message)
   }
 
-  override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
+  override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     return liveCounterManager.applyOperation(operation, message)
   }
 

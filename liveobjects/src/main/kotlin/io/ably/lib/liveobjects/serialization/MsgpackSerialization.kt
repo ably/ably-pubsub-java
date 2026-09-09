@@ -521,9 +521,11 @@ private fun readMapRemove(unpacker: MessageUnpacker): WireMapRemove {
  * Write WireCounterCreate to MessagePacker
  */
 private fun WireCounterCreate.writeMsgpack(packer: MessagePacker) {
-  packer.packMapHeader(1)
-  packer.packString("count")
-  packer.packDouble(count)
+  packer.packMapHeader(if (count != null) 1 else 0)
+  if (count != null) {
+    packer.packString("count")
+    packer.packDouble(count)
+  }
 }
 
 /**
@@ -542,16 +544,19 @@ private fun readCounterCreate(unpacker: MessageUnpacker): WireCounterCreate {
       else -> unpacker.skipValue()
     }
   }
-  return WireCounterCreate(count = count ?: throw objectStateError("Missing 'count' in WireCounterCreate payload"))
+  // count may legitimately be absent (RTLC16d) - the apply path treats it as a noop
+  return WireCounterCreate(count = count)
 }
 
 /**
  * Write WireCounterInc to MessagePacker
  */
 private fun WireCounterInc.writeMsgpack(packer: MessagePacker) {
-  packer.packMapHeader(1)
-  packer.packString("number")
-  packer.packDouble(number)
+  packer.packMapHeader(if (number != null) 1 else 0)
+  if (number != null) {
+    packer.packString("number")
+    packer.packDouble(number)
+  }
 }
 
 /**
@@ -570,7 +575,8 @@ private fun readCounterInc(unpacker: MessageUnpacker): WireCounterInc {
       else -> unpacker.skipValue()
     }
   }
-  return WireCounterInc(number = number ?: throw objectStateError("Missing 'number' in WireCounterInc payload"))
+  // number may legitimately be absent (RTLC9h) - the apply path treats it as a noop
+  return WireCounterInc(number = number)
 }
 
 /**

@@ -192,7 +192,7 @@ internal class InternalLiveMap private constructor(
     return liveMapManager.applyState(wireObjectState, message)
   }
 
-  override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean {
+  override fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate {
     return liveMapManager.applyOperation(operation, message)
   }
 

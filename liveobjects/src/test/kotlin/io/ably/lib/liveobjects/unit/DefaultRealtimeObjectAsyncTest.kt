@@ -20,13 +20,18 @@ import kotlin.test.assertFailsWith
  */
 class DefaultRealtimeObjectAsyncTest {
 
+  private val created = mutableListOf<DefaultRealtimeObject>()
+
   private fun newObject(): DefaultRealtimeObject =
-    DefaultRealtimeObject("ch", getMockAblyClientAdapter())
+    DefaultRealtimeObject("ch", getMockAblyClientAdapter()).also { created += it }
 
   private fun boom() = AblyException.fromErrorInfo(ErrorInfo("boom", 400, 40000))
 
   @After
-  fun tearDown() = unmockkAll() // getMockAblyClientAdapter uses mockkStatic - clean up global state
+  fun tearDown() {
+    created.forEach { it.objectsPool.dispose() } // the pool init starts a real GC coroutine
+    unmockkAll() // getMockAblyClientAdapter uses mockkStatic - clean up global state
+  }
 
   @Test
   fun asyncFutureCompletesWithResult() {

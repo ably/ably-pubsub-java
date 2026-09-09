@@ -56,7 +56,7 @@ DIRECTIVE_RE = re.compile(r"\b(ASSERT_[A-Z_]+|ASSERT|AWAIT_STATE|AWAIT_ERROR|AWA
 UTS_TAG_RE = re.compile(r"@UTS\s+(\S+)")
 KOTLIN_ASSERT_RE = re.compile(
     r"\b(assertEquals|assertNotEquals|assertNull|assertNotNull|assertTrue|assertFalse|"
-    r"assertIs|assertIsNot|assertContains|assertFailsWith|assertFails|assertSame|"
+    r"assertIs|assertIsNot|assertContains|assertContentEquals|assertFailsWith|assertFails|assertSame|"
     r"assertNotSame|awaitState|awaitChannelState|pollUntil)\b"
 )
 

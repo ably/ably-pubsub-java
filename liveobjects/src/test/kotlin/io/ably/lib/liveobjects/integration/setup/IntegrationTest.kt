@@ -91,7 +91,8 @@ abstract class IntegrationTest {
     @JvmStatic
     @AfterClass
     @Throws(Exception::class)
-    fun tearDownAfterClass() {
+    fun tearDownAfterClass(): Unit = runBlocking {
+      if (::sandbox.isInitialized) sandbox.delete()
     }
   }
 }

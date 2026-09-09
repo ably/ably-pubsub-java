@@ -92,12 +92,12 @@ internal class DefaultMapRemove(private val mapRemove: WireMapRemove) : MapRemov
 
 /** Spec: CCR2 */
 internal class DefaultCounterCreate(private val counterCreate: WireCounterCreate) : CounterCreate {
-  override fun getCount(): Double = counterCreate.count
+  override fun getCount(): Double? = counterCreate.count
 }
 
 /** Spec: CIN2 */
 internal class DefaultCounterInc(private val counterInc: WireCounterInc) : CounterInc {
-  override fun getNumber(): Double = counterInc.number
+  override fun getNumber(): Double? = counterInc.number
 }
 
 /** Spec: ODE2 - no attributes */

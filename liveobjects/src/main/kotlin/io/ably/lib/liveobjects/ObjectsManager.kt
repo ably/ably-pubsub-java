@@ -7,6 +7,7 @@ import io.ably.lib.liveobjects.message.WireObjectState
 import io.ably.lib.liveobjects.message.WireObjectsMap
 import io.ably.lib.liveobjects.value.BaseRealtimeObject
 import io.ably.lib.liveobjects.value.ObjectUpdate
+import io.ably.lib.liveobjects.value.noOp
 import io.ably.lib.liveobjects.value.livecounter.InternalLiveCounter
 import io.ably.lib.liveobjects.value.livemap.InternalLiveMap
 import io.ably.lib.liveobjects.value.livemap.isEntryOrRefTombstoned
@@ -26,7 +27,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
   /**
    * @spec RTO7 - Buffered object operations during sync
    */
-  private val bufferedObjectOperations = mutableListOf<WireObjectMessage>() // RTO7a
+  internal val bufferedObjectOperations = mutableListOf<WireObjectMessage>() // RTO7a
 
   /**
    * Handles object messages (non-sync messages).
@@ -55,6 +56,10 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    */
   internal fun handleObjectSyncMessages(wireObjectMessages: List<WireObjectMessage>, syncChannelSerial: String?) {
     val syncTracker = ObjectsSyncTracker(syncChannelSerial)
+    if (syncTracker.isMalformed) {
+      // RTO5a6 - a malformed channelSerial (no ':' separator) is handled as absent (RTO5a5): warn and fall through so null syncId/syncCursor makes the flow apply the messages and end the sync like a single-message sync
+      Log.w(tag, "OBJECT_SYNC channelSerial is malformed (missing ':' separator); treating as absent per RTO5a6: $syncChannelSerial")
+    }
     val isNewSync = syncTracker.hasSyncStarted(currentSyncId)
     if (isNewSync) {
       // RTO5a2 - new sync sequence started
@@ -112,7 +117,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
     // MUST run on the sequential scope: the state check + waiter registration in awaitSyncCompletion
     // is atomic only there (same lost-wakeup hazard as ensureSynced).
     if (realtimeObjects.state != ObjectsState.Synced) {
-      awaitSyncCompletion() // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
+      // RTO20e1 - the publishAndApply-specific failure message prefix; get()'s wait uses its own (RTO23c1).
+      awaitSyncCompletion("the operation could not be applied locally") // suspends until SYNCED (RTO20e); throws 92008 on channel state change (RTO20e1)
     }
     applyObjectMessages(messages, ObjectsOperationSource.LOCAL) // RTO20f
   }
@@ -206,7 +212,7 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
    *
    * @spec RTO9 - Creates zero-value objects if they don't exist
    */
-  private fun applyObjectMessages(
+  internal fun applyObjectMessages(
     wireObjectMessages: List<WireObjectMessage>,
     source: ObjectsOperationSource = ObjectsOperationSource.CHANNEL,
   ) {
@@ -244,8 +250,8 @@ internal class ObjectsManager(private val realtimeObjects: DefaultRealtimeObject
       // so to simplify operations handling, we always try to create a zero-value object in the pool first,
       // and then we can always apply the operation on the existing object in the pool.
       val obj = realtimeObjects.objectsPool.createZeroValueObjectIfNotExists(wireObjectOperation.objectId) // RTO9a2a1
-      val applied = obj.applyObject(objectMessage, source) // RTO9a2a2, RTO9a2a3
-      if (source == ObjectsOperationSource.LOCAL && applied && objectMessage.serial != null) {
+      val update = obj.applyObject(objectMessage, source) // RTO9a2a2, RTO9a2a3
+      if (source == ObjectsOperationSource.LOCAL && !update.noOp && objectMessage.serial != null) {
         realtimeObjects.appliedOnAckSerials.add(objectMessage.serial) // RTO9a2a4
       }
     }

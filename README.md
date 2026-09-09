@@ -107,6 +107,8 @@ realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange ->
 
 [Ably Live Objects](https://ably.com/docs/liveobjects) provide realtime, collaborative data structures that automatically synchronize state across all connected clients. Build interactive applications with shared data that updates instantly across devices.
 
+For a comprehensive guide, check the [Ably Live Objects documentation](https://ably.com/docs/liveobjects), starting with the [Java quickstart](https://ably.com/docs/liveobjects/quickstart/java).
+
 ### Install Live Objects
 
 Add the following dependency to your `build.gradle` file:

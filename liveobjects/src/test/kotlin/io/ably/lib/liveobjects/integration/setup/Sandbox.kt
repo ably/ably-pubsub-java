@@ -1,61 +1,32 @@
 package io.ably.lib.liveobjects.integration.setup
 
-import com.google.gson.JsonElement
-import com.google.gson.JsonParser
 import io.ably.lib.liveobjects.ablyException
 import io.ably.lib.liveobjects.integration.helpers.RestObjects
-import io.ably.lib.realtime.*
+import io.ably.lib.realtime.AblyRealtime
+import io.ably.lib.realtime.ConnectionEvent
+import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.types.ClientOptions
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.network.sockets.*
-import io.ktor.client.plugins.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.*
+import io.ably.lib.uts.infra.integration.SandboxApp
 import kotlinx.coroutines.CompletableDeferred
 
-private val client = HttpClient(CIO) {
-  install(HttpRequestRetry) {
-    maxRetries = 5
-    retryIf { _, response ->
-      !response.status.isSuccess()
-    }
-    retryOnExceptionIf { _, cause ->
-      cause is ConnectTimeoutException ||
-        cause is HttpRequestTimeoutException ||
-        cause is SocketTimeoutException
-    }
-    exponentialDelay()
-  }
-}
-
-class Sandbox private constructor(val appId: String, val apiKey: String) {
+/**
+ * A sandbox test app for the LiveObjects integration tests. Provisioning is delegated to the
+ * shared [SandboxApp] fixture from `:uts` (single source of truth for the sandbox host and the
+ * canonical `test-app-setup.json` app spec); this type just carries the fields the local
+ * client-factory extensions need.
+ */
+class Sandbox private constructor(private val app: SandboxApp, val appId: String, val apiKey: String) {
   companion object {
-    private suspend fun loadAppCreationJson(): JsonElement =
-      JsonParser.parseString(
-        client.get("https://raw.githubusercontent.com/ably/ably-common/refs/heads/main/test-resources/test-app-setup.json") {
-          contentType(ContentType.Application.Json)
-        }.bodyAsText(),
-      ).asJsonObject.get("post_apps")
-
     internal suspend fun createInstance(): Sandbox {
-      val response: HttpResponse = client.post("https://sandbox.realtime.ably-nonprod.net/apps") {
-        contentType(ContentType.Application.Json)
-        setBody(loadAppCreationJson().toString())
-      }
-      val body = JsonParser.parseString(response.bodyAsText())
-
-      return Sandbox(
-        appId = body.asJsonObject["appId"].asString,
-        // From JS chat repo at 7985ab7 — "The key we need to use is the one at index 5, which gives enough permissions to interact with Chat and Channels"
-        apiKey = body.asJsonObject["keys"].asJsonArray[0].asJsonObject["keyStr"].asString,
-      )
+      val app = SandboxApp.create()
+      // defaultKey is the full-capability "appId.keyId:keySecret" key (index 0 of the app spec)
+      return Sandbox(app = app, appId = app.appId, apiKey = app.defaultKey)
     }
   }
-}
 
+  /** Best-effort teardown of the provisioned sandbox app (see [SandboxApp.delete]). */
+  internal suspend fun delete() = app.delete()
+}
 
 internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): AblyRealtime {
   val clientOptions = ClientOptions().apply {

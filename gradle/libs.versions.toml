@@ -1,6 +1,7 @@
 [versions]
 agp = "8.6.1"
 junit = "4.13.2"
+junit-jupiter = "5.10.1"   # matches what kotlin-test-junit5:2.1.10 transitively pins (verified)
 gson = "2.9.0"
 msgpack = "0.9.11"
 java-websocket = "1.5.3"
@@ -40,6 +41,10 @@ java-websocket = { group = "org.java-websocket", name = "Java-WebSocket", versio
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
 vcdiff-core = { group = "com.davidehrmann.vcdiff", name = "vcdiff-core", version.ref = "vcdiff" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit-jupiter" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
+junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params" }
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine" }
 hamcrest-all = { group = "org.hamcrest", name = "hamcrest-all", version.ref = "hamcrest" }
 nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
 nanohttpd-nanolets = { group = "org.nanohttpd", name = "nanohttpd-nanolets", version.ref = "nanohttpd" }

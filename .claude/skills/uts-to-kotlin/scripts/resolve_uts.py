@@ -5,8 +5,11 @@ Deterministic helper for the uts-to-kotlin skill. Given a UTS spec *module*
 directory (a directory directly under .../specification/uts/), it:
 
   - validates the path and the module's tier structure,
-  - reads uts-package-mapping.json (next to this script's skill dir),
-  - resolves, per tier, the target output directory and Kotlin package, and
+  - reads uts-package-mapping.json (next to this script's skill dir), where each
+    tier value is ONE repo-root-relative path (never machine-absolute),
+  - resolves, per tier, the target output directory, Kotlin package (the path
+    after 'src/test/kotlin/'), and owning Gradle module (from the path's first
+    segment), and
   - lists the candidate spec files with their derived Kotlin class names.
 
 Doing this in code (rather than asking the model to eyeball regexes, join
@@ -31,6 +34,10 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parent.parent
 MAPPING = SKILL_DIR / "uts-package-mapping.json"
 TIERS = ("unit", "integration", "proxy")
+# Owning Gradle module, keyed by a target dir's first path segment. The `lib` -> `:java`
+# pair is the load-bearing non-obvious mapping (the `:java` module's build file wires
+# `../lib/src/...` srcDirs).
+MODULE_BY_PREFIX = {"lib": ":java", "liveobjects": ":liveobjects", "uts": ":uts"}
 
 
 def fail(code, message):
@@ -88,7 +95,9 @@ def main():
         "--create",
         metavar="NAME",
         help="add a mapping for this source module using NAME as the ably-java "
-        "module base name, then resolve",
+        "module base name, then resolve. Scaffolds full lib/-rooted (:java) paths "
+        "only — a module whose tiers live in another Gradle module (like objects "
+        "-> :liveobjects) still needs a hand-edit afterwards.",
     )
     args = ap.parse_args()
 
@@ -114,7 +123,6 @@ def main():
         fail("MAPPING_NOT_FOUND", f"mapping file not found at {MAPPING}")
     data = json.loads(MAPPING.read_text(encoding="utf-8"))
     packages = data.setdefault("packages", {})
-    test_root = data.get("testRoot", "")
 
     if args.create:
         target = args.create
@@ -123,10 +131,14 @@ def main():
                  f"--create target {target!r} must be a simple module base name "
                  f"(letters/digits/underscore, e.g. 'liveobjects') so it forms a "
                  f"valid path and Kotlin package.")
+        # Full repo-root-relative paths using the realtime/`lib` (:java) template.
+        # A module whose tiers live in another Gradle module (like objects ->
+        # :liveobjects) still needs a hand-edit — --create only scaffolds :java-hosted modules.
+        base = "lib/src/test/kotlin/io/ably/lib/uts"
         new_entry = {
-            "unit": f"unit/{target}",
-            "integration": f"integration/standard/{target}",
-            "proxy": f"integration/proxy/{target}",
+            "unit": f"{base}/unit/{target}",
+            "integration": f"{base}/integration/standard/{target}",
+            "proxy": f"{base}/integration/proxy/{target}",
         }
         # preserve a hand-maintained "notes" pointer when re-creating an existing entry
         notes = packages.get(source_module, {}).get("notes")
@@ -162,12 +174,18 @@ def main():
 
     tiers_out = {}
     for tier in TIERS:
-        target_dir = f"{test_root}/{entry[tier]}" if (mapped and tier in entry) else None
+        # A tier value is ONE repo-root-relative path (never machine-absolute); the
+        # owning module comes from its first path segment (MODULE_BY_PREFIX).
+        target_dir = entry.get(tier) if mapped else None
+        module = (
+            MODULE_BY_PREFIX.get(target_dir.split("/", 1)[0]) if target_dir else None
+        )
         tiers_out[tier] = {
             "present": src[tier].is_dir(),
             "sourceDir": str(src[tier]),
             "targetDir": target_dir,
             "package": package_for(target_dir) if target_dir else None,
+            "module": module,
             "specs": [{"file": str(p), "className": class_name(p)} for p in specs[tier]],
         }
 
@@ -175,7 +193,6 @@ def main():
         "ok": True,
         "sourceModule": source_module,
         "mapped": mapped,
-        "testRoot": test_root,
         "translationNotes": translation_notes,
         "tiers": tiers_out,
     }, indent=2))

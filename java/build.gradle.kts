@@ -1,4 +1,5 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.build.config)
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.test.retry)
     checkstyle
     `java-library`
+    alias(libs.plugins.kotlin.jvm)
 }
 
 java {
@@ -28,6 +30,9 @@ dependencies {
         runtimeOnly(project(":network-client-default"))
     }
     testImplementation(libs.bundles.tests)
+
+    // Brings in the shared UTS test toolkit (JUnit 5 + kotlin.test + coroutines) transitively via :uts api.
+    testImplementation(project(":uts"))
 }
 
 buildConfig {
@@ -47,7 +52,14 @@ sourceSets {
         java {
             srcDirs("src/test/java", "../lib/src/test/java")
         }
+        kotlin {
+            srcDirs("src/test/kotlin", "../lib/src/test/kotlin")
+        }
     }
+}
+
+kotlin {
+    compilerOptions { jvmTarget.set(JvmTarget.JVM_1_8) }   // match sourceCompatibility 1.8
 }
 
 tasks.checkstyleMain.configure {
@@ -103,9 +115,43 @@ as it only contains the REST and Realtime suites.
 tasks.register<Test>("runUnitTests") {
     filter {
         excludeTestsMatching("io.ably.lib.test.*")
+        excludeTestsMatching("io.ably.lib.uts.*")   // UTS Jupiter suites run via runUts* tasks only
     }
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
     outputs.upToDateWhen { false }
+}
+
+tasks.register<Test>("runUtsUnitTests") {
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("io.ably.lib.uts.unit.*")
+    }
+    jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+    beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
+    outputs.upToDateWhen { false }
+}
+
+tasks.register<Test>("runUtsIntegrationTests") {
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("io.ably.lib.uts.integration.*")
+    }
+    jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+    beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
+    outputs.upToDateWhen { false }
+
+    // Gradle does not forward -D system properties to the forked test JVM, so propagate the
+    // local uts-proxy override explicitly (invariant I6; AuthReauthTest launches the proxy).
+    // Accepts either `-Duts.proxy.localPath=...` on the Gradle invocation or the
+    // `UTS_PROXY_LOCAL_PATH` environment variable. See ProxyManager.
+    systemProperty(
+        "uts.proxy.localPath",
+        providers.systemProperty("uts.proxy.localPath")
+            .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
+            .getOrElse(""),
+    )
 }

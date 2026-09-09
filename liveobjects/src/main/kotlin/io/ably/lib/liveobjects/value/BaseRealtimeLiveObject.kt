@@ -45,7 +45,7 @@ internal abstract class BaseRealtimeObject(
   @Volatile
   internal var isTombstoned = false // Accessed from public API for LiveMap/LiveCounter
 
-  private var tombstonedAt: Long? = null
+  internal var tombstonedAt: Long? = null
 
   /**
    * Reverse references: parent InternalLiveMap objectId -> set of keys at which that map
@@ -125,11 +125,11 @@ internal abstract class BaseRealtimeObject(
 
   /**
    * This is invoked by ObjectMessage having updated data with parent `ProtocolMessageAction` as `object`
-   * @return true if the operation was meaningfully applied, false otherwise
+   * @return the [ObjectUpdate] produced by the operation (RTLC9g/RTLM7f); [ObjectUpdate.NoOp] if nothing was applied
    *
    * @spec RTLM15/RTLC7 - Applies ObjectMessage with object data operations to LiveMap/LiveCounter
    */
-  internal fun applyObject(wireObjectMessage: WireObjectMessage, source: ObjectsOperationSource): Boolean {
+  internal fun applyObject(wireObjectMessage: WireObjectMessage, source: ObjectsOperationSource): ObjectUpdate {
     validateObjectId(wireObjectMessage.operation?.objectId)
 
     val msgTimeSerial = wireObjectMessage.serial
@@ -138,12 +138,14 @@ internal abstract class BaseRealtimeObject(
 
     if (!canApplyOperation(msgSiteCode, msgTimeSerial)) {
       // RTLC7b, RTLM15b
-      Log.v(
-        tag,
-        "Skipping ${wireObjectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
-          "objectId=$objectId"
-      )
-      return false // RTLC7b / RTLM15b
+      if (!msgTimeSerial.isNullOrEmpty() && !msgSiteCode.isNullOrEmpty()) {
+        Log.v(
+          tag,
+          "Skipping ${wireObjectOperation.action} op: op serial $msgTimeSerial <= site serial ${siteTimeserials[msgSiteCode]}; " +
+            "objectId=$objectId"
+        )
+      }
+      return ObjectUpdate.NoOp // RTLC7b / RTLM15b
     }
     // RTLC7c / RTLM15c - only update siteTimeserials for CHANNEL source
     if (source == ObjectsOperationSource.CHANNEL) {
@@ -152,7 +154,7 @@ internal abstract class BaseRealtimeObject(
 
     if (isTombstoned) {
       // this object is tombstoned so the operation cannot be applied
-      return false // RTLC7e / RTLM15e
+      return ObjectUpdate.NoOp // RTLC7e / RTLM15e
     }
     return applyObjectOperation(wireObjectOperation, wireObjectMessage) // RTLC7d
   }
@@ -163,11 +165,11 @@ internal abstract class BaseRealtimeObject(
    * @spec RTLO4a - Serial comparison logic for LiveMap/LiveCounter operations
    */
   internal fun canApplyOperation(siteCode: String?, timeSerial: String?): Boolean {
-    if (timeSerial.isNullOrEmpty()) {
-      throw objectError("Invalid serial: $timeSerial") // RTLO4a3
-    }
-    if (siteCode.isNullOrEmpty()) {
-      throw objectError("Invalid site code: $siteCode") // RTLO4a3
+    if (timeSerial.isNullOrEmpty() || siteCode.isNullOrEmpty()) {
+      // RTLO4a3 - log a warning and refuse to apply; must not throw, as a throw would abort
+      // every sibling operation in the same ProtocolMessage batch
+      Log.w(tag, "Invalid serial values on object operation message; serial=$timeSerial, siteCode=$siteCode; objectId=$objectId")
+      return false // RTLO4a3
     }
     val existingSiteSerial = siteTimeserials[siteCode] // RTLO4a4
     return existingSiteSerial == null || timeSerial > existingSiteSerial // RTLO4a5, RTLO4a6
@@ -182,8 +184,20 @@ internal abstract class BaseRealtimeObject(
   /**
    * Marks the object as tombstoned. The returned update carries `tombstone = true` and the
    * source message (RTLO4e5..e8); the caller emits it via notifyUpdated.
+   * The root object can never be tombstoned (RTLO4e10); such attempts return a noop update.
    */
   internal fun tombstone(serialTimestamp: Long?, message: WireObjectMessage?): ObjectUpdate {
+    if (objectId == ROOT_OBJECT_ID) {
+      // RTLO4e10 - the root object must always exist in the ObjectsPool (RTO3b); the realtime
+      // system never publishes an OBJECT_DELETE operation or a tombstoned object state for it,
+      // so an attempt to tombstone it indicates a faulty message. Log a warning and skip it
+      Log.w(
+        tag,
+        "Attempt to tombstone the root object was rejected; " +
+          "serial=${message?.serial}, siteCode=${message?.siteCode}, messageId=${message?.id}",
+      )
+      return ObjectUpdate.NoOp
+    }
     if (serialTimestamp == null) {
       Log.w(tag, "Tombstoning object $objectId without serial timestamp, using local timestamp instead") // RTLO6b1
     }
@@ -245,10 +259,10 @@ internal abstract class BaseRealtimeObject(
    *
    * @param operation The operation containing the action and data to apply
    * @param message The complete object message containing the operation
-   * @return true if the operation was meaningfully applied, false otherwise
+   * @return the [ObjectUpdate] produced by the operation (RTLC9g/RTLM7f); [ObjectUpdate.NoOp] if nothing was applied
    *
    */
-  abstract fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): Boolean
+  abstract fun applyObjectOperation(operation: WireObjectOperation, message: WireObjectMessage): ObjectUpdate
 
   /**
    * Clears the object's data and returns an update describing the changes.

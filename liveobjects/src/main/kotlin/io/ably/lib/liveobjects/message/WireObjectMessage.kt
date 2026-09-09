@@ -70,12 +70,12 @@ internal data class WireMapRemove(
 
 /** Spec: CCR2 */
 internal data class WireCounterCreate(
-  val count: Double, // CCR2a
+  val count: Double?, // CCR2a - may be absent on the wire (RTLC16d)
 )
 
 /** Spec: CIN2 */
 internal data class WireCounterInc(
-  val number: Double, // CIN2a
+  val number: Double?, // CIN2a - may be absent on the wire (RTLC9h)
 )
 
 /** Spec: ODE2 - no attributes */
@@ -166,7 +166,9 @@ internal fun WireObjectMessage.size(): Int {
   val clientIdSize = clientId?.byteSize ?: 0 // Spec: OM3f
   val operationSize = operation?.size() ?: 0 // Spec: OM3b, OOP4
   val objectStateSize = objectState?.size() ?: 0 // Spec: OM3c, OST3
-  val extrasSize = extras?.let { gson.toJson(it).length } ?: 0 // Spec: OM3d
+  // Spec: OM3d - extras is measured as "the string length of its JSON representation" (docs
+  // verbatim), i.e. the UTF-16 code-unit count of the JSON string, not its UTF-8 byte length.
+  val extrasSize = extras?.let { gson.toJson(it).length } ?: 0
 
   return clientIdSize + operationSize + objectStateSize + extrasSize
 }
@@ -254,7 +256,7 @@ private fun WireCounterCreateWithObjectId.size(): Int {
 private fun WireObjectsMap.size(): Int {
   // Calculate the size of all map entries in the map property
   val entriesSize = entries?.entries?.sumOf {
-    it.key.length + it.value.size() // // Spec: OMP4a1, OMP4a2
+    it.key.byteSize + it.value.size() // Spec: OMP4a1, OMP4a2 (key measured as its UTF-8 byte length)
   } ?: 0
 
   return entriesSize
@@ -287,7 +289,7 @@ private fun WireObjectData.size(): Int {
   number?.let { return 8 } // Spec: OD3d
   boolean?.let { return 1 } // Spec: OD3b
   bytes?.let { return Base64.getDecoder().decode(it).size } // Spec: OD3c
-  json?.let { return it.toString().byteSize } // Spec: OD3e
+  json?.let { return it.toString().byteSize } // Spec: OD3g (UTF-8 byte length of JSON-encoded string)
   return 0
 }
 

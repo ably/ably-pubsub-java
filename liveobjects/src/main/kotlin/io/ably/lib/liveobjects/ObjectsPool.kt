@@ -139,8 +139,10 @@ internal class ObjectsPool(
    * Garbage collection interval handler.
    */
   private fun onGCInterval() {
-    pool.entries.removeIf { (_, obj) ->
-      if (obj.isEligibleForGc(gcGracePeriod)) { true } // Remove from pool
+    pool.entries.removeIf { (key, obj) ->
+      // RTO10c1b1 - the root object must never be removed from the pool (RTO3b). It can never
+      // become tombstoned per RTLO4e10, so this exclusion is an additional safeguard
+      if (key != ROOT_OBJECT_ID && obj.isEligibleForGc(gcGracePeriod)) { true } // Remove from pool
       else {
         obj.onGCInterval(gcGracePeriod)
         false  // Keep in pool

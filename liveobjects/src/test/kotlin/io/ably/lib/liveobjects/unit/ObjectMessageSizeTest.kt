@@ -159,6 +159,30 @@ class ObjectMessageSizeTest {
   }
 
   @Test
+  fun testObjectMapStateEntryKeyUnicodeSizeIsUtf8() = runTest {
+    // OMP4a1: map-state entry keys are measured as their UTF-8 byte length, consistent with the
+    // MapCreate/MapSet/MapRemove operation keys. "你😊" -> 7 UTF-8 bytes (not 3 UTF-16 code units);
+    // the entry's data string "v" -> 1 byte.
+    val objectMessage = WireObjectMessage(
+      objectState = WireObjectState(
+        objectId = "",
+        siteTimeserials = mapOf(),
+        tombstone = false,
+        map = WireObjectsMap(
+          entries = mapOf(
+            "你😊" to WireObjectsMapEntry(
+              data = WireObjectData(
+                string = "v" // Size: 1 byte
+              )
+            )
+          )
+        )
+      )
+    )
+    assertEquals(8, objectMessage.size())
+  }
+
+  @Test
   fun testObjectMessageSizeAboveLimit() = runTest {
     val mockAdapter = getMockAblyClientAdapter()
     mockAdapter.connectionManager.maxMessageSize = Defaults.maxMessageSize // 64 kb

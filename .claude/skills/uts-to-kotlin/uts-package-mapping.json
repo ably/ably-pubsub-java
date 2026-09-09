@@ -1,22 +1,21 @@
 {
-  "_comment": "Maps each UTS spec module (a dir under specification/uts/) to its target test packages. Output dir = testRoot + '/' + tier entry; Kotlin package = that path after 'src/test/kotlin/' with '/' -> '.'. An optional 'notes' field points (relative to this skill dir) to a per-module ably-js -> ably-java translation reference, read before translating that module. Used by the uts-to-kotlin skill.",
-  "testRoot": "uts/src/test/kotlin/io/ably/lib/uts",
+  "_comment": "Maps each UTS spec module (a dir under specification/uts/) to its target test directory per tier. Each tier value is ONE repo-root-relative path (never machine-absolute); the Kotlin package is the path after 'src/test/kotlin/' with '/' -> '.'; the owning Gradle module is the path's first segment (lib/ -> :java, liveobjects/ -> :liveobjects, uts/ -> :uts). Every tier path MUST keep a module segment after the tier (e.g. 'unit/realtime', never bare 'unit') so a derived package can never collide with a :uts smoke package (io.ably.lib.uts.unit / .integration.standard / .integration.proxy) — an invariant currently held only by construction. An optional 'notes' field points (relative to this skill dir) to a per-module ably-js -> ably-java translation reference, read before translating that module. Used by the uts-to-kotlin skill (scripts/resolve_uts.py).",
   "packages": {
     "realtime": {
-      "unit": "unit/realtime",
-      "integration": "integration/standard/realtime",
-      "proxy": "integration/proxy/realtime"
+      "unit": "lib/src/test/kotlin/io/ably/lib/uts/unit/realtime",
+      "integration": "lib/src/test/kotlin/io/ably/lib/uts/integration/standard/realtime",
+      "proxy": "lib/src/test/kotlin/io/ably/lib/uts/integration/proxy/realtime"
     },
     "objects": {
-      "unit": "unit/liveobjects",
-      "integration": "integration/standard/liveobjects",
-      "proxy": "integration/proxy/liveobjects",
+      "unit": "liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit",
+      "integration": "liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/integration",
+      "proxy": "liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/proxy",
       "notes": "references/objects-mapping.md"
     },
     "rest": {
-      "unit": "unit/rest",
-      "integration": "integration/standard/rest",
-      "proxy": "integration/proxy/rest"
+      "unit": "lib/src/test/kotlin/io/ably/lib/uts/unit/rest",
+      "integration": "lib/src/test/kotlin/io/ably/lib/uts/integration/standard/rest",
+      "proxy": "lib/src/test/kotlin/io/ably/lib/uts/integration/proxy/rest"
     }
   }
 }

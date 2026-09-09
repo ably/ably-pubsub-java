@@ -30,6 +30,7 @@ doubt, that IDL is the source of truth; this doc is the applied version of it fo
 14. [Integration-test helpers — REST fixture provisioning](#14-integration-helpers)
 15. [Worked example](#15-worked-example)
 16. [Quick symbol index](#16-symbol-index)
+17. [Internal-graph symbol map (unit specs → `:liveobjects`'s own tests)](#17-internal-mappings)
 
 ---
 
@@ -42,7 +43,7 @@ different things**, and a third *internal* layer underneath. Keep them straight:
 |---|---|---|---|---|
 | **Creation value type** — immutable blueprint you pass *into* `set` | `LiveMap` / `LiveCounter` (the `RTLMV*` / `RTLCV*` classes) | `LiveMap.create()` / `LiveCounter.create()` | `LiveMap` / `LiveCounter` | `io.ably.lib.liveobjects.value` |
 | **Public read/write view** — what you navigate & subscribe on | `PathObject`, `Instance` | `PathObject`, `Instance` | typed hierarchy (§4, §5) | base in `io.ably.lib.liveobjects.path` / `.instance`; **typed subtypes in `.path.types` / `.instance.types`** |
-| **Internal graph object** — the live CRDT node | `InternalLiveMap` / `InternalLiveCounter` (`RTLM*` / `RTLC*`), `ObjectsPool` | internal | `DefaultLiveMap` / `DefaultLiveCounter` etc. (impl, `:liveobjects` module) | not public — see §13 |
+| **Internal graph object** — the live CRDT node | `InternalLiveMap` / `InternalLiveCounter` (`RTLM*` / `RTLC*`), `ObjectsPool` | internal | `InternalLiveMap` / `InternalLiveCounter` / `ObjectsPool` — **same names as the spec** (`internal` classes, `:liveobjects` module) | `io.ably.lib.liveobjects[.value.livemap/.value.livecounter]` — not public; access rules §13, full symbol map §17 |
 
 So when a spec says `counter = LiveCounter.create(5)` and passes it to `set`, that's the **value type**
 (`io.ably.lib.liveobjects.value.LiveCounter`). When a spec says "the resolved value is an
@@ -400,8 +401,9 @@ delivered to subscription listeners) map to ably-java interfaces with getters (p
 > obtain an `ObjectMessage` from a subscription event (`event.getMessage()`, §8); there is no public
 > factory. The spec's explicit construction-from-wire (`PublicObjectMessage.fromObjectMessage(source,
 > channel)` / `PublicObjectOperation.fromObjectOperation(op)`, `PAOM3`/`PAOOP3`, in
-> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it **by
-> reflection** as `buildPublicObjectMessage(wireJson, channelName)` (§13). So `public_object_message.md` is
+> `public_object_message.md`) is `internal` to `:liveobjects` — but the unit helpers expose it as
+> `buildPublicObjectMessage(wireMessage, channelName)` (§13), a direct `toPublicMessage` call (no reflection,
+> since `:liveobjects`'s internals are visible to its own tests). So `public_object_message.md` is
 > translatable: build the source with the op builders (`buildMapSet(...)`, `buildCounterInc(...)`, …) and
 > assert the public getters on the result.
 
@@ -503,9 +505,10 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
 
 - `objects_pool.md`, `parent_references.md`, `object_id.md` — pool sync state, the reverse parent-reference
   graph, and object-id generation: entirely internal.
-- the internal-state assertions in `live_counter.md` / `live_map.md` (`.data`, `.siteTimeserials`,
-  `.createOperationIsMerged`, `.isTombstone`, `applyOperation`, `replaceData`) — internal; their
-  public-facing read/write counterparts live in `live_counter_api.md` / `live_map_api.md`.
+- the internal-state assertions in `internal_live_counter.md` / `internal_live_map.md` (`.data`,
+  `.siteTimeserials`, `.createOperationIsMerged`, `.isTombstone`, `applyOperation`, `replaceData`) —
+  internal; their public-facing read/write counterparts live in `internal_live_counter_api.md` /
+  `internal_live_map_api.md` (which *are* translated in `:liveobjects`).
 - `value_types.md` — the *public* `LiveMap.create` / `LiveCounter.create` surface maps via §6, but the
   evaluation half (`COUNTER_CREATE` / `MAP_CREATE` `ObjectMessage` generation, nonce/`initialValue`/
   `objectId` derivation, the `*WithObjectId` wire forms) is internal/wire-level.
@@ -513,28 +516,31 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
   is public and maps via §2/§12, but `publish` / `publishAndApply` (`RTO15`/`RTO20`, marked `internal` in the
   IDL) and the OBJECT/ACK wire assertions are internal.
 - `public_object_message.md` — **translatable** via the `buildPublicObjectMessage` helper (below), which
-  reflectively performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
+  performs the `PAOM3`/`PAOOP3` construction (`WireObjectMessage` → `DefaultObjectMessage`)
   that is otherwise `internal`. Build the source with the op builders and assert the public getters (§11).
 
-In ably-java these are **not public**. They live in the `:liveobjects` module as `Default*` / `Wire*` /
+In ably-java these are **not public**. They live in the `:liveobjects` module as `Internal*` / `Default*` / `Wire*` /
 `ResolvedValue` / `Leaf` / `MapRef` / `CounterRef` classes (package `io.ably.lib.liveobjects.*`,
-implementation source set). The `uts` module keeps them **off its compile classpath** (it compiles against
-`:java` only) but now has `testRuntimeOnly(project(":liveobjects"))`, so the helpers reach the internal
-wire/message classes **by reflection** at runtime. Consequences when translating:
+implementation source set), visible only to that module's own tests. Because of this, **all objects tiers
+translate into `:liveobjects`'s own test source set** —
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,integration,proxy}/` — so the unit tier
+sees module internals directly, and the integration/proxy tiers reach the plugin through the same module.
+Consequences when translating:
 
-- **Public-API unit specs** (`path_object*.md`, `instance.md`, `live_object_subscribe.md`,
-  `public_object_message.md`, and the public-surface parts of `realtime_object.md` and `value_types.md`)
-  translate cleanly against the §1–§12 map + the helpers below, and compile against `:java`. (Note
-  `path_object.md` / `instance.md` also contain `compact()` cases, which are deviations per §4/§5 since
-  ably-java implements only `compactJson()`.)
-- **Internal-graph unit specs** (`objects_pool.md`, `parent_references.md`, the internal-state assertions in
-  `live_counter.md` / `live_map.md`) assert on internal CRDT state the public API can't see. Options: (a)
-  add reflective accessors to the helpers for the `Default*`/internal classes (the technique
-  `buildPublicObjectMessage` and `infra/unit/Utils.kt` already use), (b) translate them in the
-  `:liveobjects` module's own test source where the types are directly accessible, or (c) skip them. Flag
-  rather than forcing a public-API assertion that can't reach internal state.
-- Spec name → ably-java impl (for orientation, not public use): `InternalLiveMap` → `DefaultLiveMap`,
-  `InternalLiveCounter` → `DefaultLiveCounter`, the public-view impls are `DefaultPathObject` /
+- **Public-tier unit specs** (`path_object*.md`, `instance.md`, `live_object_subscribe.md`,
+  `public_object_message.md`, `internal_live_counter_api.md`, `internal_live_map_api.md`, and the
+  public-surface parts of `realtime_object.md` and `value_types.md`) translate against the §1–§12 map +
+  the helpers below. **Convention: these tests use only the public API + helpers** even though module
+  internals are technically visible. (Note `path_object.md` / `instance.md` also contain `compact()`
+  cases, which are deviations per §4/§5 since ably-java implements only `compactJson()`.)
+- **Internal-graph unit specs** (`objects_pool.md`, `parent_references.md`, `object_id.md`,
+  `internal_live_counter.md`, `internal_live_map.md`) assert on internal CRDT state — their complete
+  spec-symbol → Kotlin-symbol map is **§17**.
+- Spec name → ably-java impl (for orientation, not public use): the internal CRDT engine
+  **uses the spec's own names** — `InternalLiveMap` / `InternalLiveCounter`
+  (packages `value.livemap` / `value.livecounter`, shared base `BaseRealtimeObject`), `ObjectsPool`,
+  `ObjectsManager`, `ObjectId`. Do **not** confuse them with `DefaultLiveMap` / `DefaultLiveCounter`,
+  which are the *creation value-type* impls (§1/§6). The public-view impls are `DefaultPathObject` /
   `DefaultLiveMapPathObject` / `DefaultInstance` / …, wire form is `WireObjectMessage` /
   `WireObjectOperation` / `WireObjectState` etc.
 
@@ -542,23 +548,42 @@ wire/message classes **by reflection** at runtime. Consequences when translating
 
 Every objects unit spec opens with `setup_synced_channel` and constructs protocol/object messages with the
 `build_*` helpers. These are implemented in
-`uts/src/test/kotlin/io/ably/lib/uts/unit/liveobjects/Helpers.kt` — **call them; don't hand-roll the mock
-setup or message JSON.**
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
+`io.ably.lib.liveobjects.uts.unit`; transport bootstrap via the shared `io.ably.lib.uts.infra.*` infra helpers,
+message construction via the typed `Wire*` DTOs — §17.10) — **call them; don't hand-roll the mock setup or
+message wire forms.**
 
 | Spec helper | `Helpers.kt` |
 |---|---|
 | `{ client, channel, root, mock_ws } = AWAIT setup_synced_channel("test")` | `val (client, channel, root, mockWs) = setupSyncedChannel("test")` (`suspend`, returns `SyncedChannel`) |
 | `setup_synced_channel_no_ack(...)` | `setupSyncedChannelNoAck(...)` |
 | `build_object_sync_message` / `build_object_message` / `build_ack_message` | `buildObjectSyncMessage` / `buildObjectMessage` / `buildAckMessage` → `ProtocolMessage` |
-| `build_counter_inc` / `build_map_set` / `build_map_remove` / `build_map_clear` / `build_object_delete` / `build_counter_create` / `build_map_create` | same names camelCased → wire `JsonObject` |
-| `build_object_state` / `build_object_message_with_state` | `buildObjectState` / `buildObjectMessageWithState` |
-| `build_public_object_message(msg, channel)` | `buildPublicObjectMessage(wireJson, channel)` (reflective; §11) |
+| `build_counter_inc` / `build_map_set` / `build_map_remove` / `build_map_clear` / `build_object_delete` / `build_counter_create` / `build_map_create` | same names camelCased → typed `WireObjectMessage` (§17.10 constructions) |
+| `build_object_state` / `build_object_message_with_state` | `buildObjectState` / `buildObjectMessageWithState` → typed `WireObjectState` / `WireObjectMessage` |
+| `build_public_object_message(msg, channel)` | `buildPublicObjectMessage(wireMessage, channel)` (direct `toPublicMessage` call — no reflection; §11) |
 | `STANDARD_POOL_OBJECTS` | `STANDARD_POOL_OBJECTS` |
+| `captured_messages` (outgoing OBJECT publishes — RTLC12/RTLM20/RTO15 wire asserts) | `mockWs.capturedObjectMessages(): List<ProtocolMessage>` |
 | inline ObjectData / map-entry / state fragments | `dataString` / `dataNumber` / `dataBoolean` / `dataObjectId` / `dataBytes` / `dataJson`, `mapEntry`, `mapState`, `counterState`, `mapCreateOp`, `counterCreateOp` |
 | Canonical Constants: `POOL_SERIAL`, `ack_serial(m, i)`, `remote_serial(i)`, `below_ack_serial(i)` | `POOL_SERIAL` (`"t:0"`), `ackSerial(msgSerial, i)`, `remoteSerial(i)`, `belowAckSerial(i)` — use these, never hand-rolled `"t:N"` literals (serials are compared as strings, so ad-hoc values silently sort wrong) |
+| `process_pending_events()` | `` (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await() `` — flushes the objects sequential scope (single-lane FIFO); the empty block cannot run until previously dispatched work has completed or suspended at its wait point |
 
 `mock_ws.send_to_client(...)` is the existing `mockWs.sendToClient(...)` (§ mock API in the main skill). The
 wire `action` / `semantics` are integer enum codes — the builders emit the codes for you.
+
+> **Helper-mock scope & known per-test patterns:**
+> - `setupSyncedChannel`'s mock answers **`attach` and `object` (ACK) only**, and serves `/time` over a
+>   mocked HTTP client (hermetic `*_CREATE` id derivation). The spec pool's `DETACH → DETACHED` branch and
+>   `enable_fake_timers()` are **not** wired in — tests that need them follow the local patterns in
+>   `RealtimeObjectTest.kt` (`detachClientSide`, `setupSyncedChannelWithFakeTimers`; the fake-clock variant
+>   must set a large `maxIdleInterval` or virtual-time advances trip the transport idle timer).
+> - **Async delivery:** the SDK applies inbound messages asynchronously; when a later step depends on the
+>   effect of a `send_to_client(...)` (positive read-after-send, subscribing "after" a seed, writes after
+>   ATTACHED), await the observable effect first (`pollUntil { ... }` / `assertWaiter`) — the spec's
+>   pseudocode assumes synchronous mock processing.
+> - `evaluate(vt)` (value_types.md RTLCV4/RTLMV4): maps to the internal
+>   `DefaultLiveCounter.createCounterCreateMessage(realtimeObject)` /
+>   `DefaultLiveMap.createMapCreateMessages(realtimeObject)` against a §17.1 `DefaultRealtimeObject`;
+>   retained-create derivation is asserted via the `*CreateWithObjectId.derivedFrom` wire fields.
 
 > **Runtime status:** the `:liveobjects` SDK's OBJECT_SYNC processing and `RealtimeObject.get()` are
 > implemented — `setupSyncedChannel` and the full objects unit suite run green, so translate **and
@@ -573,10 +598,11 @@ wire `action` / `semantics` are integer enum codes — the builders emit the cod
 Some objects **integration** specs (tier `integration/standard`) seed object state over REST *before* the
 realtime client connects, via the spec's `## REST Fixture Provisioning` helper `provision_objects_via_rest`.
 Its ably-java translation lives in
-`uts/src/test/kotlin/io/ably/lib/uts/integration/standard/liveobjects/Helpers.kt` (package
-`io.ably.lib.uts.integration.standard.liveobjects`) — **call it; don't hand-roll the REST request or payload
-JSON.** (Currently only `objects/integration/RTPO15` uses it.) Unlike the unit helpers (§13), this needs no
-reflection and no `:liveobjects` dependency — it compiles and runs against `:java`'s public `AblyRest`.
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/integration/Helpers.kt` (package
+`io.ably.lib.liveobjects.uts.integration`) — **call it; don't hand-roll the REST request or payload
+JSON.** (Currently only `objects/integration/RTPO15` uses it.) It lives inside `:liveobjects`'s own tests
+now (like the whole objects suite), but still uses only the public `AblyRest` — the "public API only for
+REST provisioning" convention survives even though the module's internals are visible.
 
 | Spec helper / operation shape | integration `Helpers.kt` |
 |---|---|
@@ -674,4 +700,199 @@ wrapped in `LiveMapValue.of`; `at(...)` followed by `asLiveCounter()` before cou
 | type tag `'LiveMap'` etc. | `ValueType.LIVE_MAP` etc. |
 | `PublicAPI::ObjectMessage` | `ObjectMessage` (getters) |
 | `PublicAPI::ObjectOperation` | `ObjectOperation` (getters, one payload non-null) |
-| `InternalLiveMap` / `InternalLiveCounter` / `ObjectsPool` | internal `:liveobjects` impl — see §13 |
+| `InternalLiveMap` / `InternalLiveCounter` / `ObjectsPool` | internal `:liveobjects` impl, same names as spec — access rules §13, symbol map §17 |
+
+---
+
+## 17. Internal-graph symbol map (unit specs → `:liveobjects`'s own tests) <a id="17-internal-mappings"></a>
+
+This section maps the **5 internal-graph unit specs** — `internal_live_counter.md`,
+`internal_live_map.md`, `object_id.md`, `objects_pool.md`, `parent_references.md` (they assert on
+internal CRDT state, so they cannot translate against the public API — background in
+`JAVA_LIVEOBJECTS_INTERNAL_METHODS_ACCESS_REPORT.md` at the repo root) — onto the internal engine.
+Like the rest of the objects suite, they go into
+**`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/`** (package
+`io.ably.lib.liveobjects.uts.unit`, task `:liveobjects:runLiveObjectsUnitTests`), where the test
+compilation is associated with `main`, so every `internal` declaration is directly visible — no
+reflection.
+
+> **Access.** Every spec-required member is `internal` (or a public member of an `internal` class)
+> and therefore directly accessible from `:liveobjects`'s own tests — no reflection needed. The
+> only things to handle are the S-1…S-4 *shape* deviations (§17.9); record those per-test. (The
+> symbol-by-symbol audit behind this section is `JAVA_LIVEOBJECTS_INTERNAL_METHODS_ACCESS_REPORT.md`
+> at the repo root.)
+
+### 17.1 Instantiation — no public constructors, use the factories
+
+The internal classes have `private constructor`s; each pairs with an `internal` companion factory that
+needs a `DefaultRealtimeObject`. Build one from the mocked adapter (helper already exists in
+`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/unit/TestHelpers.kt`):
+
+```kotlin
+val ro = DefaultRealtimeObject("test", getMockAblyClientAdapter())
+// teardown: unmockkAll() and ro.objectsPool.dispose()  (the pool init starts a real GC coroutine)
+```
+
+| Spec | ably-java (Kotlin) |
+|---|---|
+| `counter = InternalLiveCounter(objectId: "counter:abc@1000")` | `val counter = InternalLiveCounter.zeroValue("counter:abc@1000", ro)` |
+| `map = InternalLiveMap(objectId: "root", semantics: "LWW")` | `val map = InternalLiveMap.zeroValue("root", ro)` (semantics is a defaulted ctor param, always `WireObjectsMapSemantics.LWW` — no factory override exists; fine, the specs only use LWW) |
+| `pool = ObjectsPool()` | `ro.objectsPool` (`internal val`, auto-created with the `"root"` `InternalLiveMap` per RTO3b) |
+| `map = InternalLiveMap(..., pool: pool)` / `pool["id"] = obj` | pool wiring is implicit via `ro` — register children with `ro.objectsPool.set("counter:child@1000", child)` |
+| `realtime_object = RealtimeObject(pool: pool)` | `ro` itself (`DefaultRealtimeObject`) |
+
+> **From a live-channel fixture instead of the factory.** When a test drives internals off a channel
+> built by `setupSyncedChannel` (§13 unit-test helpers) rather than constructing standalone, obtain the same internal
+> object by casting the public field: `` val ro = channel.`object` as DefaultRealtimeObject ``.
+> `` channel.`object` `` is typed as the public `RealtimeObject` interface, so the cast is required to
+> reach the `internal` members mapped in §17.6 (`handleStateChange`, `objectsPool`, …). Teardown is the
+> fixture's own (`client.close()`), not `ro.objectsPool.dispose()`.
+
+### 17.2 Shared LiveObject base — `BaseRealtimeObject` (`value/BaseRealtimeLiveObject.kt`)
+
+Both node types share these; spec setups that *assign* collections mutate them in place instead
+(`val` + mutable collection).
+
+| Spec | ably-java (Kotlin) | Notes |
+|---|---|---|
+| `obj.objectId` | `objectId` (`internal val`) | |
+| `obj.siteTimeserials` (read/assign) | `siteTimeserials: MutableMap<String, String>` (`internal val`) | assign → `putAll(...)`; assert with map equality |
+| `obj.createOperationIsMerged` | `createOperationIsMerged` (`internal var`) | r/w |
+| `obj.isTombstone` | `isTombstoned` (`internal var`) | rename |
+| `obj.tombstonedAt` | `tombstonedAt: Long?` (`internal var`) | r/w |
+| `obj.applyOperation(msg, source: CHANNEL)` | `applyObject(wireObjectMessage, ObjectsOperationSource.CHANNEL): ObjectUpdate` (`internal`) | template method → abstract `applyObjectOperation` → per-type manager; **returns the `ObjectUpdate`** (RTLC9g/RTLM7f), `ObjectUpdate.NoOp` when nothing is applied |
+| `obj.replaceData(state_msg)` | `applyObjectSync(wireObjectMessage): ObjectUpdate` (`internal`) | **returns the update** — all `RTLC6`/`RTLM6`/`RTLM22`-style assertions work on the return value |
+| `canApplyOperation` (RTLO4a) | `canApplyOperation(siteCode, timeSerial): Boolean` (`internal`) | directly callable standalone |
+| tombstone entry (RTLO4e/5/6) | `tombstone(serialTimestamp, message): ObjectUpdate` (`internal`) | returns update with `tombstone = true` + `objectMessage`; RTLO4e10 root-noop built in |
+| `source: CHANNEL / LOCAL` | `ObjectsOperationSource.CHANNEL / LOCAL` (`internal enum`) | |
+| `current_time()` control (RTLO6b, GC) | `clock` ← `SystemClock.clockFrom(adapter.clientOptions)` (Java static) | `mockkStatic(SystemClock::class)` returning a fixed `Clock` — deviation S-3 |
+
+### 17.3 `InternalLiveCounter` (`value/livecounter/`)
+
+| Spec | ably-java (Kotlin) | Notes |
+|---|---|---|
+| `counter.data` (read/write `Double`) | `data: AtomicReference<Double>` (`internal val`) | `data.get()` / `data.set(10.0)` |
+| `counter.value()` | `value(): Double` (`internal`) | |
+
+There is **no `applyOperation` member on `InternalLiveCounter` itself** — use the base
+`applyObject(...)` (§17.2). The per-action switch lives in `LiveCounterManager.applyOperation`
+(`internal class`, `internal fun`), reached in production via a `private val` field; if a test needs
+manager-level calls (e.g. `applyState(...): ObjectUpdate`), construct `LiveCounterManager(counter)`
+directly (public-in-internal-class ctor; note it owns a separate subscription emitter).
+
+### 17.4 `InternalLiveMap` + `LiveMapEntry` (`value/livemap/`)
+
+| Spec | ably-java (Kotlin) | Notes |
+|---|---|---|
+| `map.data` (entry dict, r/w) | `data: ConcurrentHashMap<String, LiveMapEntry>` (`internal val`) | seed with `put`. `ASSERT "k" IN map.data` → `map.data.containsKey("k")` — Kotlin's `"k" in map.data` is a **compile error** on `ConcurrentHashMap` (KT-18053: `contains` resolves to `containsValue`) |
+| entry `{ data, timeserial, tombstone, tombstonedAt }` | `LiveMapEntry(isTombstoned, tombstonedAt, timeserial, data)` (`internal data class`) | `tombstone` → `isTombstoned`; `data` is `WireObjectData?` |
+| `map.clearTimeserial` | `clearTimeserial: String?` (`internal var`) | r/w |
+| `map.semantics` | `semantics` (`internal val`) | |
+| `map.get(key)` / `map.size()` | `get(keyName): ResolvedValue?` / `size(): Long` (`internal`) | RTLM5 / RTLM10d; RTLM14c ref-tombstone behaviour included |
+| `isTombstoned(entry)` (RTLM14) | extension `entry.isEntryOrRefTombstoned(ro.objectsPool)` (`internal fun`, `LiveMapEntry.kt`) | |
+| `map.gcTombstonedEntries(grace, now)` | `onGCInterval(gcGracePeriod)` (override) | no `now` param — time via `clock` (mock per §17.2 / S-3) |
+| `InternalLiveMap.diff(previousData, newData)` (RTLM22, static) | `LiveMapManager(map).calculateUpdateFromDataDiff(prev: Map<String, LiveMapEntry>, new: Map<String, LiveMapEntry>): ObjectUpdate` (`internal`) | instance method — construct the manager in the test |
+| `MAP_SET` value `{ objectId: ... }` creates zero-value child (RTLM7g) | manager calls `objectsPool.createZeroValueObjectIfNotExists` internally | assert `ro.objectsPool.get("counter:new@2000") is InternalLiveCounter` |
+
+### 17.5 The update object — spec `LiveObjectUpdate` → `ObjectUpdate` (`value/ObjectUpdate.kt`)
+
+| Spec | ably-java (Kotlin) |
+|---|---|
+| `update.noop == true` | `update is ObjectUpdate.NoOp` (or `update.noOp` extension) |
+| `update.update.amount` (counter) | `(update as ObjectUpdate.CounterUpdate).amount: Double` |
+| `update.update == { "k": "updated"/"removed" }` (map) | `(update as ObjectUpdate.MapUpdate).update: Map<String, MapChange>`, values `MapChange.Updated / Removed` |
+| `update.tombstone` | `update.tombstone: Boolean` |
+| `update.objectMessage` | `update.objectMessage: WireObjectMessage?` |
+| `result == false` (op rejected) | `applyObject(...).noOp` (returns `ObjectUpdate.NoOp` for rejected/noop ops) |
+
+> **Which paths return it:** the op path `applyObject` (RTLC9g/RTLM7f — `ObjectUpdate.NoOp` when
+> nothing is applied), `applyObjectSync` (spec `replaceData`), `tombstone(...)`, `clearData()` and
+> `calculateUpdateFromDataDiff` all **return** the `ObjectUpdate`.
+
+### 17.6 Pool & sync state machine — spec `ObjectsPool` splits across three classes
+
+The spec's monolithic pool = `ObjectsPool` (storage) + `ObjectsManager` (sync/apply logic) +
+`DefaultRealtimeObject` (state, ack-serials, ATTACHED handling).
+
+| Spec | ably-java (Kotlin) | Notes |
+|---|---|---|
+| `pool["id"]` / `pool["id"] = obj` / `"id" IN pool` | `ro.objectsPool.get(id)` / `.set(id, obj)` / `get(id) != null` (`internal`) | backing map is `private`; accessors cover all spec uses |
+| `pool.keys().length` | `ro.objectsPool.all().size` (`internal fun all()`) | |
+| `"root"` invariant (RTO3b) | `ROOT_OBJECT_ID` (`internal const`, `ObjectsPool.kt`) | root auto-created in pool `init` |
+| `pool.syncState` (read **and** write) | `ro.state: ObjectsState` (`internal var`) — `Initialized / Syncing / Synced` | setup `pool.syncState = SYNCED` → `ro.state = ObjectsState.Synced` |
+| `pool.processAttached(ProtocolMessage(flags: HAS_OBJECTS))` | `ro.handleStateChange(ChannelState.attached, hasObjects = true/false)` (`internal`) | **async** (`sequentialScope.launch`) — await with `assertWaiter`, or drive the manager steps directly — deviation S-2 |
+| `channel.object.processChannelState(state)` | `ro.handleStateChange(state, false)` (`internal`) | **async** (`sequentialScope.launch`) — flush with `ro.asyncFuture { }.await()` — deviation S-2 |
+| `channel.object.objectsPool` | `ro.objectsPool` (`internal val`) | the `ObjectsPool` storage on the `DefaultRealtimeObject` |
+| `pool.processObjectSync(build_object_sync_message(ch, "sync1:", msgs))` | `objectsManager.handleObjectSyncMessages(wireMessages, "sync1:")` (`internal`) | sync-serial parsing = `ObjectsSyncTracker` (`internal`; `syncId` / `hasSyncStarted` / `hasSyncEnded`) |
+| `pool.processObjectMessage(...)` | `objectsManager.handleObjectMessages(wireMessages)` (`internal`) | buffers unless `ro.state == Synced` (RTO8) |
+| explicit sync phases | `objectsManager.startNewSync(syncId)` / `endSync()` (`internal`) | `endSync()` also runs the RTO5c10 `parentReferences` rebuild + RTO5c9 ack-serial clear |
+| `pool.applyObjectMessages(msgs, source: LOCAL)` (RTO9a2a4) | `ro.objectsManager.applyObjectMessages(msgs, ObjectsOperationSource.LOCAL)` (`internal`) | `applyAckResult(msgs)` (`internal suspend`) is the production LOCAL path if you prefer driving it end-to-end (requires `ro.state = Synced` first) |
+| the manager instance itself | `ro.objectsManager` (`internal val`) | all `handle*`/`startNewSync`/`endSync` calls go through it |
+| `realtime_object.bufferedObjectOperations` | `ro.objectsManager.bufferedObjectOperations: MutableList<WireObjectMessage>` (`internal val`) | assert `.size`; spec never writes it |
+| `realtime_object.appliedOnAckSerials` (r/w) | `ro.appliedOnAckSerials: MutableSet<String>` (`internal val`) | mutate in place |
+| zero-value from objectId prefix (RTO6) | `ro.objectsPool.createZeroValueObjectIfNotExists(objectId)` (`internal`) | uses `ObjectId.fromString` for RTO6b1 |
+| `pool["root"].subscribe((update) => ...)` | `internalLiveMap.subscribe(InstanceListener)` (`internal`) | event = `DefaultInstanceSubscriptionEvent` — carries `getObject()` + `getMessage()`, **no diff payload** (S-1); `getMessage()` is the *public* `ObjectMessage` (PAOM3-mapped), `null` for sync-sourced updates (exactly RTO4b2a) |
+
+### 17.7 `ObjectId` — spec `generateObjectId` (RTO14) (`ObjectId.kt`)
+
+| Spec | ably-java (Kotlin) |
+|---|---|
+| `generateObjectId(type: "counter", initialValue, nonce, timestamp)` | `ObjectId.fromInitialValue(ObjectType.Counter, initialValue, nonce, timestamp).toString()` (`internal` companion) |
+| type `"map"` / `"counter"` | `ObjectType.Map / Counter` (`internal enum`, `value/`) |
+| parse `"type:hash@ts"` (RTO6b1) | `ObjectId.fromString(objectId)`; `.type` (`internal`) — `hash`/`timestampMs` are `private`, but every RTO14 assertion works on the **string** form |
+
+Pure functions — these tests need no `DefaultRealtimeObject`, no mocking, no §17.1 setup at all.
+
+### 17.8 Parent references & `getFullPaths` (RTLO3f / RTLO4f / RTLO4g / RTLO4h, RTO5c10)
+
+| Spec | ably-java (Kotlin) | Notes |
+|---|---|---|
+| `obj.parentReferences` (read + seed) | `parentReferences: MutableMap<String, MutableSet<String>>` (`internal val`, keyed by parent objectId) | seed via `put`; structure matches spec exactly. Asserting a single entry needs an explicit type parameter — `assertEquals<Set<String>?>(setOf("score"), obj.parentReferences["map:parent@1000"])` — because `kotlin.test.assertEquals`'s `@OnlyInputTypes` rejects `Set<String>` (expected) vs `MutableSet<String>?` (actual) |
+| `child.addParentReference(parent, key)` | `addParentReference(parent: InternalLiveMap, key: String)` (`internal`) | |
+| `child.removeParentReference(parent, key)` | `removeParentReference(...)` (`internal`; RTLO4h1–h3 all implemented) | |
+| `obj.getFullPaths()` | `getFullPaths(): List<List<String>>` (`internal`; cycle-safe, order unspecified) | **parents resolve through `ro.objectsPool`** — `pool.set(...)` every node you wire, or paths silently drop |
+| reset (RTO5c10a) | `clearParentReferences()` (`internal`) | |
+| post-sync rebuild (RTO5c10/a/b) | happens inside `endSync()` (`rebuildAllParentReferences` is `private` — assert outcomes via `parentReferences`) | drive the sync via `ro.objectsManager.handleObjectSyncMessages(...)` (§17.6) |
+
+The pure-graph tests (RTLO3f2, RTLO4g\*, RTLO4h\*, RTLO4f\*) need only the §17.1 setup — no sync
+machinery involved.
+
+### 17.9 Shape deviations — record per-test in the module-local `deviations.md`
+
+All spec-required members are accessible (see the §17 access note); these are the only structural
+differences between the spec pseudocode and the Kotlin surface:
+
+| Id | What | Impact | Handling |
+|---|---|---|---|
+| S-1 | subscriber event (`InstanceSubscriptionEvent`) carries the message but no diff/`noop`/`tombstone` payload | pool emit-path `updates[0].update.*` assertions (RTO4b2a/RTO5c7) → assert pool/root state + event `getMessage()` instead | record per-test deviation |
+| S-2 | `processAttached` ≡ async `handleStateChange` | synchronous asserts after ATTACHED | `assertWaiter` (`liveobjects/src/test/.../TestUtils.kt`) or drive manager steps directly |
+| S-3 | time from `clock`, not `now` params | RTLO6b, RTLM19 GC | `mockkStatic(SystemClock::class)` |
+| S-4 | `ObjectsPool.init` starts GC coroutine + adapter subscription | leaked coroutines | `dispose()` in teardown |
+
+### 17.10 Message builders — `build_*` map to `Wire*` constructors natively
+
+Tests in `:liveobjects` construct the `internal data class`es directly — the module-local
+`Helpers.kt` (§13's helpers table) implements the `build_*` builders as plain Kotlin functions over
+these constructions:
+
+| Spec builder | ably-java (Kotlin) construction |
+|---|---|
+| `build_counter_inc(objectId, n, serial, siteCode)` | `WireObjectMessage(serial = serial, siteCode = siteCode, operation = WireObjectOperation(action = WireObjectOperationAction.CounterInc, objectId = objectId, counterInc = WireCounterInc(number = n)))` |
+| `build_counter_create(objectId, { count }, serial, siteCode)` | op `action = CounterCreate, counterCreate = WireCounterCreate(count = ...)` |
+| `build_map_set(objectId, key, value, serial, siteCode)` | op `action = MapSet, mapSet = WireMapSet(key, WireObjectData(...))` |
+| `build_map_remove(..., serialTimestamp?)` | op `action = MapRemove, mapRemove = WireMapRemove(key)`; `serialTimestamp` goes on the **message** |
+| `build_map_clear(objectId, serial, siteCode)` | op `action = MapClear, mapClear = WireMapClear` (payload-less `internal object`) |
+| `build_map_create(objectId, { semantics, entries }, ...)` | op `action = MapCreate, mapCreate = WireMapCreate(semantics = WireObjectsMapSemantics.LWW, entries = mapOf(k to WireObjectsMapEntry(...)))` |
+| `build_object_delete(objectId, serial, siteCode, serialTimestamp?)` | op `action = ObjectDelete, objectDelete = WireObjectDelete`; `serialTimestamp` on the message |
+| `build_object_state(objectId, siteTimeserials, { map/counter/createOp/tombstone })` | `WireObjectState(objectId, siteTimeserials, tombstone, createOp, map = WireObjectsMap(semantics, entries, clearTimeserial), counter = WireObjectsCounter(count))` — ⚠️ `objectId`, `siteTimeserials` and `tombstone` have **no defaults**, pass them explicitly |
+| `ObjectMessage(object: state)` / `ObjectMessage(object: null)` | `WireObjectMessage(objectState = ...)` — the field is named **`objectState`** in Kotlin (wire key stays `"object"` via `@SerializedName`) |
+| wire entry `{ data, timeserial, tombstone, serialTimestamp }` (inside `mapCreate`/`ObjectState.map.entries`) | `WireObjectsMapEntry(tombstone, timeserial, serialTimestamp, data)` — this is the **wire** entry (`tombstone`); don't confuse it with the graph-side `LiveMapEntry` (`isTombstoned`, §17.4) |
+| value `{ string }` / `{ number }` / `{ boolean }` / `{ bytes }` / `{ objectId }` / json | `WireObjectData(string = / number = / boolean = / bytes = / objectId = / json = )` |
+| `ProtocolMessage(action: ATTACHED, flags: HAS_OBJECTS)` | no protocol-message parsing at this layer — translate to `ro.handleStateChange(ChannelState.attached, hasObjects)` (§17.6) |
+| `build_object_sync_message(ch, channelSerial, msgs)` | pass `List<WireObjectMessage>` + `channelSerial` straight to `handleObjectSyncMessages` (no `ProtocolMessage` wrapper needed) |
+
+(`build_ack_message` from `standard_test_pool.md` is not needed here — it belongs to the mock-WS
+tiers, and none of the 5 internal unit specs use it.)
+
+Keep the `uts` discipline in the migrated tests: one `@Test` per spec case, `/** @UTS objects/unit/… */`
+KDoc tags, and a module-local `deviations.md` recording every §17.9 deviation used.
