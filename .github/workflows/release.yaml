@@ -6,7 +6,7 @@ on:
 jobs:
   run-on-release:
     runs-on: ubuntu-latest
-    if: github.repository == 'ably/ably-java'
+    if: github.repository == 'ably/ably-pubsub-java'
     permissions:
       contents: read
     steps:

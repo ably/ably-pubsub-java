@@ -1,6 +1,6 @@
 ![Ably Pub/Sub Java Header](images/javaSDK-github.png)
 [![Latest Version](https://img.shields.io/maven-central/v/io.ably/ably-java)](https://central.sonatype.com/artifact/io.ably/ably-java)
-[![License](https://badgen.net/github/license/ably/ably-java)](https://github.com/ably/ably-java/blob/main/LICENSE)
+[![License](https://badgen.net/github/license/ably/ably-pubsub-java)](https://github.com/ably/ably-pubsub-java/blob/main/LICENSE)
 
 # Ably Pub/Sub Java SDK
 
@@ -195,4 +195,4 @@ The [CHANGELOG.md](./CHANGELOG.md) contains details of the latest releases for t
 
 ## Support, feedback, and troubleshooting
 
-For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-java/issues) for community-reported bugs and discussions.
+For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-pubsub-java/issues) for community-reported bugs and discussions.

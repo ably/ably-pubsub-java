@@ -108,7 +108,7 @@ For more details see the [`gradle-lint`](gradle-lint) project.
 We regression-test the library against a selection of Java and Android platforms (which will change over time, but usually consists of the versions that are supported upstream). Please refer to [.travis.yml](./.travis.yml) for the set of versions that currently undergo CI testing..
 
 We'll happily support (and investigate reported problems with) any reasonably-widely-used platform, Java or Android.
-If you find any compatibility issues, please [do raise an issue](https://github.com/ably/ably-java/issues/new) in this repository or [contact Ably customer support](https://support.ably.io/) for advice.
+If you find any compatibility issues, please [do raise an issue](https://github.com/ably/ably-pubsub-java/issues/new) in this repository or [contact Ably customer support](https://support.ably.io/) for advice.
 
 ### IDE Support
 
@@ -126,7 +126,7 @@ The gradle project files can be imported to create projects in IntelliJ IDEA, Ec
 The top-level ably-java project can be imported into IntelliJ IDEA, enabling development of both the java and android projects. This has been tested with IntelliJ IDEA Ultimate 2017.2. To import into IDEA:
 
 - do File->New->Project from Existing Sources...
-- select ably-java/settings.gradle
+- select ably-pubsub-java/settings.gradle
 - in the import dialog, check "Use auto-import" and uncheck "Create separate module per source set"
 - select "ok"
 
@@ -166,7 +166,7 @@ This has been tested with Android Studio 3.0.1.
 
 To import into Android Studio:
 - do Import project (Gradle, Eclipse ADT, etc);
-- select ably-java/android/build.gradle;
+- select ably-pubsub-java/android/build.gradle;
 - select OK to Gradle Sync.
 
 This creates a single android project and module.
@@ -255,7 +255,7 @@ This library uses [semantic versioning](http://semver.org/). For each release, t
 5. Make a PR against `main`
 6. Once the PR is approved, merge it into `main`
 7. Create the release and the release tag on Github including populating the release notes
-8. Use the [GitHub action](https://github.com/ably/ably-java/actions/workflows/release.yaml) to publish the release. Run the workflow on the latest release tag.
+8. Use the [GitHub action](https://github.com/ably/ably-pubsub-java/actions/workflows/release.yaml) to publish the release. Run the workflow on the latest release tag.
 9. Create the entry on the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/))
 
 ### Signing
