@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.8.1](https://github.com/ably/ably-java/tree/v1.8.1)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.8.0...v1.8.1)
+
+### What's Changed
+
+- Bring the LiveObjects implementation into line with the reconciled objects spec and reorganise the shared unified test suite (UTS) infrastructure [#1228](https://github.com/ably/ably-java/pull/1228). Inbound operation handling is hardened so a single malformed operation no longer discards its batch siblings, a missing counter `number`/`count` is now representable and behaves consistently across transports, and the channel-state data lifecycle (RTO27) and root-object safeguards (RTO10c1b1/RTLO4e10) are honoured. Alongside this, `:uts` becomes a shared test-infra module and the spec-derived UTS suites move into the modules that own the code they exercise. This work was delivered through the following PRs:
+  - Make `:uts` a shared test-infra module and move UTS suites to their owning modules [#1231](https://github.com/ably/ably-java/pull/1231)
+  - Make `:uts` a shared test-infra module, move UTS suites to owning modules, and add objects spec-conformance [#1229](https://github.com/ably/ably-java/pull/1229)
+
 ## [1.8.0](https://github.com/ably/ably-java/tree/v1.8.0)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.7.2...v1.8.0)
