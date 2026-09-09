@@ -51,14 +51,14 @@ The Java SDK is available as a [Maven dependency](https://mvnrepository.com/arti
 <dependency>
     <groupId>io.ably</groupId>
     <artifactId>ably-java</artifactId>
-    <version>1.8.0</version>
+    <version>1.8.1</version>
 </dependency>
 ```
 
 ### Install for Gradle:
 
 ```gradle
-implementation 'io.ably:ably-java:1.8.0'
+implementation 'io.ably:ably-java:1.8.1'
 implementation 'org.slf4j:slf4j-simple:2.0.7'
 ```
 
@@ -115,7 +115,7 @@ Add the following dependency to your `build.gradle` file:
 
 ```groovy
 dependencies {
-    runtimeOnly("io.ably:liveobjects:1.8.0")
+    runtimeOnly("io.ably:liveobjects:1.8.1")
 }
 ```
 
