@@ -10,6 +10,7 @@ import io.ably.lib.types.AsyncPaginatedResult;
 import io.ably.lib.types.Callback;
 import io.ably.lib.types.ErrorInfo;
 import io.ably.lib.types.MessageDecodeException;
+import io.ably.lib.types.MessageExtras;
 import io.ably.lib.types.PaginatedResult;
 import io.ably.lib.types.Param;
 import io.ably.lib.types.PresenceMessage;
@@ -483,8 +484,27 @@ public class Presence {
      * @throws AblyException
      */
     public void enter(Object data, CompletionListener listener) throws AblyException {
+        enter(data, null, listener);
+    }
+
+    /**
+     * Enters the presence set for the channel, optionally passing a data payload and extras.
+     * A clientId is required to be present on a channel.
+     * An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * <p>
+     * Spec: RTP8
+     *
+     * @param data The payload associated with the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener A callback to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     * @throws AblyException
+     */
+    public void enter(Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         Log.v(TAG, "enter(); channel = " + channel.name);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.enter, null, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.enter, null, data, extras), listener);
     }
 
     /**
@@ -502,8 +522,27 @@ public class Presence {
      * @throws AblyException
      */
     public void update(Object data, CompletionListener listener) throws AblyException {
+        update(data, null, listener);
+    }
+
+    /**
+     * Updates the data payload for a presence member, optionally passing extras.
+     * If called before entering the presence set, this is treated as an {@link PresenceMessage.Action#enter} event.
+     * An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * <p>
+     * Spec: RTP9
+     *
+     * @param data The payload associated with the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener A callback to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     * @throws AblyException
+     */
+    public void update(Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         Log.v(TAG, "update(); channel = " + channel.name);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.update, null, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.update, null, data, extras), listener);
     }
 
     /**
@@ -520,8 +559,26 @@ public class Presence {
      * @throws AblyException
      */
     public void leave(Object data, CompletionListener listener) throws AblyException {
+        leave(data, null, listener);
+    }
+
+    /**
+     * Leaves the presence set for the channel, optionally passing extras.
+     * A client must have previously entered the presence set before they can leave it.
+     *
+     * <p>
+     * Spec: RTP10
+     *
+     * @param data The payload associated with the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener a listener to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     * @throws AblyException
+     */
+    public void leave(Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         Log.v(TAG, "leave(); channel = " + channel.name);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.leave, null, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.leave, null, data, extras), listener);
     }
 
     /**
@@ -584,6 +641,25 @@ public class Presence {
      * This listener is invoked on a background thread.
      */
     public void enterClient(String clientId, Object data, CompletionListener listener) throws AblyException {
+        enterClient(clientId, data, null, listener);
+    }
+
+    /**
+     * Enters the presence set of the channel for a given clientId, optionally passing extras.
+     * Enables a single client to update presence on behalf of any number of clients using a single connection.
+     * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
+     *
+     * <p>
+     * Spec: RTP4, RTP14, RTP15
+     *
+     * @param clientId The ID of the client to enter into the presence set.
+     * @param data The payload associated with the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener A callback to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    public void enterClient(String clientId, Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         if(clientId == null) {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to enter presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
@@ -593,7 +669,7 @@ public class Presence {
             }
         }
         Log.v(TAG, "enterClient(); channel = " + channel.name + "; clientId = " + clientId);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.enter, clientId, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.enter, clientId, data, extras), listener);
     }
 
     private void enterClientWithId(String id, String clientId, Object data, CompletionListener listener) throws AblyException {
@@ -658,6 +734,26 @@ public class Presence {
      * This listener is invoked on a background thread.
      */
     public void updateClient(String clientId, Object data, CompletionListener listener) throws AblyException {
+        updateClient(clientId, data, null, listener);
+    }
+
+    /**
+     * Updates the data payload for a presence member using a given clientId, optionally passing extras.
+     * Enables a single client to update presence on behalf of any number of clients using a single connection.
+     * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
+     * An optional callback may be provided to notify of the success or failure of the operation.
+     *
+     * <p>
+     * Spec: RTP15
+     *
+     * @param clientId The ID of the client to update in the presence set.
+     * @param data The payload to update for the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener A callback to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    public void updateClient(String clientId, Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         if(clientId == null) {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to update presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
@@ -667,7 +763,7 @@ public class Presence {
             }
         }
         Log.v(TAG, "updateClient(); channel = " + channel.name + "; clientId = " + clientId);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.update, clientId, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.update, clientId, data, extras), listener);
     }
 
     /**
@@ -714,6 +810,25 @@ public class Presence {
      * This listener is invoked on a background thread.
      */
     public void leaveClient(String clientId, Object data, CompletionListener listener) throws AblyException {
+        leaveClient(clientId, data, null, listener);
+    }
+
+    /**
+     * Leaves the presence set of the channel for a given clientId, optionally passing extras.
+     * Enables a single client to update presence on behalf of any number of clients using a single connection.
+     * The library must have been instantiated with an API key or a token bound to a wildcard clientId.
+     *
+     * <p>
+     * Spec: RTP15
+     *
+     * @param clientId The ID of the client to leave the presence set for.
+     * @param data The payload associated with the presence member.
+     * @param extras The extras associated with the presence member.
+     * @param listener A callback to notify of the success or failure of the operation.
+     * <p>
+     * This listener is invoked on a background thread.
+     */
+    public void leaveClient(String clientId, Object data, MessageExtras extras, CompletionListener listener) throws AblyException {
         if(clientId == null) {
             String errorMessage = String.format(Locale.ROOT, "Channel %s: unable to leave presence channel (null clientId specified)", channel.name);
             Log.v(TAG, errorMessage);
@@ -723,7 +838,7 @@ public class Presence {
             }
         }
         Log.v(TAG, "leaveClient(); channel = " + channel.name + "; clientId = " + clientId);
-        updatePresence(new PresenceMessage(PresenceMessage.Action.leave, clientId, data), listener);
+        updatePresence(new PresenceMessage(PresenceMessage.Action.leave, clientId, data, extras), listener);
     }
 
     /**
