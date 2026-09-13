@@ -96,12 +96,17 @@ public class BaseMessage implements Cloneable {
         this.decode(opts, new DecodingContext());
     }
 
-    private final static VCDiffDecoder vcdiffDecoder = VCDiffDecoderBuilder.builder().buildSimple();
+    private final static ThreadLocal<VCDiffDecoder> vcdiffDecoder = new ThreadLocal<VCDiffDecoder>() {
+        @Override
+        protected VCDiffDecoder initialValue() {
+            return VCDiffDecoderBuilder.builder().buildSimple();
+        }
+    };
 
     private static byte[] vcdiffApply(byte[] delta, byte[] base) throws MessageDecodeException {
         try {
             ByteArrayOutputStream decoded = new ByteArrayOutputStream();
-            vcdiffDecoder.decode(base, delta, decoded);
+            vcdiffDecoder.get().decode(base, delta, decoded);
             return decoded.toByteArray();
         } catch (Throwable t) {
             throw MessageDecodeException.fromThrowableAndErrorInfo(t, new ErrorInfo("VCDIFF delta decode failed", 400, 40018));
