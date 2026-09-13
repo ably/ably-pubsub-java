@@ -60,6 +60,11 @@ public class OkHttpWebSocketClient implements WebSocketClient {
         }
 
         @Override
+        public void onClosing(WebSocket webSocket, int code, String reason) {
+            webSocket.close(1000, null);
+        }
+
+        @Override
         public void onClosed(WebSocket webSocket, int code, String reason) {
             listener.onClose(code, reason);
         }
