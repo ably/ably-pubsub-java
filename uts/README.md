@@ -655,12 +655,15 @@ One long **await-style** test that walks the SDK through the whole transport lif
    ```
 3. **Publish**, asserting the full MESSAGE frame (`action`, `channel`, `messages[0].name`/`data`) again
    via `awaitNextMessageFromClient()`.
-4. **Disconnect.** `simulateDisconnect()`, await DISCONNECTED, and assert the drop was recorded. Note
-   we do **not** snapshot the `ConnectionAttempt` count here: `FakeClock.waitOn(target, timeout)` does a
-   real `target.wait(timeout)`, so the disconnected-retry fires on its own after ~`disconnectedRetryTimeout`
-   ms of wall-clock even without an `advance()`. `advance()` only wins that race sooner — it is not a
-   hard gate — so a "still exactly one attempt" assertion would be racy on a loaded runner. Ownership
-   of attempt #2 belongs to the next step, which gates on it deterministically.
+4. **Disconnect.** Register a recording list + `ConnectionStateListener` *before* `simulateDisconnect()`,
+   then `pollUntil { disconnected in stateChanges }` — the same inline record-before-stimulus idiom the
+   proxy walkthroughs use (§11.2/§11.3). DISCONNECTED here is **transient**: the drop happens while CONNECTED, so
+   RTN15a reconnects immediately (`Disconnected.enact` queues CONNECTING *before* DISCONNECTED reaches
+   listeners), leaving a microsecond-wide window — independent of `disconnectedRetryTimeout`/`FakeClock`,
+   which never participate on this path. A post-stimulus `awaitState(disconnected)` can race that window
+   and miss it (the CI lost-wakeup flake); recording before the stimulus cannot. We also do **not**
+   snapshot the `ConnectionAttempt` count here — ownership of attempt #2 belongs to the next step, which
+   gates on it deterministically via the buffered `awaitConnectionAttempt()`.
 5. **FakeClock-driven reconnect.** A coroutine loops `fakeClock.advance(2.seconds)` then answers the
    next attempt (received via the buffered `awaitConnectionAttempt()`, so it cannot be missed) with a
    short-TTL CONNECTED; the test awaits CONNECTED again and asserts a second `ConnectionAttempt`.

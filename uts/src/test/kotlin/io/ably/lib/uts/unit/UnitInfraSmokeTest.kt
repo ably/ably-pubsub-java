@@ -2,9 +2,11 @@ package io.ably.lib.uts.unit
 
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.uts.infra.awaitChannelState
 import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.pollUntil
 import io.ably.lib.uts.infra.unit.CONNECTED_MESSAGE
 import io.ably.lib.uts.infra.unit.ConnectionDetails
 import io.ably.lib.uts.infra.unit.FakeClock
@@ -17,6 +19,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -107,16 +110,18 @@ class UnitInfraSmokeTest {
             assertEquals("event", publishFrame.messages[0].name)
             assertEquals("payload", publishFrame.messages[0].data)
 
-            // 5. Disconnect: we reach DISCONNECTED and the drop is recorded. We deliberately do NOT
-            // snapshot the ConnectionAttempt count here. FakeClock.waitOn(target, timeout) performs a
-            // real `target.wait(timeout)`, so the disconnected-retry (~disconnectedRetryTimeout ms of
-            // wall-clock, with backoff/jitter) eventually fires on its own even without an advance() —
-            // on a loaded CI runner it can beat this line, making a "still exactly 1 attempt"
-            // assertion inherently racy. advance() only wins the race sooner; it is not a hard gate.
-            // Ownership of attempt #2 therefore belongs to step 6, which gates on it deterministically
-            // via awaitConnectionAttempt() (buffered, so it cannot be missed).
+            // 5. Disconnect → DISCONNECTED. RTN15a reconnects immediately, so the DISCONNECTED window
+            // is only microseconds wide and a post-stimulus awaitState() can lose it (the CI
+            // lost-wakeup flake). Record connection states BEFORE the stimulus and pollUntil the drop
+            // is observed — the record-and-verify pattern (uts/docs/writing-test-specs.md, "Verifying
+            // Transient States"). We deliberately do NOT snapshot the ConnectionAttempt count here:
+            // ownership of attempt #2 belongs to step 6, gated deterministically via
+            // awaitConnectionAttempt().
+            val stateChanges = CopyOnWriteArrayList<ConnectionState>()
+            val stateListener = ConnectionStateListener { stateChanges.add(it.current) }
+            client.connection.on(stateListener)
             mock.simulateDisconnect()
-            awaitState(client, ConnectionState.disconnected)
+            pollUntil { ConnectionState.disconnected in stateChanges }
             assertTrue(mock.events.any { it is MockEvent.Disconnected })
 
             // 6. FakeClock-driven reconnect: the advance demonstrably drives the transition. Respond
