@@ -1471,6 +1471,10 @@ public class ConnectionManager implements ConnectListener {
         suspendTime = (clock.currentTimeMillis() + connectionStateTtl);
     }
 
+    private boolean shouldTryFallback(TransportParams params, ErrorInfo reason) {
+        return params != null && (reason == null || reason.statusCode >= 500);
+    }
+
     /**
      * After a connection attempt failed, check to
      * see whether we should attempt to use a fallback.
@@ -1478,14 +1482,15 @@ public class ConnectionManager implements ConnectListener {
      * @return StateIndication if a fallback connection attempt is required, otherwise null
      */
     private StateIndication checkFallback(ErrorInfo reason) {
-        if(pendingConnect != null && (reason == null || reason.statusCode >= 500)) {
-            if (checkConnectivity()) {
-                /* we will try a fallback host */
-                String hostFallback = hosts.getFallback(pendingConnect.host);
-                if (hostFallback != null) {
-                    Log.v(TAG, "checkFallback: fallback to " + hostFallback);
-                    return new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnect.host);
-                }
+        // checkConnectivity is blocking http call, try to avoid it if we don't need to try fallback
+        TransportParams pendingConnectionParams = pendingConnect;
+        boolean internetIsUp = shouldTryFallback(pendingConnectionParams, reason) && checkConnectivity();
+        if (internetIsUp) {
+            /* we will try a fallback host */
+            String hostFallback = hosts.getFallback(pendingConnectionParams.host);
+            if (hostFallback != null && pendingConnectionParams == pendingConnect) {
+                Log.v(TAG, "checkFallback: fallback to " + hostFallback);
+                return new StateIndication(ConnectionState.connecting, null, hostFallback, pendingConnectionParams.host);
             }
         }
         pendingConnect = null;
@@ -2033,7 +2038,7 @@ public class ConnectionManager implements ConnectListener {
     private final Map<ConnectionState, State> states = new HashMap<>();
     private State currentState;
     private ErrorInfo stateError;
-    private ConnectParams pendingConnect;
+    private volatile ConnectParams pendingConnect;
     private boolean suppressRetry; /* for tests only; modified via reflection */
     private volatile ITransport transport;
     private long suspendTime;
