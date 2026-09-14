@@ -102,6 +102,11 @@ class ObjectsFaultsTest {
 
             // First attach triggers sync; proxy disconnects mid-sync, then the client auto-reconnects.
             channel.attach()
+            // Mid-test gate: poll the RECORDED list for the transient DISCONNECTED before the final
+            // awaitState. The proxy only drops the connection after the OBJECT_SYNC round-trips, so at
+            // this point the client is still CONNECTED and awaitState(connected) would no-op — the
+            // assert would then race ahead of the disconnect (observed as [connecting, connected]).
+            pollUntil(30.seconds) { ConnectionState.disconnected in stateChanges }
             // Final wait targets CONNECTED, a sticky state — safe for awaitState.
             awaitState(client, ConnectionState.connected, 30.seconds)
             // CONTAINS_IN_ORDER is a subsequence match, so leading initial-connect states are fine.
