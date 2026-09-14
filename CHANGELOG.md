@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.8.2](https://github.com/ably/ably-java/tree/v1.8.2)
+
+[Full Changelog](https://github.com/ably/ably-java/compare/v1.8.1...v1.8.2)
+
+### What's Changed
+
+- Refine the connection fallback logic so that internet connectivity is always verified before a fallback host is resolved, and only when a valid pending connection exists [#1242](https://github.com/ably/ably-java/pull/1242)
+- complete the close handshake when the server closes the websocket [#1241](https://github.com/ably/ably-pubsub-java/pull/1241)
+
 ## [1.8.1](https://github.com/ably/ably-java/tree/v1.8.1)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.8.0...v1.8.1)
