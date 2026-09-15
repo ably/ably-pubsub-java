@@ -33,6 +33,7 @@ import io.ably.lib.uts.infra.unit.MockWebSocket
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.test.runTest
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -639,7 +640,7 @@ class RealtimeObjectTest {
         val client = newClient(mockWs)
         val channel = client.objectsChannel("test")
 
-        val events = mutableListOf<String>()
+        val events = CopyOnWriteArrayList<String>()
         channel.`object`.on(ObjectStateEvent.SYNCING, ObjectStateChange.Listener { events.add("SYNCING") })
         channel.`object`.on(ObjectStateEvent.SYNCED, ObjectStateChange.Listener { events.add("SYNCED") })
 
@@ -918,8 +919,8 @@ class RealtimeObjectTest {
     fun `RTO24a - RealtimeObject maintains a single PathObjectSubscriptionRegister`() = runTest {
         val (client, _, root, mockWs) = setupSyncedChannel("test")
 
-        val eventsRoot = mutableListOf<PathObjectSubscriptionEvent>()
-        val eventsScore = mutableListOf<PathObjectSubscriptionEvent>()
+        val eventsRoot = CopyOnWriteArrayList<PathObjectSubscriptionEvent>()
+        val eventsScore = CopyOnWriteArrayList<PathObjectSubscriptionEvent>()
 
         // Subscribe via root PathObject at path [].
         root.subscribe(PathObjectListener { event -> eventsRoot.add(event) })
@@ -950,8 +951,8 @@ class RealtimeObjectTest {
     fun `RTO24c1 - subscription coverage prefix match with depth constraint`() = runTest {
         val (client, _, root, mockWs) = setupSyncedChannel("test")
 
-        val shallowEvents = mutableListOf<PathObjectSubscriptionEvent>()
-        val deepEvents = mutableListOf<PathObjectSubscriptionEvent>()
+        val shallowEvents = CopyOnWriteArrayList<PathObjectSubscriptionEvent>()
+        val deepEvents = CopyOnWriteArrayList<PathObjectSubscriptionEvent>()
 
         // Subscribe at root with depth 1 — per RTO24c2b this covers ONLY root's own path ([]),
         // NOT its children (a child like ["score"] is relativeDepth 1-0+1 = 2 > 1).
@@ -1153,7 +1154,7 @@ class RealtimeObjectTest {
     @Test
     fun `RTO20 - subscription fires on apply-on-ACK`() = runTest {
         val (client, _, root, _) = setupSyncedChannel("test")
-        val events = mutableListOf<PathObjectSubscriptionEvent>()
+        val events = CopyOnWriteArrayList<PathObjectSubscriptionEvent>()
         root.get("score").subscribe(PathObjectListener { event -> events.add(event) })
 
         root.get("score").asLiveCounter().increment(10).await()
@@ -1244,7 +1245,10 @@ class RealtimeObjectTest {
             )
             val client = newClient(mockWs)
             val channel = client.objectsChannel("test")
-            val events = mutableListOf<String>()
+            // process_pending_events(): flush the sequential scope so the fresh channel's objects
+            // message pipeline has finished subscribing before attach().
+            (channel.`object` as DefaultRealtimeObject).asyncFuture { }.await()
+            val events = CopyOnWriteArrayList<String>()
             channel.`object`.on(ObjectStateEvent.SYNCING, ObjectStateChange.Listener { events.add("SYNCING") })
             channel.`object`.on(ObjectStateEvent.SYNCED, ObjectStateChange.Listener { events.add("SYNCED") })
 
@@ -1258,7 +1262,7 @@ class RealtimeObjectTest {
         // Scenario "re-sync on new ATTACHED".
         run {
             val (client, channel, _, mockWs) = setupSyncedChannel("test")
-            val events = mutableListOf<String>()
+            val events = CopyOnWriteArrayList<String>()
             channel.`object`.on(ObjectStateEvent.SYNCING, ObjectStateChange.Listener { events.add("SYNCING") })
             channel.`object`.on(ObjectStateEvent.SYNCED, ObjectStateChange.Listener { events.add("SYNCED") })
 
@@ -1275,7 +1279,7 @@ class RealtimeObjectTest {
         // the sync immediately via RTO4b4 → emits SYNCED.
         run {
             val (client, channel, _, mockWs) = setupSyncedChannel("test")
-            val events = mutableListOf<String>()
+            val events = CopyOnWriteArrayList<String>()
             channel.`object`.on(ObjectStateEvent.SYNCING, ObjectStateChange.Listener { events.add("SYNCING") })
             channel.`object`.on(ObjectStateEvent.SYNCED, ObjectStateChange.Listener { events.add("SYNCED") })
 

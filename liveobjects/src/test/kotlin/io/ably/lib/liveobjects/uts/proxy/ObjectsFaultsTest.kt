@@ -7,6 +7,7 @@ import io.ably.lib.types.AblyException
 import io.ably.lib.realtime.Channel
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.ChannelMode
 import io.ably.lib.types.ChannelOptions
 import io.ably.lib.uts.infra.awaitChannelState
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertFailsWith
@@ -85,17 +87,33 @@ class ObjectsFaultsTest {
         )
         val client = proxyClient(session)
         try {
+            val channel = objectChannel(client, channelName)
+
+            // Record connection states BEFORE the disconnect stimulus (channel.attach(), below).
+            // DISCONNECTED is transient (RTN15a reconnects immediately); a post-stimulus awaitState
+            // can miss it, so this listener MUST precede the stimulus — reordering breaks the test.
+            // (see uts/docs/writing-test-specs.md, "Verifying Transient States")
+            val stateChanges = CopyOnWriteArrayList<ConnectionState>()
+            val stateListener = ConnectionStateListener { stateChanges.add(it.current) }
+            client.connection.on(stateListener)
+
             client.connect()
             awaitState(client, ConnectionState.connected, 15.seconds)
 
-            val channel = objectChannel(client, channelName)
-
-            // First attach triggers sync; proxy disconnects mid-sync.
+            // First attach triggers sync; proxy disconnects mid-sync, then the client auto-reconnects.
             channel.attach()
-            awaitState(client, ConnectionState.disconnected, 15.seconds)
-
-            // Client auto-reconnects; re-attach triggers a fresh sync.
+            // Mid-test gate: poll the RECORDED list for the transient DISCONNECTED before the final
+            // awaitState. The proxy only drops the connection after the OBJECT_SYNC round-trips, so at
+            // this point the client is still CONNECTED and awaitState(connected) would no-op — the
+            // assert would then race ahead of the disconnect (observed as [connecting, connected]).
+            pollUntil(30.seconds) { ConnectionState.disconnected in stateChanges }
+            // Final wait targets CONNECTED, a sticky state — safe for awaitState.
             awaitState(client, ConnectionState.connected, 30.seconds)
+            // CONTAINS_IN_ORDER is a subsequence match, so leading initial-connect states are fine.
+            assertContainsInOrder(
+                stateChanges,
+                listOf(ConnectionState.disconnected, ConnectionState.connecting, ConnectionState.connected)
+            )
 
             // get() waits for SYNCED — resolves only if the re-sync completes.
             val root = withRealTimeout(30.seconds) { channel.`object`.get().await() }
@@ -136,14 +154,25 @@ class ObjectsFaultsTest {
             var rootB = withRealTimeout(15.seconds) { channelB.`object`.get().await() }
             pollUntil(10.seconds) { rootB.get("key1").asString().value() == "initial" }
 
+            // Record B's connection states BEFORE the disconnect stimulus (triggerAction, below).
+            // DISCONNECTED is transient (RTN15a reconnects immediately); a post-stimulus awaitState
+            // can miss it, so this listener MUST precede the stimulus — reordering breaks the test.
+            // (see uts/docs/writing-test-specs.md, "Verifying Transient States")
+            val stateChanges = CopyOnWriteArrayList<ConnectionState>()
+            val stateListener = ConnectionStateListener { stateChanges.add(it.current) }
+            clientB.connection.on(stateListener)
+
             // Disconnect client B
             session.triggerAction(mapOf("type" to "disconnect"))
-            awaitState(clientB, ConnectionState.disconnected, 15.seconds)
+            // Mid-test gate: poll the RECORDED list (not awaitState on live state, which could miss
+            // the transient DISCONNECTED). This blocks A's publish until B has observed the drop.
+            pollUntil(15.seconds) { ConnectionState.disconnected in stateChanges }
 
-            // While B is disconnected, A publishes a mutation
+            // A publishes while B is down. Best-effort: RTN15a may reconnect/re-sync B before this
+            // round-trips (then it tests plain delivery, not RTO7/RTO8); the final poll tolerates both.
             rootA.set("key1", LiveMapValue.of("updated_during_disconnect")).await()
 
-            // Client B reconnects and re-syncs; the mutation should be visible
+            // Client B reconnects and re-syncs; the mutation should be visible.
             awaitState(clientB, ConnectionState.connected, 30.seconds)
             rootB = withRealTimeout(15.seconds) { channelB.`object`.get().await() }
             pollUntil(15.seconds) { rootB.get("key1").asString().value() == "updated_during_disconnect" }
@@ -355,4 +384,14 @@ class ObjectsFaultsTest {
                 modes = arrayOf(ChannelMode.object_subscribe, ChannelMode.object_publish)
             },
         )
+
+    /** Asserts [expected] appears in [actual] as an ordered subsequence (the spec's CONTAINS_IN_ORDER). */
+    private fun <T> assertContainsInOrder(actual: List<T>, expected: List<T>) {
+        var i = 0
+        for (item in actual) if (i < expected.size && item == expected[i]) i++
+        assertEquals(
+            expected.size, i,
+            "expected $expected as an ordered subsequence of $actual",
+        )
+    }
 }

@@ -17,6 +17,19 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 // tryResume/completeResume (the atomic single-winner resume) are @InternalCoroutinesApi.
+/**
+ * Suspends until [client]'s connection reaches [target], or fails with a
+ * [kotlinx.coroutines.TimeoutCancellationException] after [timeout].
+ *
+ * **For sticky targets only** (CONNECTED, CLOSED, SUSPENDED, FAILED, …). It registers its listener
+ * *after* the call point and then checks the current state, so a transition that both arrives and is
+ * superseded before registration is lost. That never happens for a state that persists, but a
+ * **transient** target — DISCONNECTED/CLOSING after a drop, which RTN15a supersedes with CONNECTING
+ * within microseconds — can be missed entirely. For those, use the inline record-before-stimulus
+ * pattern per the UTS record-and-verify convention (spec `uts/docs/writing-test-specs.md`,
+ * "Verifying Transient States"): register a `connection.on { states.add(it.current) }` listener
+ * *before* the stimulus, then `pollUntil { target in states }` (or assert `CONTAINS_IN_ORDER`).
+ */
 @OptIn(InternalCoroutinesApi::class)
 suspend fun awaitState(
   client: AblyRealtime,
