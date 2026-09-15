@@ -60,6 +60,7 @@ public class ActivationContext {
         this.clientId = ably.auth.clientId;
     }
 
+    @SuppressWarnings("deprecation") // internal push-registration client, not an application entry point
     AblyRest getAbly() throws AblyException {
         if(ably != null) {
             Log.v(TAG, "getAbly(): returning existing Ably instance");
@@ -84,6 +85,7 @@ public class ActivationContext {
      * @return AblyRest instance with device identity token auth. We use this instance to perform
      * deregistration calls in push activation flow.
      */
+    @SuppressWarnings("deprecation") // internal push-registration client, not an application entry point
     AblyRest getDeviceIdentityTokenBasedAblyClient(String deviceIdentityToken) throws AblyException {
         ClientOptions clientOptions = ably.options.copy();
         clientOptions.clearAuthOptions();
