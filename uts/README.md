@@ -596,6 +596,15 @@ listener — it re-evaluates the predicate every `interval` until it holds or th
 | `awaitChannelState` | `(channel, target, timeout=5s)` | same, for a channel's state |
 | `pollUntil` | `(timeout=15s, interval=100ms) { condition }` | suspend until a boolean predicate holds — used in proxy tests to wait on real network/proxy state, e.g. `pollUntil { authCallbackCount.get() > original }` |
 
+**Transient states and recording lists.** `awaitState`/`awaitChannelState` are for *sticky* targets
+only (CONNECTED, CLOSED, ATTACHED, FAILED…): a transient state — e.g. DISCONNECTED, which RTN15a
+supersedes within microseconds of a drop from CONNECTED — can fire and vanish before any waiter
+registers. Observe transient states with the record-and-verify pattern instead: register a recording
+listener *before* the stimulus, then `pollUntil` on (or assert over) the recorded list. Recording
+lists are appended on SDK callback threads and read from `pollUntil`'s poller thread, so they must be
+thread-safe — always `CopyOnWriteArrayList`, never a plain `mutableListOf` (see the walkthrough in
+§9 and the recording-lists row in the UTS docs' `writing-derived-tests.md`).
+
 A second `Utils.kt` under `infra/unit/` adds the `ConnectionDetails { … }` builder DSL so tests can
 write `ConnectionDetails { connectionKey = "key-1"; connectionStateTtl = 120000L }`. Since this file
 no longer sits in the `io.ably.lib.types` package, it can't call `ConnectionDetails`'s package-private
