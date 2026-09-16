@@ -3,6 +3,7 @@ package io.ably.lib.uts.unit.realtime
 import io.ably.lib.uts.infra.unit.*
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
+import io.ably.lib.realtime.ConnectionStateListener
 import io.ably.lib.types.ErrorInfo
 import io.ably.lib.types.ProtocolMessage
 import io.ably.lib.types.RecoveryKeyContext
@@ -111,11 +112,19 @@ class ConnectionRecoveryTest {
     assertNotNull(client.connection.createRecoveryKey())
 
     // --- CLOSING and CLOSED states ---
-    // connection.close() sets key = null immediately (Connection.java:116)
+    // connection.close() sets key = null immediately (Connection.java:116). CLOSING is a transient
+    // step on the way to CLOSED, so record connection states BEFORE the close() stimulus and
+    // pollUntil CLOSING is observed rather than awaiting it post-stimulus, which can race that window
+    // (record-and-verify pattern, uts/docs/writing-test-specs.md, "Verifying Transient States").
+    // CLOSED is terminal/sticky, so the existing awaitState suffices for it.
+    val stateChanges = CopyOnWriteArrayList<ConnectionState>()
+    val stateListener = ConnectionStateListener { stateChanges.add(it.current) }
+    client.connection.on(stateListener)
+
     client.connection.close()
     assertNull(client.connection.createRecoveryKey())
 
-    awaitState(client, ConnectionState.closing)
+    pollUntil { ConnectionState.closing in stateChanges }
     assertNull(client.connection.createRecoveryKey())
 
     mock.sendToClientAndClose(ProtocolMessage().apply {

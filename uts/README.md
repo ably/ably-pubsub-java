@@ -596,6 +596,15 @@ listener — it re-evaluates the predicate every `interval` until it holds or th
 | `awaitChannelState` | `(channel, target, timeout=5s)` | same, for a channel's state |
 | `pollUntil` | `(timeout=15s, interval=100ms) { condition }` | suspend until a boolean predicate holds — used in proxy tests to wait on real network/proxy state, e.g. `pollUntil { authCallbackCount.get() > original }` |
 
+**Transient states and recording lists.** `awaitState`/`awaitChannelState` are for *sticky* targets
+only (CONNECTED, CLOSED, ATTACHED, FAILED…): a transient state — e.g. DISCONNECTED, which RTN15a
+supersedes within microseconds of a drop from CONNECTED — can fire and vanish before any waiter
+registers. Observe transient states with the record-and-verify pattern instead: register a recording
+listener *before* the stimulus, then `pollUntil` on (or assert over) the recorded list. Recording
+lists are appended on SDK callback threads and read from `pollUntil`'s poller thread, so they must be
+thread-safe — always `CopyOnWriteArrayList`, never a plain `mutableListOf` (see the walkthrough in
+§9 and the recording-lists row in the UTS docs' `writing-derived-tests.md`).
+
 A second `Utils.kt` under `infra/unit/` adds the `ConnectionDetails { … }` builder DSL so tests can
 write `ConnectionDetails { connectionKey = "key-1"; connectionStateTtl = 120000L }`. Since this file
 no longer sits in the `io.ably.lib.types` package, it can't call `ConnectionDetails`'s package-private
@@ -655,12 +664,15 @@ One long **await-style** test that walks the SDK through the whole transport lif
    ```
 3. **Publish**, asserting the full MESSAGE frame (`action`, `channel`, `messages[0].name`/`data`) again
    via `awaitNextMessageFromClient()`.
-4. **Disconnect.** `simulateDisconnect()`, await DISCONNECTED, and assert the drop was recorded. Note
-   we do **not** snapshot the `ConnectionAttempt` count here: `FakeClock.waitOn(target, timeout)` does a
-   real `target.wait(timeout)`, so the disconnected-retry fires on its own after ~`disconnectedRetryTimeout`
-   ms of wall-clock even without an `advance()`. `advance()` only wins that race sooner — it is not a
-   hard gate — so a "still exactly one attempt" assertion would be racy on a loaded runner. Ownership
-   of attempt #2 belongs to the next step, which gates on it deterministically.
+4. **Disconnect.** Register a recording list + `ConnectionStateListener` *before* `simulateDisconnect()`,
+   then `pollUntil { disconnected in stateChanges }` — the same inline record-before-stimulus idiom the
+   proxy walkthroughs use (§11.2/§11.3). DISCONNECTED here is **transient**: the drop happens while CONNECTED, so
+   RTN15a reconnects immediately (`Disconnected.enact` queues CONNECTING *before* DISCONNECTED reaches
+   listeners), leaving a microsecond-wide window — independent of `disconnectedRetryTimeout`/`FakeClock`,
+   which never participate on this path. A post-stimulus `awaitState(disconnected)` can race that window
+   and miss it (the CI lost-wakeup flake); recording before the stimulus cannot. We also do **not**
+   snapshot the `ConnectionAttempt` count here — ownership of attempt #2 belongs to the next step, which
+   gates on it deterministically via the buffered `awaitConnectionAttempt()`.
 5. **FakeClock-driven reconnect.** A coroutine loops `fakeClock.advance(2.seconds)` then answers the
    next attempt (received via the buffered `awaitConnectionAttempt()`, so it cannot be missed) with a
    short-TTL CONNECTED; the test awaits CONNECTED again and asserts a second `ConnectionAttempt`.
