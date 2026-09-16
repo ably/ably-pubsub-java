@@ -251,17 +251,17 @@ Takeaways:
 - `:uts` is a `java-library` + `kotlin.jvm` module. `java-test-fixtures` is **gone** — the infra is
   plain `src/main`, so consumers use `testImplementation(project(":uts"))` (no `testFixtures(...)`
   wrapper). `java-library` is what now supplies the `api` configuration.
-- The module compiles to **Java 8** bytecode (source/target + `jvmTarget = JVM_1_8`), so `:java`
+- The module compiles to **Java 8** bytecode (source/target + `jvmTarget = JVM_1_8`), so `:core`
   (which requests Java-8 variants) can consume it. **mockk is not a dependency** — the infra imports
   no test library at all.
-- It depends on `:java` (the SDK under test) and `:network-client-core` (the pluggable transport SPIs
+- It depends on `:core` (the SDK under test) and `:network-client-core` (the pluggable transport SPIs
   the mocks implement), both via `api` because they appear in infra signatures.
 - Tests are **Kotlin + JUnit 5**, using **kotlinx.coroutines** for async control and **Ktor** for the
   sandbox REST API and proxy control API. `junit-jupiter-params` (version from the JUnit BOM) adds
   **`@ParameterizedTest`** for the protocol-variant integration tests (§10.3).
 - `runUtsUnitTests` / `runUtsIntegrationTests` are package-filtered `Test` tasks (§13). The
   `--add-opens java.base/java.time` and `java.base/java.lang` flags grant the test runtime reflective
-  access into those JDK packages, mirroring `java/build.gradle.kts`.
+  access into those JDK packages, mirroring `core/build.gradle.kts`.
 - A system property carries an optional path to a **locally built** proxy binary (so you can test
   against an unreleased proxy).
 

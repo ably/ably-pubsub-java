@@ -20,7 +20,11 @@ public class AblyRest extends AblyBase {
      * Spec: RSC1
      * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
+     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
+     *             {@code io.ably.pubsub:device} artifact instead, which names the side of the
+     *             connection your code runs on.
      */
+    @Deprecated
     public AblyRest(String key) throws AblyException {
         super(key, new AndroidPlatformAgentProvider());
     }
@@ -31,7 +35,11 @@ public class AblyRest extends AblyBase {
      * Spec: RSC1
      * @param options A {@link ClientOptions} object to configure the client connection to Ably.
      * @throws AblyException
+     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
+     *             {@code io.ably.pubsub:device} artifact instead, which names the side of the
+     *             connection your code runs on.
      */
+    @Deprecated
     public AblyRest(ClientOptions options) throws AblyException {
         super(options, new AndroidPlatformAgentProvider());
     }
