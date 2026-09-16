@@ -32,7 +32,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: java-build-reports-rest
+          name: core-build-reports-rest
           path: core/build/reports/
 
   check-realtime-httpurlconnection:
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: java-build-reports-realtime
+          name: core-build-reports-realtime
           path: core/build/reports/
   check-rest-okhttp:
     runs-on: ubuntu-latest
