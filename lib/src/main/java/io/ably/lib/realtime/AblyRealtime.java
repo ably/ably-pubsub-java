@@ -56,7 +56,12 @@ public class AblyRealtime extends AblyRest {
      * Spec: RSC1
      * @param key The Ably API key or token string used to validate the client.
      * @throws AblyException
+     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
+     *             {@code io.ably.pubsub:device} artifact if this code runs on an end-user device, or
+     *             {@code io.ably.pubsub.server.PubSubServer#realtimeClientBuilder()} from the
+     *             {@code io.ably.pubsub:server} artifact if it runs on infrastructure you control.
      */
+    @Deprecated
     public AblyRealtime(String key) throws AblyException {
         this(new ClientOptions(key));
     }
@@ -67,7 +72,12 @@ public class AblyRealtime extends AblyRest {
      * Spec: RSC1
      * @param options A {@link ClientOptions} object.
      * @throws AblyException
+     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
+     *             {@code io.ably.pubsub:device} artifact if this code runs on an end-user device, or
+     *             {@code io.ably.pubsub.server.PubSubServer#realtimeClientBuilder()} from the
+     *             {@code io.ably.pubsub:server} artifact if it runs on infrastructure you control.
      */
+    @Deprecated
     public AblyRealtime(ClientOptions options) throws AblyException {
         super(options);
         final InternalChannels channels = new InternalChannels();
