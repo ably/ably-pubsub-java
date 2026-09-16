@@ -210,7 +210,7 @@ Takeaways:
 - It depends on `:java` (the SDK) and `:network-client-core` (the pluggable transport interfaces the
   mocks implement).
 - The `--add-opens java.base/java.time` and `java.base/java.lang` flags grant reflective access into
-  those JDK packages for the test runtime. They mirror the same flags set in `java/build.gradle.kts`
+  those JDK packages for the test runtime. They mirror the same flags set in `core/build.gradle.kts`
   for the SDK's own test module (which additionally opens `java.net` and `java.lang.reflect`).
 - A system property carries an optional path to a **locally built** proxy binary (so you can test
   against an unreleased proxy).

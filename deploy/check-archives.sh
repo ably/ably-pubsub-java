@@ -36,8 +36,8 @@ case "${ABLY_VERSION}" in
 		;;
 esac
 
-ABLY_JAVA_RELEASE_DIR="${ABLY_HOME}/java/build/release/${ABLY_VERSION}/io/ably/ably-java/${ABLY_VERSION}"
-ABLY_ANDROID_RELEASE_DIR="${ABLY_HOME}/android/build/release/${ABLY_VERSION}/io/ably/ably-android/${ABLY_VERSION}"
+ABLY_JAVA_RELEASE_DIR="${ABLY_HOME}/core/build/release/${ABLY_VERSION}/io/ably/ably-java/${ABLY_VERSION}"
+ABLY_ANDROID_RELEASE_DIR="${ABLY_HOME}/core-android/build/release/${ABLY_VERSION}/io/ably/ably-android/${ABLY_VERSION}"
 
 if [ ! -d "${ABLY_JAVA_RELEASE_DIR}" ]; then
 	echo "Directory for Java release ${ABLY_JAVA_RELEASE_DIR} doesn't exist"

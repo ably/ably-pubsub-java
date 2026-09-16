@@ -11,7 +11,7 @@
 
 ### Building
 
-The library consists of JRE-specific library (in `java/`) and an Android-specific library (in `android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
+The library consists of JRE-specific library (in `core/`) and an Android-specific library (in `core-android/`). The libraries are largely common-sourced; the `lib/` directory contains the common parts.
 
 A gradle wrapper is included so these tasks can run without any prior installation of gradle. The Linux/OSX form of the commands, given below, is:
 
@@ -85,7 +85,7 @@ Once done, your custom network engine will be available for use within `ably-jav
 
 We use [Checkstyle](https://checkstyle.org/) to enforce code style and spot for transgressions and illogical constructs
 in our Java source files.
-The Gradle build has been configured to run these on `java:assembleRelease`.
+The Gradle build has been configured to run these on `core:assembleRelease`.
 It does not run for the Android build yet.
 
 You can run just the Checkstyle rules on their own using:
@@ -123,18 +123,18 @@ The gradle project files can be imported to create projects in IntelliJ IDEA, Ec
 
 #### Importing into IntelliJ
 
-The top-level ably-java project can be imported into IntelliJ IDEA, enabling development of both the java and android projects. This has been tested with IntelliJ IDEA Ultimate 2017.2. To import into IDEA:
+The top-level ably-java project can be imported into IntelliJ IDEA, enabling development of both the core and core-android projects. This has been tested with IntelliJ IDEA Ultimate 2017.2. To import into IDEA:
 
 - do File->New->Project from Existing Sources...
 - select ably-java/settings.gradle
 - in the import dialog, check "Use auto-import" and uncheck "Create separate module per source set"
 - select "ok"
 
-This will create a project with separate java and android modules.
+This will create a project with separate core and core-android modules.
 
 Interactive run/debug configurations to execute the unit tests can be created as follows:
 - select Run->Edit configurations ...
-- for the java project, create a new "JUnit" run configuration; or for the android project create a new "Android Instrumented Tests" configuration;
+- for the core project, create a new "JUnit" run configuration; or for the core-android project create a new "Android Instrumented Tests" configuration;
 - select the Class as RealtimeSuite or RestSuite;
 - select the relevant module for the classpath.
 
@@ -142,34 +142,34 @@ In order to run the Android configuration it is necessary to set up the Android 
 
 #### Importing into Eclipse
 
-The top-level ably-java project can be imported into Eclipse, enabling development of the java project only. The Eclipse Android development plugin (ADT) is no longer supported. This has been tested with Eclipse Oxygen.2
+The top-level ably-java project can be imported into Eclipse, enabling development of the core project only. The Eclipse Android development plugin (ADT) is no longer supported. This has been tested with Eclipse Oxygen.2
 
 To import into Eclipse:
 
 - do File->Import->Gradle->Existing Gradle project;
 - follow the wizard steps, selecting the ably-java root directory.
 
-This will create two projects in the workspace; one for the top-level ably-java project, and one for the java project.
+This will create two projects in the workspace; one for the top-level ably-java project, and one for the core project.
 
-Interactive run/debug configurations for the java project can be created as follows:
+Interactive run/debug configurations for the core project can be created as follows:
 - select Run->Run configurations ...
 - create a new JUnit configuration
-- select the java project;
+- select the core project;
 - select the Class as RealtimeSuite or RestSuite;
 - select JUnit 4 as the test runner.
 
 #### Importing into Android studio
 
-Android studio does not include the components required to support development of the java project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the android project as a standalone project into Android Studio by deleting the top-level settings.gradle file, which effectively decouples the android and java projects.
+Android studio does not include the components required to support development of the core project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the core-android project as a standalone project into Android Studio by deleting the top-level settings.gradle file, which effectively decouples the core-android and core projects.
 
 This has been tested with Android Studio 3.0.1.
 
 To import into Android Studio:
 - do Import project (Gradle, Eclipse ADT, etc);
-- select ably-java/android/build.gradle;
+- select ably-java/core-android/build.gradle;
 - select OK to Gradle Sync.
 
-This creates a single android project and module.
+This creates a single core-android project and module.
 
 Configuration of Run/Debug configurations for running the unit tests on Android is the same as for IntelliJ IDEA (above).
 

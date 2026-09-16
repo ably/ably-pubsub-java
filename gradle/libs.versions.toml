@@ -91,4 +91,5 @@ lombok = { id = "io.freefair.lombok", version.ref = "lombok" }
 test-retry = { id = "org.gradle.test-retry", version.ref = "test-retry" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

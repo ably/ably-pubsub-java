@@ -27,7 +27,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -35,7 +35,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       realtimeClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -43,7 +43,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.request("/time")
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -59,7 +59,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -67,7 +67,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       restClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -75,7 +75,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.request("/time")
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -91,7 +91,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -99,7 +99,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       restClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -107,7 +107,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").presence.history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -123,7 +123,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -131,7 +131,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       realtimeClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -139,7 +139,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").presence.history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
