@@ -181,7 +181,7 @@ everything lives under `uts/src/test/`.
 plugins { alias(libs.plugins.kotlin.jvm) }
 
 dependencies {
-    testImplementation(project(":java"))                 // the SDK under test
+    testImplementation(project(":core"))                 // the SDK under test
     testImplementation(project(":network-client-core"))  // HttpEngine / WebSocketEngine interfaces
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter-params")  // @ParameterizedTest / @ValueSource (version from the JUnit BOM)

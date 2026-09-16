@@ -68,7 +68,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(project(":liveobjects"))
 
-    implementation(project(":android"))
+    implementation(project(":core-android"))
 
     implementation(libs.navigation.compose)
 

@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":java"))
+    testImplementation(project(":core"))
     testImplementation(project(":network-client-core"))
     // Runtime-only so compile-time stays decoupled from the plugin internals; the LiveObjects test
     // helpers reach the internal wire/message classes (e.g. for build_public_object_message) by reflection.
