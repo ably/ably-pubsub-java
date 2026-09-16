@@ -14,7 +14,14 @@ public class Defaults {
      */
     public static final String ABLY_PROTOCOL_VERSION = "6";
 
-    public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-java", BuildConfig.VERSION);
+    /**
+     * The SDK family identifier. It renamed from {@code ably-java} with the per-side package
+     * split, so the identifier alone partitions the fleet: {@code ably-java/*} is legacy-package
+     * traffic, {@code ably-pubsub-java/*} is new-package traffic. It names the family rather than
+     * any one published artifact; the side a client declares travels as a separate versionless
+     * agent entry (see io.ably.pubsub.internal.Side and the agents registry in ably-common).
+     */
+    public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-pubsub-java", BuildConfig.VERSION);
 
     /* realtime params */
     public static final String ABLY_PROTOCOL_VERSION_PARAM = "v";
