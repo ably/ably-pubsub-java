@@ -4,6 +4,7 @@ import io.ably.pubsub.realtime.PubSubRealtimeClient
 // the adapter factory function of the same name, no longer covered by the class import above
 import io.ably.pubsub.realtime.RealtimeClient
 import io.ably.pubsub.realtime.RealtimeClientAdapter
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.channelOptions
 import io.ably.pubsub.types.ChannelMode
 import io.ably.pubsub.types.ChannelOptions
@@ -86,5 +87,5 @@ private fun createRealtimeClient(): PubSubRealtimeClient {
   val options = ClientOptions("xxxxx:yyyyyyy").apply {
     autoConnect = false
   }
-  return PubSubRealtimeClient(options)
+  return RealtimeClientFactory.create(options)
 }

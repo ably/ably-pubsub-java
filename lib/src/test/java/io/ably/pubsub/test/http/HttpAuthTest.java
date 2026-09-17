@@ -6,6 +6,7 @@ import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.http.HttpConstants;
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.network.HttpRequest;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Auth.AuthMethod;
@@ -63,7 +64,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public static void auth_start_tokenserver() {
         try {
             ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             tokenServer = new TokenServer(ably, 8982);
             tokenServer.start();
 
@@ -103,7 +104,7 @@ public class HttpAuthTest extends ParameterizedTest {
     @Test
     public void authinit0() {
         try {
-            PubSubHttpClient ably = new PubSubHttpClient(testVars.keys[0].keyStr);
+            PubSubHttpClient ably = HttpClientFactory.create(new ClientOptions(testVars.keys[0].keyStr));
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "*");
         } catch (AblyException e) {
@@ -121,7 +122,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             ably.stats(null);
             fail("Unexpected success calling with Basic auth over httpCore");
         } catch (AblyException e) {
@@ -138,7 +139,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             /* Spec: RSA12a */
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -156,7 +157,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = new ClientOptions();
             opts.token = "this_is_not_really_a_token";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             /* Spec: RSA12a */
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -185,7 +186,7 @@ public class HttpAuthTest extends ParameterizedTest {
                     authinit2_cbCalled = true;
                     return "this_is_not_really_a_token_request";
                 }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 ably.stats(null);
@@ -209,7 +210,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = "testClientId";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.basic);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, "testClientId");
         } catch (AblyException e) {
@@ -230,7 +231,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
             opts.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
             ably.auth.authorize(null, null);
@@ -250,7 +251,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.token = testVars.keys[0].keyStr;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -268,7 +269,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.tokenDetails = new TokenDetails() {{ token = testVars.keys[0].keyStr; }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -290,7 +291,7 @@ public class HttpAuthTest extends ParameterizedTest {
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return null;
                 }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -308,7 +309,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.authUrl = "http://auth.url";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -323,13 +324,13 @@ public class HttpAuthTest extends ParameterizedTest {
     public void authinit4() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
             assertNotNull("Expected token value", tokenDetails.token);
             ClientOptions opts = new ClientOptions();
             opts.token = tokenDetails.token;
             opts.environment = testVars.environment;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
         } catch (AblyException e) {
@@ -348,7 +349,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/get-token-request";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -374,7 +375,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/post-token-request";
             opts.authMethod = HttpConstants.Methods.POST;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -400,7 +401,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/get-token";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -425,7 +426,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/404";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 ably.auth.requestToken(null, null);
@@ -451,7 +452,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.environment = testVars.environment;
             opts.authUrl = "http://localhost:8982/wait?delay=6000";
             opts.httpRequestTimeout = 5000;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
             try {
                 ably.auth.requestToken(null, null);
@@ -481,7 +482,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authParams = new Param[]{new Param("test-param", "test-value")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -509,7 +510,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.authUrl = "http://localhost:8982/post-token-request";
             opts.authMethod = HttpConstants.Methods.POST;
             opts.authParams = new Param[]{new Param("test-param", "test-value")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -539,7 +540,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.httpListener = httpListener;
 
             opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -566,7 +567,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/post-token-request?test-param=test-value";
             opts.authMethod = HttpConstants.Methods.POST;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -593,7 +594,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request?test-param=test-value-urlParam";
             opts.authParams = new Param[]{new Param("test-param", "test-value-authParam")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -620,7 +621,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authParams = new Param[]{new Param("ttl", "500")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(new TokenParams() {{
@@ -649,7 +650,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -677,7 +678,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             opts.authUrl = "http://localhost:8982/get-token-request";
             opts.authHeaders = new Param[]{new Param("test-header", "test-value")};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             ably.auth.requestToken(null, null);
@@ -700,7 +701,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.createTokenRequest(params, null);
@@ -710,7 +711,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             try {
@@ -735,7 +736,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -745,7 +746,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             try {
@@ -769,7 +770,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authcallback_tokenstring() throws AblyException {
             /* implement callback, using Ably instance with key */
         TokenCallback authCallback = new TokenCallback() {
-            private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+            private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
             @Override
             public Object getTokenRequest(TokenParams params) throws AblyException {
                 return ably.auth.requestToken(params, null).token;
@@ -779,7 +780,7 @@ public class HttpAuthTest extends ParameterizedTest {
         /* create Ably instance without key */
         ClientOptions opts = createOptions();
         opts.authCallback = authCallback;
-        PubSubHttpClient ably = new PubSubHttpClient(opts);
+        PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
         try {
@@ -798,7 +799,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authcallback_token_expire() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -819,7 +820,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.token = tokenDetails.token;
             opts.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* wait until token expires */
             try {
@@ -853,7 +854,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.clientId = "testClientId";
             opts.useTokenAuth = true;
             opts.defaultTokenParams.ttl = 5000L;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a request that relies on the token */
             System.out.println("auth_authcallback_key_expire: making first request");
@@ -906,7 +907,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance without key */
             ClientOptions opts = createOptions();
             opts.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call to trigger token request */
             try {
@@ -930,7 +931,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void authinit_no_auth() {
         try {
             ClientOptions opts = new ClientOptions();
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
             fail("authinit_no_auth: Unexpected success instantiating library");
         } catch (AblyException e) {
             assertEquals("Verify exception thrown initialising library", e.errorInfo.code, 40000);
@@ -948,7 +949,7 @@ public class HttpAuthTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -975,7 +976,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = "testClientId";
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             /* create Ably instance with token */
@@ -983,7 +984,7 @@ public class HttpAuthTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -1015,7 +1016,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.useTokenAuth = true;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a request that relies on authentication */
             try {
@@ -1044,7 +1045,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             opts = createOptions();
             opts.clientId = "*";
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
         } catch (AblyException e) {
             assertEquals("Verify exception raised from disallowed wildcard clientId", e.errorInfo.code, 40000);
         }
@@ -1068,7 +1069,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.clientId = "options clientId";
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
         } catch (AblyException e) {
             assertEquals("Verify exception raised from incompatible clientIds", e.errorInfo.code, 40101);
         }
@@ -1093,7 +1094,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.clientId = "options clientId";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "options clientId");
         } catch (AblyException e) {
             e.printStackTrace();
@@ -1118,7 +1119,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.clientId = null;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Verify given clientId is compatible with wildcard token clientId", ably.auth.clientId, "*");
         } catch (AblyException e) {
             e.printStackTrace();
@@ -1137,7 +1138,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -1148,7 +1149,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions options = createOptions();
             options.clientId = null;
             options.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.requestToken(null, null);
@@ -1199,7 +1200,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     return ably.auth.requestToken(params, null);
@@ -1209,7 +1210,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance */
             ClientOptions options = createOptions();
             options.authCallback = authCallback;
-            ably = new PubSubHttpClient(options);
+            ably = HttpClientFactory.create(options);
 
             /* Create token with null clientId */
             TokenParams tokenParams = new TokenParams() {{ clientId = null; }};
@@ -1246,7 +1247,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     params.clientId = "*";
@@ -1257,7 +1258,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance with wildcard clientId */
             ClientOptions options = createOptions();
             options.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.authorize(null, null);
@@ -1306,7 +1307,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* implement callback, using Ably instance with key */
             TokenCallback authCallback = new TokenCallback() {
-                private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     params.clientId = "*";
@@ -1317,7 +1318,7 @@ public class HttpAuthTest extends ParameterizedTest {
             /* create Ably instance with wildcard clientId */
             ClientOptions options = createOptions();
             options.authCallback = authCallback;
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Fetch token */
             TokenDetails tokenDetails = ably.auth.authorize(null, null);
@@ -1369,7 +1370,7 @@ public class HttpAuthTest extends ParameterizedTest {
             String clientId = "test clientId";
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = clientId;
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(null, null);
 
             final Message[] messages = new Message[1];
@@ -1402,7 +1403,7 @@ public class HttpAuthTest extends ParameterizedTest {
             }};
             fillInOptions(options);
             options.tokenDetails = tokenDetails;
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Publish a message */
             Message messagePublishee = new Message(
@@ -1432,7 +1433,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             final String messageClientId = "test clientId";
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{
                 this.clientId = "*";
             }}, null);
@@ -1467,7 +1468,7 @@ public class HttpAuthTest extends ParameterizedTest {
             }};
             fillInOptions(options);
             options.tokenDetails = tokenDetails;
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Publish a message */
             Message messagePublishee = new Message(
@@ -1499,7 +1500,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             /* create Ably instance with basic auth and no clientId */
             ClientOptions options = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* Publish message */
             String messageName = "wildcard";
@@ -1548,7 +1549,7 @@ public class HttpAuthTest extends ParameterizedTest {
             ClientOptions options = createOptions(testVars.keys[0].keyStr);
             options.useTokenAuth = true;
             options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* get a token with these default params */
             ably.auth.authorize(null, null);
@@ -1578,7 +1579,7 @@ public class HttpAuthTest extends ParameterizedTest {
             options.useTokenAuth = true;
             options.clientId = clientId;
             options.defaultTokenParams = new TokenParams() {{ this.clientId = defaultClientId; }};
-            PubSubHttpClient ably = new PubSubHttpClient(options);
+            PubSubHttpClient ably = HttpClientFactory.create(options);
 
             /* get a token with these default params */
             ably.auth.authorize(null, null);
@@ -1600,7 +1601,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.useTokenAuth = true;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* verify that we don't have a token yet. */
             assertTrue("Not expecting a token yet", ably.auth.getTokenDetails() == null);
             /* make a request that relies on the token */
@@ -1634,11 +1635,11 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.port = nanoHTTPD.getListeningPort();
             opts.queryTime = true;
 
-            PubSubHttpClient ably1 = new PubSubHttpClient(opts);
+            PubSubHttpClient ably1 = HttpClientFactory.create(opts);
             @SuppressWarnings("unused")
             Auth.TokenRequest tr1 = ably1.auth.createTokenRequest(null, null);
 
-            PubSubHttpClient ably2 = new PubSubHttpClient(opts);
+            PubSubHttpClient ably2 = HttpClientFactory.create(opts);
             @SuppressWarnings("unused")
             Auth.TokenRequest tr2 = ably2.auth.createTokenRequest(null, null);
 
@@ -1668,7 +1669,7 @@ public class HttpAuthTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = "Test client id";
-            ably = new PubSubHttpClient(opts);
+            ably = HttpClientFactory.create(opts);
             tokenRequest = ably.auth.createTokenRequest(new TokenParams() {{
                 ttl = 10000;
                 capability = "{\"*\": [\"*\"]}";
@@ -1705,7 +1706,7 @@ public class HttpAuthTest extends ParameterizedTest {
             for (final String cap : new String[] {null, ""}) {
                 ClientOptions opts = createOptions(testVars.keys[0].keyStr);
                 opts.clientId = "Test client id";
-                ably = new PubSubHttpClient(opts);
+                ably = HttpClientFactory.create(opts);
                 tokenRequest = ably.auth.createTokenRequest(new TokenParams() {{
                     capability = cap;
                 }}, null);
@@ -1730,7 +1731,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.defaultTokenParams = new TokenParams() {{
                 ttl = 500;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             // Any request will issue a new token with the defaultTokenParams and use it.
 
@@ -1742,7 +1743,7 @@ public class HttpAuthTest extends ParameterizedTest {
             Thread.sleep(1000);
             ClientOptions optsWithOldToken = createOptions();
             optsWithOldToken.tokenDetails = oldToken;
-            PubSubHttpClient ablyWithOldToken = new PubSubHttpClient(optsWithOldToken);
+            PubSubHttpClient ablyWithOldToken = HttpClientFactory.create(optsWithOldToken);
             try {
                 ablyWithOldToken.channels.get("test").history(null);
                 fail("expected old token to be expired already");
@@ -1772,7 +1773,7 @@ public class HttpAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = true;
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1783,7 +1784,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.tokenDetails = tokenDetails;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* sync this library instance to server by creating a token request */
             ably.auth.createTokenRequest(null, new Auth.AuthOptions() {{ key = testKey; queryTime = true; }});
@@ -1820,7 +1821,7 @@ public class HttpAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = true;
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1831,7 +1832,7 @@ public class HttpAuthTest extends ParameterizedTest {
             opts.tokenDetails = tokenDetails;
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* wait for the token to expire */
             try { Thread.sleep(200L); } catch(InterruptedException ie) {}
@@ -1864,7 +1865,7 @@ public class HttpAuthTest extends ParameterizedTest {
             final String testKey = testVars.keys[0].keyStr;
             ClientOptions optsForToken = createOptions(testKey);
             optsForToken.queryTime = false;
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams(){{ ttl = 100L; }}, null);
 
@@ -1882,7 +1883,7 @@ public class HttpAuthTest extends ParameterizedTest {
 
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* wait for the token to expire */
             try { Thread.sleep(200L); } catch(InterruptedException ie) {}

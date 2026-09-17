@@ -1,6 +1,7 @@
 package io.ably.pubsub.test.http;
 
 import fi.iki.elonen.NanoHTTPD;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.types.AblyException;
@@ -62,7 +63,7 @@ public class HttpErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", "Test message"), new Param("href", href(12345))});
@@ -91,7 +92,7 @@ public class HttpErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", "Test message. See " + href(12345))});
@@ -120,7 +121,7 @@ public class HttpErrorTest extends ParameterizedTest {
                     logMessages.add(msg);
                 }
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* make a call that will generate an error */
             ably.stats(new Param[]{new Param("message", "Test message"), new Param("code", "12345")});

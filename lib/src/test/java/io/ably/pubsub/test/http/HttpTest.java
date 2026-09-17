@@ -8,6 +8,7 @@ import io.ably.pubsub.http.HttpConstants;
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpHelpers;
 import io.ably.pubsub.http.SyncHttpScheduler;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.util.EmptyPlatformAgentProvider;
 import io.ably.pubsub.test.util.StatusHandler;
@@ -265,7 +266,7 @@ public class HttpTest {
         ClientOptions options = new ClientOptions("not:a.key");
         options.httpMaxRetryCount = 1;
         options.fallbackRetryTimeout = 100;
-        PubSubHttpClient ably = new PubSubHttpClient(options);
+        PubSubHttpClient ably = HttpClientFactory.create(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -352,7 +353,7 @@ public class HttpTest {
         final String fakeHost = "fake.ably.io";
         ClientOptions options = new ClientOptions("not:a.key");
         options.restHost = fakeHost;
-        PubSubHttpClient ably = new PubSubHttpClient(options);
+        PubSubHttpClient ably = HttpClientFactory.create(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -446,7 +447,7 @@ public class HttpTest {
     public void http_ably_execute_empty_fallback_array() throws AblyException {
         ClientOptions options = new ClientOptions("not:a.key");
         options.fallbackHosts = new String[0];
-        PubSubHttpClient ably = new PubSubHttpClient(options);
+        PubSubHttpClient ably = HttpClientFactory.create(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -522,7 +523,7 @@ public class HttpTest {
         ClientOptions options = new ClientOptions("not.a:key");
         options.fallbackHosts = expectedFallbackHosts;
         int expectedCallCount = options.httpMaxRetryCount + 1;
-        PubSubHttpClient ably = new PubSubHttpClient(options);
+        PubSubHttpClient ably = HttpClientFactory.create(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
 
@@ -1285,7 +1286,7 @@ public class HttpTest {
             if(poolSize > 0) {
                 options.asyncHttpThreadpoolSize = poolSize;
             }
-            final PubSubHttpClient pubSubHttpClient = new PubSubHttpClient(options);
+            final PubSubHttpClient pubSubHttpClient = HttpClientFactory.create(options);
 
             final Object waiter = new Object();
             final long startTime = System.currentTimeMillis();
@@ -1470,7 +1471,7 @@ public class HttpTest {
             @Override public void onRawHttpException(String id, String method, Throwable t) {}
         };
 
-        PubSubHttpClient client = new PubSubHttpClient(opts);
+        PubSubHttpClient client = HttpClientFactory.create(opts);
 
         // req1 (primary→500) + req2 (fallback→200); fallback is now pinned
         client.time();
