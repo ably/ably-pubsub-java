@@ -425,11 +425,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         }
     }
 
-    @Deprecated
-    public void sync() throws AblyException {
-        Log.w(TAG, "sync() method is intended only for internal testing purpose as per RTP19");
-    }
-
     private static void callCompletionListenerError(CompletionListener listener, ErrorInfo err) {
         if(listener != null) {
             try {
@@ -1070,28 +1065,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * Spec: RTL6i
      * @param name the event name
      * @param data the message payload
-     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
-     * <p>
-     * This listener is invoked on a background thread.
-     * @throws AblyException
-     * @deprecated Use {@link #publish(String, Object, Callback)} instead.
-     */
-    @Deprecated
-    @NonBlocking
-    public void publish(String name, Object data, CompletionListener listener) throws AblyException {
-        Log.v(TAG, "publish(String, Object); channel = " + this.name + "; event = " + name);
-        publish(new Message[] {new Message(name, data)}, listener);
-    }
-
-    /**
-     * Publishes a single message to the channel with the given event name and payload.
-     * When publish is called with this client library, it won't attempt to implicitly attach to the channel,
-     * so long as <a href="https://ably.com/docs/realtime/channels#transient-publish">transient publishing</a> is available in the library.
-     * Otherwise, the client will implicitly attach.
-     * <p>
-     * Spec: RTL6i
-     * @param name the event name
-     * @param data the message payload
      * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation,
      *                 receiving a {@link PublishResult} with message serial(s) on success.
      * <p>
@@ -1110,25 +1083,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
      * <p>
      * Spec: RTL6i
      * @param message A {@link Message} object.
-     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
-     * <p>
-     * This listener is invoked on a background thread.
-     * @throws AblyException
-     * @deprecated Use {@link #publish(Message, Callback)} instead.
-     */
-    @Deprecated
-    @NonBlocking
-    public void publish(Message message, CompletionListener listener) throws AblyException {
-        Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
-        publish(new Message[] {message}, listener);
-    }
-
-    /**
-     * Publishes a message to the channel.
-     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
-     * <p>
-     * Spec: RTL6i
-     * @param message A {@link Message} object.
      * @param callback A callback may optionally be passed in to this call to be notified of success or failure of the operation,
      *                 receiving a {@link PublishResult} with message serial(s) on success.
      * <p>
@@ -1139,24 +1093,6 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
     public void publish(Message message, Callback<PublishResult> callback) throws AblyException {
         Log.v(TAG, "publish(Message); channel = " + this.name + "; event = " + message.name);
         publish(new Message[] {message}, callback);
-    }
-
-    /**
-     * Publishes an array of messages to the channel.
-     * When publish is called with this client library, it won't attempt to implicitly attach to the channel.
-     * <p>
-     * Spec: RTL6i
-     * @param messages An array of {@link Message} objects.
-     * @param listener A listener may optionally be passed in to this call to be notified of success or failure of the operation.
-     * <p>
-     * This listener is invoked on a background thread.
-     * @throws AblyException
-     * @deprecated Use {@link #publish(Message[], Callback)} instead.
-     */
-    @Deprecated
-    @NonBlocking
-    public synchronized void publish(Message[] messages, CompletionListener listener) throws AblyException {
-        publish(messages, Listeners.fromCompletionListener(listener));
     }
 
     @NonBlocking

@@ -12,7 +12,6 @@ public class RegistrationToken {
     }
 
     public enum Type {
-        @Deprecated GCM,
         FCM;
 
         public static Type fromOrdinal(int i) {

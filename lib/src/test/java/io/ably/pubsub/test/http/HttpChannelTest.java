@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.Setup;
@@ -23,7 +24,7 @@ public class HttpChannelTest {
     public void channel_object_caching() throws AblyException {
         Setup.TestVars testVars = Setup.getTestVars();
         ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-        PubSubHttpClient pubSubHttpClient = new PubSubHttpClient(opts);
+        PubSubHttpClient pubSubHttpClient = HttpClientFactory.create(opts);
 
         Channel channel1 = pubSubHttpClient.channels.get("channel_1");
         Channel channel2 = pubSubHttpClient.channels.get("channel_2");
