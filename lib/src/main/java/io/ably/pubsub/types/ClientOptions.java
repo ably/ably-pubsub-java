@@ -243,15 +243,6 @@ public class ClientOptions extends AuthOptions {
     public long suspendedRetryTimeout = Defaults.suspendedRetryTimeout;
 
     /**
-     * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
-     * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
-     * <p>
-     * Spec: RSC15b, RSC15a, TO3k6
-     */
-    @Deprecated
-    public boolean fallbackHostsUseDefault;
-
-    /**
      * The maximum time before HTTP requests are retried against the default endpoint.
      * The default is 600 seconds.
      * <p>
@@ -354,7 +345,6 @@ public class ClientOptions extends AuthOptions {
         copied.realtimeRequestTimeout = realtimeRequestTimeout;
         copied.disconnectedRetryTimeout = disconnectedRetryTimeout;
         copied.suspendedRetryTimeout = suspendedRetryTimeout;
-        copied.fallbackHostsUseDefault = fallbackHostsUseDefault;
         copied.fallbackRetryTimeout = fallbackRetryTimeout;
         copied.defaultTokenParams = defaultTokenParams;
         copied.channelRetryTimeout = channelRetryTimeout;

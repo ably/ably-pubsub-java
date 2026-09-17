@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.http.HttpConstants;
 import io.ably.pubsub.http.HttpUtils;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.Helpers.RawHttpRequest;
@@ -53,7 +54,7 @@ public class HttpRequestTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        setupAbly = new PubSubHttpClient(opts);
+        setupAbly = HttpClientFactory.create(opts);
         channelNamePrefix = "persisted:rest_request_" + testParams.name;
         channelName = channelNamePrefix + "_channel";
         channelAltName = channelNamePrefix + "_alt_channel";
@@ -86,7 +87,7 @@ public class HttpRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             Param[] testParams = new Param[] { new Param("testParam", "testValue") };
             Param[] testHeaders = new Param[] { new Param("x-test-header", "testValue") };
@@ -135,7 +136,7 @@ public class HttpRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, channelPath, null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -194,7 +195,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
             Param[] requestHeaders = new Param[] { new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2) };
@@ -239,7 +240,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix) };
             Param[] requestHeaders = new Param[] { new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2) };
@@ -309,7 +310,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
             Param[] requestHeaders = new Param[] { new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2) };
@@ -373,7 +374,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             Param[] params = new Param[] { new Param("prefix", channelNamePrefix), new Param("limit", "1") };
             Param[] headers = new Param[] { new Param(Defaults.ABLY_PROTOCOL_VERSION_HEADER, 2) };
@@ -482,7 +483,7 @@ public class HttpRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* publish a message */
             Message message = new Message("Test event", messageData);
@@ -535,7 +536,7 @@ public class HttpRequestTest extends ParameterizedTest {
             fillInOptions(opts);
             final RawHttpTracker httpListener = new RawHttpTracker();
             opts.httpListener = httpListener;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* publish a message */
             Message message = new Message("Test event", messageData);
@@ -607,7 +608,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             HttpPaginatedResponse errorResponse = ably.request(HttpConstants.Methods.GET, "/non-existent-path", null, null, null);
 
             /* check HttpPaginatedResponse details are present */
@@ -632,7 +633,7 @@ public class HttpRequestTest extends ParameterizedTest {
             final Waiter waiter = new Waiter();
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, "/non-existent-path", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -677,7 +678,7 @@ public class HttpRequestTest extends ParameterizedTest {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
             opts.environment = "non.existent.env";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.request(HttpConstants.Methods.GET, "/", null, null, null);
             fail("request_500: Expected an exception");
@@ -698,7 +699,7 @@ public class HttpRequestTest extends ParameterizedTest {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
             opts.environment = "non.existent.env";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, "/", null, null, null, new AsyncHttpPaginatedResponse.Callback() {
                 @Override
@@ -735,7 +736,7 @@ public class HttpRequestTest extends ParameterizedTest {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
         opts.httpListener = new RawHttpTracker();
-        PubSubHttpClient ably = new PubSubHttpClient(opts);
+        PubSubHttpClient ably = HttpClientFactory.create(opts);
         Message message = new Message("Test event", "Test data (invalid key)");
         message.connectionKey = "invalid";
         HttpUtils.JsonRequestBody requestBody = new HttpUtils.JsonRequestBody(message);

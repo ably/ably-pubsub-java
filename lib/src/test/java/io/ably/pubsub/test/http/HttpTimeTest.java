@@ -6,6 +6,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Helpers.AsyncWaiter;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -21,7 +22,7 @@ public class HttpTimeTest extends ParameterizedTest {
     public void time0() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             long reportedTime = ably.time();
             long actualTime = System.currentTimeMillis();
             assertTrue(Math.abs(actualTime - reportedTime) < 60000);
@@ -38,7 +39,7 @@ public class HttpTimeTest extends ParameterizedTest {
     public void time1() {
         try {
             ClientOptions opts = createOptions("not:a.key");
-            PubSubHttpClient ablyNoAuth = new PubSubHttpClient(opts);
+            PubSubHttpClient ablyNoAuth = HttpClientFactory.create(opts);
             ablyNoAuth.time();
         } catch (AblyException e) {
             e.printStackTrace();
@@ -55,7 +56,7 @@ public class HttpTimeTest extends ParameterizedTest {
             ClientOptions opts = createOptions("not:a.key");
             opts.environment = null;
             opts.restHost = "this.restHost.does.not.exist";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             ably.time();
             fail("time2: Unexpected success getting time");
         } catch (AblyException e) {
@@ -70,7 +71,7 @@ public class HttpTimeTest extends ParameterizedTest {
     public void time_async() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ably = new PubSubHttpClient(opts);
+            final PubSubHttpClient ably = HttpClientFactory.create(opts);
             AsyncWaiter<Long> callback = new AsyncWaiter<Long>();
             ably.timeAsync(callback);
             callback.waitFor();
