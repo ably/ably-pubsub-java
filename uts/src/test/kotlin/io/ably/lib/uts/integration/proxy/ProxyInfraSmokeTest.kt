@@ -2,10 +2,10 @@ package io.ably.lib.uts.integration.proxy
 
 import io.ably.lib.realtime.ChannelState
 import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.rest.AblyRest
 import io.ably.lib.rest.Auth
 import io.ably.lib.uts.infra.awaitChannelState
 import io.ably.lib.uts.infra.awaitState
+import io.ably.lib.uts.infra.integration.AblyJwt
 import io.ably.lib.uts.infra.integration.SandboxApp
 import io.ably.lib.uts.infra.integration.proxy.ProxyManager
 import io.ably.lib.uts.infra.integration.proxy.ProxySession
@@ -13,6 +13,7 @@ import io.ably.lib.uts.infra.integration.proxy.connectThroughProxy
 import io.ably.lib.uts.infra.integration.proxy.wsFrameToClientRule
 import io.ably.lib.uts.infra.pollUntil
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
+import io.ably.lib.uts.infra.unit.utsSide
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
@@ -71,14 +72,20 @@ class ProxyInfraSmokeTest {
         val session = ProxySession.create(rules = emptyList())
         assertTrue(session.proxyPort > 0)
 
-        val tokenSigner = AblyRest(app.defaultKey)
         val authCallbackCount = AtomicInteger(0)
         val client = TestRealtimeClient {
             // Basic key auth is TLS-only, so authenticate through the proxy with a locally-signed
-            // TokenRequest (README §11 teaching point).
+            // token (README §11 teaching point). It is a JWT rather than a native TokenRequest
+            // because only a JWT can carry the x-ably-clientType claim: on token auth realtime
+            // accepts a server-side declaration from that signed claim alone, rejecting the bare
+            // agent entry the server leg's door stamps with 40167.
             authCallback = Auth.TokenCallback { params ->
                 authCallbackCount.incrementAndGet()
-                tokenSigner.auth.createTokenRequest(params, null)
+                AblyJwt.sign(
+                    app.defaultKey,
+                    clientId = params.clientId,
+                    clientType = if (utsSide == "server") "server" else null,
+                )
             }
             connectThroughProxy(session)
             autoConnect = false
@@ -116,7 +123,6 @@ class ProxyInfraSmokeTest {
                 client.close()
             } finally {
                 session.close()
-                runCatching { tokenSigner.close() }
             }
         }
     }
@@ -134,10 +140,14 @@ class ProxyInfraSmokeTest {
             ),
         )
 
-        val tokenSigner = AblyRest(app.defaultKey)
         val client = TestRealtimeClient {
+            // A claim-bearing JWT, for the reason given in the first test.
             authCallback = Auth.TokenCallback { params ->
-                tokenSigner.auth.createTokenRequest(params, null)
+                AblyJwt.sign(
+                    app.defaultKey,
+                    clientId = params.clientId,
+                    clientType = if (utsSide == "server") "server" else null,
+                )
             }
             connectThroughProxy(session)
             autoConnect = false
@@ -164,7 +174,6 @@ class ProxyInfraSmokeTest {
                 client.close()
             } finally {
                 session.close()
-                runCatching { tokenSigner.close() }
             }
         }
     }

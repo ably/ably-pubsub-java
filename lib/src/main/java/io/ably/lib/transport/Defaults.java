@@ -19,7 +19,7 @@ public class Defaults {
      * split, so the identifier alone partitions the fleet: {@code ably-java/*} is legacy-package
      * traffic, {@code ably-pubsub-java/*} is new-package traffic. It names the family rather than
      * any one published artifact; the side a client declares travels as a separate versionless
-     * agent entry (see io.ably.pubsub.internal.Side and the agents registry in ably-common).
+     * agent entry (see {@link io.ably.lib.util.Side} and the agents registry in ably-common).
      */
     public static final String ABLY_AGENT_VERSION   = String.format("%s/%s", "ably-pubsub-java", BuildConfig.VERSION);
 

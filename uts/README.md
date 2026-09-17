@@ -845,8 +845,9 @@ It has **two** `@Test` methods, one per fault-injection style.
 
 ### 11.2 Late imperative injection — `triggerAction`
 The first test creates a **rule-less pass-through** session, authenticates through the proxy (basic key
-auth is TLS-only, so a token is signed locally by an `AblyRest(app.defaultKey)` in the `authCallback`),
-and connects:
+auth is TLS-only, so the `authCallback` signs a token locally with `AblyJwt` — a JWT rather than a
+native TokenRequest so it can carry the `x-ably-clientType` claim the server leg needs, see the
+token-auth note in §13), and connects:
 ```kotlin
 val session = ProxySession.create(rules = emptyList())
 ```
@@ -895,7 +896,7 @@ right tool when the fault must land on a frame the test can't easily await; the 
 
 ### 11.4 Teardown
 Both tests tear down in a nested `finally`: close the client, then always `session.close()` (`DELETE
-/sessions/{id}`) and the token signer.
+/sessions/{id}`).
 
 **What these tests teach about the infra:** `ProxyManager.ensureProxy` + `SandboxApp` setup,
 `connectThroughProxy`, **both** fault-injection styles (declarative `wsFrameToClientRule` at creation
@@ -1023,7 +1024,7 @@ format, with nothing skipped:
 
 - **JWTs** can carry the claim already: tests that authenticate the client under test with a
   token mint one via `AblyJwt` (HS256, JDK crypto), adding `x-ably-clientType=server` on the
-  server leg (see `AuthReauthTest`).
+  server leg (see `AuthReauthTest` and `ProxyInfraSmokeTest`).
 - **Native tokens** cannot carry the claim yet, so a client may not authenticate *itself* with
   one while declaring the server side. `TokenRequestTest` therefore splits its clients across
   the seam, matching how the feature is really used: the **minting** client (the
