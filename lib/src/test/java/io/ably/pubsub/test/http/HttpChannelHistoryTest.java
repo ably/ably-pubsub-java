@@ -14,6 +14,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -35,7 +36,7 @@ public class HttpChannelHistoryTest extends ParameterizedTest {
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.useBinaryProtocol = false;
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }

@@ -68,30 +68,6 @@ public class ChannelOptions {
     }
 
     /**
-     * <b>Deprecated. Use withCipherKey(byte[]) instead.</b><br><br>
-     * Create ChannelOptions from the given cipher key.
-     * @param key Byte array cipher key.
-     * @return Created ChannelOptions.
-     * @throws AblyException If something goes wrong.
-     */
-    @Deprecated
-    public static ChannelOptions fromCipherKey(byte[] key) throws AblyException {
-        return withCipherKey(key);
-    }
-
-    /**
-     * <b>Deprecated. Use withCipherKey(String) instead.</b><br><br>
-     * Create ChannelOptions from the given cipher key.
-     * @param base64Key The cipher key as a base64-encoded String,
-     * @return Created ChannelOptions.
-     * @throws AblyException If something goes wrong.
-     */
-    @Deprecated
-    public static ChannelOptions fromCipherKey(String base64Key) throws AblyException {
-        return fromCipherKey(Base64Coder.decode(base64Key));
-    }
-
-    /**
      * Constructor withCipherKey, that takes a key only.
      * <p>
      * Spec: TB3

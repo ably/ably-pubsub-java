@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth.AuthOptions;
 import io.ably.pubsub.http.Auth.TokenDetails;
@@ -24,7 +25,7 @@ public class HttpCapabilityTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
     }
 
     /**

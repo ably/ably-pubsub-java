@@ -1,5 +1,6 @@
 package io.ably.pubsub.test.http;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth.AuthOptions;
 import io.ably.pubsub.http.Auth.TokenDetails;
@@ -29,7 +30,7 @@ public class HttpTokenTest extends ParameterizedTest {
         capability.addResource("*", "*");
         permitAll = capability.toString();
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }

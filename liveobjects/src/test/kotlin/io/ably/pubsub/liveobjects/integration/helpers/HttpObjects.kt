@@ -2,6 +2,7 @@ package io.ably.pubsub.liveobjects.integration.helpers
 
 import com.google.gson.JsonObject
 import io.ably.pubsub.liveobjects.message.WireObjectData
+import io.ably.pubsub.http.HttpClientFactory
 import io.ably.pubsub.http.PubSubHttpClient
 import io.ably.pubsub.http.HttpUtils
 import io.ably.pubsub.liveobjects.integration.helpers.fixtures.DataFixtures
@@ -12,7 +13,7 @@ import io.ably.pubsub.types.ClientOptions
  */
 internal class HttpObjects(options: ClientOptions) {
 
-  private val pubSubHttpClient: PubSubHttpClient = PubSubHttpClient(options)
+  private val pubSubHttpClient: PubSubHttpClient = HttpClientFactory.create(options)
 
   /**
    * Creates a new map object on the channel with optional initial data.
