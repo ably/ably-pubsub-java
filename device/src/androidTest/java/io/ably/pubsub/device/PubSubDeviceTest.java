@@ -2,12 +2,13 @@ package io.ably.pubsub.device;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import io.ably.lib.realtime.AblyRealtime;
 import io.ably.lib.types.ClientOptions;
-import io.ably.pubsub.internal.Side;
+import io.ably.lib.util.Side;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -45,8 +46,12 @@ public class PubSubDeviceTest {
     }
 
     @Test
-    public void keyString_isAcceptedAndDisambiguatedAsKey() throws Exception {
-        ClientOptions builtOptions = PubSubDevice.clientBuilder(FAKE_KEY).build().options;
+    public void key_isCarriedThroughToTheClient() throws Exception {
+        ClientOptions builtOptions = PubSubDevice.clientBuilder()
+            .key(FAKE_KEY)
+            .autoConnect(false)
+            .build()
+            .options;
         assertEquals(FAKE_KEY, builtOptions.key);
         assertNull(builtOptions.token);
         assertDeviceFlag(builtOptions.agents);
@@ -65,8 +70,9 @@ public class PubSubDeviceTest {
         // The stamp replaces the caller's value: the flag is present and back to versionless.
         assertDeviceFlag(client.options.agents);
 
-        // the caller's own map is untouched
-        assertTrue(options.agents == callerAgents);
+        // the caller's own map is untouched: the stamp goes into a fresh one
+        assertNotSame("the stamp must go into a copy, not the caller's map",
+            callerAgents, client.options.agents);
         assertEquals("not-the-real-form", callerAgents.get(Side.DEVICE_AGENT_IDENTIFIER));
     }
 }

@@ -52,6 +52,7 @@ android {
 
     defaultConfig {
         minSdk = 24
+        testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -77,6 +78,17 @@ android {
          */
         unitTests.isReturnDefaultValues = true
     }
+}
+
+dependencies {
+    /*
+     * The instrumentation test is Java under src/androidTest/java, so AGP compiles it rather
+     * than a Kotlin source set and its dependencies belong on AGP's androidTest configuration.
+     * It needs only JUnit and a runner: unlike :core-android's push tests it mocks nothing, so
+     * the instrumental-android bundle (dexmaker, mockito, retrostreams) would be dead weight.
+     */
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.android.test.runner)
 }
 
 mavenPublishing {

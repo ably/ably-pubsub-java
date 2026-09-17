@@ -42,12 +42,34 @@ public object PubSubDevice {
     public fun clientBuilder(): ClientBuilder = ClientBuilder()
 
     /**
+     * As [clientBuilder], but starting from options the caller has already assembled, rather
+     * than from the builder's own empty set.
+     *
+     * This is for callers holding a [ClientOptions] they did not build here: an SDK layered on
+     * this package that takes options from its own user, or a test harness passing a
+     * [io.ably.lib.debug.DebugOptions] subclass. To supply an API key or token, prefer
+     * [ClientBuilder.key] or [ClientBuilder.token] on the no-arg builder over assembling
+     * options for it.
+     *
+     * The builder's setters still apply on top of what is passed here, and [ClientBuilder.build]
+     * stamps the side-declaring agent entry as usual. The options object is handed to the
+     * client rather than copied, so later changes to it are not isolated from the built client,
+     * and [ClientBuilder.build] replaces its `agents` map with the stamped one; pass
+     * [ClientOptions.copy] if either matters.
+     *
+     * @param options the options to start from.
+     * @return a new builder over [options].
+     */
+    @JvmStatic
+    public fun clientBuilder(options: ClientOptions): ClientBuilder = ClientBuilder(options)
+
+    /**
      * Builds a device client. Obtain one from [PubSubDevice.clientBuilder].
      */
-    public class ClientBuilder internal constructor() {
-
+    public class ClientBuilder internal constructor(
         /** Accumulates the calls made on this builder; handed to the client as-is by [build]. */
-        private val options = ClientOptions()
+        private val options: ClientOptions = ClientOptions(),
+    ) {
 
         /**
          * Sets [Auth.AuthOptions.authCallback].

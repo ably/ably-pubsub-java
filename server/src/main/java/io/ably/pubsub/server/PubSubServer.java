@@ -54,6 +54,31 @@ public final class PubSubServer {
     }
 
     /**
+     * As {@link #httpClientBuilder()}, but starting from options the caller has already
+     * assembled, rather than from the builder's own empty set.
+     * <p>
+     * This is for callers holding a {@link ClientOptions} they did not build here: an SDK
+     * layered on this package that takes options from its own user, or a test harness passing
+     * a {@link io.ably.lib.debug.DebugOptions} subclass. To supply an API key or token, prefer
+     * {@link ClientBuilder#key(String)} or {@link ClientBuilder#token(String)} on the no-arg
+     * builder over assembling options for it.
+     * <p>
+     * The builder's setters still apply on top of what is passed here, and {@link
+     * HttpClientBuilder#build()} stamps the side-declaring agent entry as usual. The
+     * options object is handed to the client rather than copied, so later changes to it are not
+     * isolated from the built client, and {@code build()} replaces its {@code agents} map with
+     * the stamped one; pass {@link ClientOptions#copy()} if either matters. A {@code null} is
+     * carried through to {@code build()}, which surfaces the core constructor's own
+     * "no options provided" error.
+     *
+     * @param options the options to start from.
+     * @return a new builder over {@code options}.
+     */
+    public static HttpClientBuilder httpClientBuilder(ClientOptions options) {
+        return new HttpClientBuilder(options);
+    }
+
+    /**
      * Creates a builder for a realtime client, which holds a persistent connection to Ably and can
      * subscribe to messages and presence as they happen.
      * <p>
@@ -67,6 +92,31 @@ public final class PubSubServer {
     }
 
     /**
+     * As {@link #realtimeClientBuilder()}, but starting from options the caller has already
+     * assembled, rather than from the builder's own empty set.
+     * <p>
+     * This is for callers holding a {@link ClientOptions} they did not build here: an SDK
+     * layered on this package that takes options from its own user, or a test harness passing
+     * a {@link io.ably.lib.debug.DebugOptions} subclass. To supply an API key or token, prefer
+     * {@link ClientBuilder#key(String)} or {@link ClientBuilder#token(String)} on the no-arg
+     * builder over assembling options for it.
+     * <p>
+     * The builder's setters still apply on top of what is passed here, and {@link
+     * RealtimeClientBuilder#build()} stamps the side-declaring agent entry as usual. The
+     * options object is handed to the client rather than copied, so later changes to it are not
+     * isolated from the built client, and {@code build()} replaces its {@code agents} map with
+     * the stamped one; pass {@link ClientOptions#copy()} if either matters. A {@code null} is
+     * carried through to {@code build()}, which surfaces the core constructor's own
+     * "no options provided" error.
+     *
+     * @param options the options to start from.
+     * @return a new builder over {@code options}.
+     */
+    public static RealtimeClientBuilder realtimeClientBuilder(ClientOptions options) {
+        return new RealtimeClientBuilder(options);
+    }
+
+    /**
      * The options common to both server-side clients. One method per {@link ClientOptions}
      * property that can affect a client of either kind; {@link RealtimeClientBuilder} adds the
      * properties that only mean something for a persistent connection.
@@ -76,9 +126,14 @@ public final class PubSubServer {
     public abstract static class ClientBuilder<T extends ClientBuilder<T>> {
 
         /** Accumulates the calls made on this builder; handed to the client as-is by build(). */
-        final ClientOptions options = new ClientOptions();
+        final ClientOptions options;
 
         ClientBuilder() {
+            this(new ClientOptions());
+        }
+
+        ClientBuilder(ClientOptions options) {
+            this.options = options;
         }
 
         @SuppressWarnings("unchecked")
@@ -486,6 +541,10 @@ public final class PubSubServer {
         HttpClientBuilder() {
         }
 
+        HttpClientBuilder(ClientOptions options) {
+            super(options);
+        }
+
         /**
          * Builds the client.
          *
@@ -505,6 +564,10 @@ public final class PubSubServer {
     public static final class RealtimeClientBuilder extends ClientBuilder<RealtimeClientBuilder> {
 
         RealtimeClientBuilder() {
+        }
+
+        RealtimeClientBuilder(ClientOptions options) {
+            super(options);
         }
 
         /**
