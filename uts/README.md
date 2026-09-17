@@ -212,7 +212,7 @@ dependencies {
     // consumed elsewhere via testImplementation(project(":uts")). `api` for types that appear in
     // infra signatures; `implementation` for internals. Invariant I1: :uts never depends on
     // :liveobjects.
-    api(project(":java"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
+    api(project(":core"))                    // the SDK + its types (DebugOptions, ProtocolMessage, …)
     api(project(":network-client-core"))     // HttpEngine / WebSocketEngine SPIs the mocks implement
     implementation(libs.ktor.client.core)    // proxy infra uses ktor internally — must NOT leak to consumers
     implementation(libs.ktor.client.cio)
@@ -251,17 +251,17 @@ Takeaways:
 - `:uts` is a `java-library` + `kotlin.jvm` module. `java-test-fixtures` is **gone** — the infra is
   plain `src/main`, so consumers use `testImplementation(project(":uts"))` (no `testFixtures(...)`
   wrapper). `java-library` is what now supplies the `api` configuration.
-- The module compiles to **Java 8** bytecode (source/target + `jvmTarget = JVM_1_8`), so `:java`
+- The module compiles to **Java 8** bytecode (source/target + `jvmTarget = JVM_1_8`), so `:core`
   (which requests Java-8 variants) can consume it. **mockk is not a dependency** — the infra imports
   no test library at all.
-- It depends on `:java` (the SDK under test) and `:network-client-core` (the pluggable transport SPIs
+- It depends on `:core` (the SDK under test) and `:network-client-core` (the pluggable transport SPIs
   the mocks implement), both via `api` because they appear in infra signatures.
 - Tests are **Kotlin + JUnit 5**, using **kotlinx.coroutines** for async control and **Ktor** for the
   sandbox REST API and proxy control API. `junit-jupiter-params` (version from the JUnit BOM) adds
   **`@ParameterizedTest`** for the protocol-variant integration tests (§10.3).
 - `runUtsUnitTests` / `runUtsIntegrationTests` are package-filtered `Test` tasks (§13). The
   `--add-opens java.base/java.time` and `java.base/java.lang` flags grant the test runtime reflective
-  access into those JDK packages, mirroring `java/build.gradle.kts`.
+  access into those JDK packages, mirroring `core/build.gradle.kts`.
 - A system property carries an optional path to a **locally built** proxy binary (so you can test
   against an unreleased proxy).
 
@@ -994,6 +994,42 @@ RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTes
 (all offline unit tiers); `integration-test.yml`'s `check-uts` job runs
 `:java:runUtsIntegrationTests :uts:runUtsIntegrationTests`, and its `check-liveobjects` job runs
 `runLiveObjectsIntegrationTests`.
+
+### Per-side package modes
+
+The suite constructs its clients through a single seam (`TestRealtimeClient` / `TestRestClient`
+in `infra/unit/ClientFactories.kt`), selected by the `uts.side` system property (or the
+`UTS_SIDE` environment variable):
+
+```bash
+./gradlew :uts:runUtsUnitTests                    # core (default): the core constructors
+./gradlew :uts:runUtsUnitTests -Duts.side=server  # io.ably.pubsub:server — the PubSubServer builders
+```
+
+The server builders only stamp the side-declaring agent entry (a versionless flag, per
+ably/ably-common#361) and pass everything else through — `DebugOptions` included, whose `copy()`
+override keeps the mock hooks — so every mode must pass identically. `SideModesTest` asserts each
+mode's stamp so a broken seam cannot silently degrade the server leg into a duplicate core run.
+CI runs both modes (`check.yml` and `integration-test.yml`).
+
+Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is an Android artifact,
+so its door cannot run on the JVM this suite uses. Its stamping contract is covered by the
+instrumentation tests in the `device` module (`emulate.yml`).
+
+**Token auth on the server leg.** Realtime rejects a token-authenticated connection that
+declares the server side through the agent entry alone (error 40167: on token auth the side
+must come from a signed `x-ably-clientType` token claim). The suite handles this per token
+format, with nothing skipped:
+
+- **JWTs** can carry the claim already: tests that authenticate the client under test with a
+  token mint one via `AblyJwt` (HS256, JDK crypto), adding `x-ably-clientType=server` on the
+  server leg (see `AuthReauthTest`).
+- **Native tokens** cannot carry the claim yet, so a client may not authenticate *itself* with
+  one while declaring the server side. `TokenRequestTest` therefore splits its clients across
+  the seam, matching how the feature is really used: the **minting** client (the
+  `createTokenRequest` surface under test) goes through the door on every leg, and the
+  **consuming** client — modelling the device the token was minted for — is always a plain
+  core client.
 
 Notes:
 - `ProxyManager` **advises** running proxy suites single-fork (`maxParallelForks = 1`) because they

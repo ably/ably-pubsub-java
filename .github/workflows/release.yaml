@@ -46,6 +46,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
+      # Fails before anything is uploaded if the artifact set, group or lockstep
+      # version drifts (core, core-android, device and server release
+      # together on the same version; partial release must be impossible).
+      - name: Release pre-flight
+        run: ./gradlew verifyReleaseArtifacts
+
       - name: Publish and release to Maven Central
         run: ./gradlew publishAndReleaseToMavenCentral
         env:

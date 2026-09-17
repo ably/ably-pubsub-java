@@ -1,10 +1,11 @@
 package io.ably.lib.uts.integration.standard.realtime
 
+import io.ably.lib.realtime.AblyRealtime
 import io.ably.lib.realtime.ConnectionState
 import io.ably.lib.rest.Auth
 import io.ably.lib.uts.infra.awaitState
 import io.ably.lib.uts.infra.integration.SandboxApp
-import io.ably.lib.uts.infra.unit.TestRealtimeClient
+import io.ably.lib.uts.infra.unit.ClientOptionsBuilder
 import io.ably.lib.uts.infra.unit.TestRestClient
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -29,6 +30,14 @@ import kotlin.time.Duration.Companion.seconds
  * server. A REST client signs the TokenRequest; a separate realtime client exchanges it (through
  * its `authCallback`) for a token and connects, proving the server accepted it.
  *
+ * The two clients deliberately sit on different sides of the seam. The **minting** client — the
+ * RSA9 surface under test — goes through [TestRestClient], so on the server UTS leg it exercises
+ * `createTokenRequest` through the server door, the shape a real server has: mint native tokens
+ * for others. The **consuming** client models the device those tokens are minted for, so it is
+ * always a plain core client: a client may not authenticate *itself* with a native token while
+ * declaring the server side (realtime rejects that with 40167 — on token auth the side must come
+ * from the signed x-ably-clientType claim, which the native token format cannot carry).
+ *
  * Spec points: RSA9, RSA9a, RSA9g. Source spec: `realtime/integration/auth/token_request_test.md`.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -46,6 +55,10 @@ class TokenRequestTest {
         if (::app.isInitialized) app.delete()
     }
 
+    /** The token-consuming client — a plain core client on every leg; see the class doc. */
+    private fun tokenConsumingClient(block: ClientOptionsBuilder.() -> Unit): AblyRealtime =
+        AblyRealtime(ClientOptionsBuilder().apply(block))
+
     /**
      * @UTS realtime/integration/RSA9a/token-request-server-accepted-0
      * @UTS realtime/integration/RSA9g/token-request-server-accepted-0
@@ -59,7 +72,7 @@ class TokenRequestTest {
         }
 
         // Client B connects using a TokenRequest produced by client A.
-        val client = TestRealtimeClient {
+        val client = tokenConsumingClient {
             authCallback = Auth.TokenCallback { params -> creator.auth.createTokenRequest(params, null) }
             realtimeHost = SandboxApp.sandboxHost
             restHost = SandboxApp.sandboxHost
@@ -94,7 +107,7 @@ class TokenRequestTest {
 
         // The TokenRequest is signed with the specific clientId, producing a token that
         // authenticates the client with that identity.
-        val client = TestRealtimeClient {
+        val client = tokenConsumingClient {
             authCallback = Auth.TokenCallback { params ->
                 params.clientId = testClientId
                 creator.auth.createTokenRequest(params, null)

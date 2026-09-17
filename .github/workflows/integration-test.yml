@@ -27,13 +27,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :java:testRestSuite -PhttpURLConnection
+      - run: ./gradlew :core:testRestSuite -PhttpURLConnection
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: java-build-reports-rest
-          path: java/build/reports/
+          name: core-build-reports-rest
+          path: core/build/reports/
 
   check-realtime-httpurlconnection:
     runs-on: ubuntu-latest
@@ -54,13 +54,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :java:testRealtimeSuite -PhttpURLConnection
+      - run: ./gradlew :core:testRealtimeSuite -PhttpURLConnection
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
-          name: java-build-reports-realtime
-          path: java/build/reports/
+          name: core-build-reports-realtime
+          path: core/build/reports/
   check-rest-okhttp:
     runs-on: ubuntu-latest
     permissions:
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :java:testRestSuite
+      - run: ./gradlew :core:testRestSuite
 
   check-realtime-okhttp:
     runs-on: ubuntu-latest
@@ -101,7 +101,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :java:testRealtimeSuite
+      - run: ./gradlew :core:testRealtimeSuite
 
   check-liveobjects:
     runs-on: ubuntu-latest
@@ -143,4 +143,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :java:runUtsIntegrationTests :uts:runUtsIntegrationTests
+      - run: ./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests
+
+      # A second leg through the server door's builders — see the uts.side handling in
+      # uts/.../ClientFactories.kt and the matching leg in check.yml.
+      - run: ./gradlew :uts:runUtsIntegrationTests -Duts.side=server

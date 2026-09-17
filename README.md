@@ -15,6 +15,23 @@ Find out more:
 
 ---
 
+> [!NOTE]
+> **This branch carries the in-development 2.0 device/server package split.** The SDK is being
+> restructured into new artifacts that declare which side of the network they run on, so that
+> traffic classifies correctly on MAU-priced accounts:
+>
+> | Artifact | For | Entry point |
+> |----------|-----|-------------|
+> | `io.ably.pubsub:device` (aar) | Devices: Android apps and other end-user runtimes | `PubSubDevice.clientBuilder(...)` |
+> | `io.ably.pubsub:server` (jar) | Servers and other trusted backend environments | `PubSubServer.httpClientBuilder(...)` / `PubSubServer.realtimeClientBuilder(...)` |
+> | `io.ably.pubsub:core`, `io.ably.pubsub:core-android` | Internal implementation artifacts — do not depend on these directly | — |
+>
+> Nothing from this branch is published yet. The `io.ably:ably-java` and `io.ably:ably-android`
+> 1.x artifacts continue to work and will receive security and critical fixes from a maintenance
+> branch for one year after the 2.0 release. The installation instructions below still describe 1.x.
+
+---
+
 ## Getting started
 
 Everything you need to get started with Ably:
