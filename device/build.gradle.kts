@@ -27,7 +27,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             /*
-             * The two platform artifacts publish the same io.ably.lib.* types, so common code
+             * The two platform artifacts publish the same io.ably.pubsub.* types, so common code
              * compiles against either one. ably-java is the arbitrary pick; each target below
              * brings the real one.
              */
