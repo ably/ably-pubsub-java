@@ -17,11 +17,11 @@ package io.ably.lib.uts.unit
  */
 
 import io.ably.lib.rest.AblyBase
+import io.ably.lib.util.Side
 import io.ably.lib.uts.infra.unit.MockHttpClient
 import io.ably.lib.uts.infra.unit.TestRealtimeClient
 import io.ably.lib.uts.infra.unit.TestRestClient
 import io.ably.lib.uts.infra.unit.utsSide
-import io.ably.pubsub.internal.Side
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
