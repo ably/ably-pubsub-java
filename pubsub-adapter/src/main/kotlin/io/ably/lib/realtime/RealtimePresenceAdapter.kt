@@ -44,20 +44,23 @@ internal class RealtimePresenceAdapter(private val javaPresence: Presence) : Rea
     }
   }
 
-  override fun enter(data: Any?, listener: CompletionListener?) = javaPresence.enter(data, listener)
+  override fun enter(data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.enter(data, extras, listener)
 
-  override fun update(data: Any?, listener: CompletionListener?) = javaPresence.update(data, listener)
+  override fun update(data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.update(data, extras, listener)
 
-  override fun leave(data: Any?, listener: CompletionListener?) = javaPresence.leave(data, listener)
+  override fun leave(data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.leave(data, extras, listener)
 
-  override fun enterClient(clientId: String, data: Any?, listener: CompletionListener?) =
-    javaPresence.enterClient(clientId, data, listener)
+  override fun enterClient(clientId: String, data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.enterClient(clientId, data, extras, listener)
 
-  override fun updateClient(clientId: String, data: Any?, listener: CompletionListener?) =
-    javaPresence.updateClient(clientId, data, listener)
+  override fun updateClient(clientId: String, data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.updateClient(clientId, data, extras, listener)
 
-  override fun leaveClient(clientId: String?, data: Any?, listener: CompletionListener?) =
-    javaPresence.leaveClient(clientId, data, listener)
+  override fun leaveClient(clientId: String?, data: Any?, extras: MessageExtras?, listener: CompletionListener?) =
+    javaPresence.leaveClient(clientId, data, extras, listener)
 
   override fun history(start: Long?, end: Long?, limit: Int, orderBy: OrderBy): PaginatedResult<PresenceMessage> =
     javaPresence.history(buildHistoryParams(start, end, limit, orderBy).toTypedArray())
