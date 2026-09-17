@@ -18,14 +18,14 @@ import androidx.compose.ui.unit.sp
 import com.ably.example.getRealtimeChannel
 import com.ably.example.observeMap
 import com.ably.example.observeRootObject
-import io.ably.lib.liveobjects.value.LiveMapValue
-import io.ably.lib.realtime.AblyRealtime
+import io.ably.pubsub.liveobjects.value.LiveMapValue
+import io.ably.pubsub.realtime.RealtimeClient
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUuidApi::class)
 @Composable
-fun TaskManagementScreen(realtimeClient: AblyRealtime) {
+fun TaskManagementScreen(realtimeClient: RealtimeClient) {
   var taskText by remember { mutableStateOf("") }
   var editingTaskId by remember { mutableStateOf<String?>(null) }
   var editingText by remember { mutableStateOf("") }

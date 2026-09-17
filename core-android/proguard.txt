@@ -1,31 +1,31 @@
--keep public class io.ably.lib.transport.WebSocketTransport$Factory {*;}
--keep class io.ably.lib.types.** {*;}
+-keep public class io.ably.pubsub.transport.WebSocketTransport$Factory {*;}
+-keep class io.ably.pubsub.types.** {*;}
 
 # LiveObjects implementations are resolved at runtime via Class.forName(...) +
 # getDeclaredConstructor(...).newInstance(...) against hard-coded class-name strings
 # (see LiveObjectsPlugin.Factory, ObjectSerializer.Holder, LiveCounter#create and
 # LiveMap#create). R8 must not rename or strip these classes or their reflectively
 # invoked constructors.
--keep class io.ably.lib.liveobjects.DefaultLiveObjectsPlugin { <init>(...); }
--keep class io.ably.lib.liveobjects.serialization.DefaultObjectsSerializer { <init>(...); }
--keep class io.ably.lib.liveobjects.value.livecounter.DefaultLiveCounter { <init>(...); }
--keep class io.ably.lib.liveobjects.value.livemap.DefaultLiveMap { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.DefaultLiveObjectsPlugin { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.serialization.DefaultObjectsSerializer { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.value.livecounter.DefaultLiveCounter { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.value.livemap.DefaultLiveMap { <init>(...); }
 
 # ObjectJsonSerializer and WireObjectDataJsonSerializer are instantiated reflectively
 # by Gson via @JsonAdapter annotations (on ProtocolMessage and WireObjectData
 # respectively); keep their no-arg constructors.
--keep class io.ably.lib.liveobjects.serialization.ObjectJsonSerializer { <init>(...); }
--keep class io.ably.lib.liveobjects.serialization.WireObjectDataJsonSerializer { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.serialization.ObjectJsonSerializer { <init>(...); }
+-keep class io.ably.pubsub.liveobjects.serialization.WireObjectDataJsonSerializer { <init>(...); }
 
 # The Wire* object model is (de)serialized to/from JSON by Gson via field-name
 # reflection (DefaultObjectsSerializer -> JsonSerialization.gson.fromJson/toJsonTree).
 # R8 must not rename or strip these fields or JSON transport silently breaks. Mirrors
-# the io.ably.lib.types.** rule above. (The MessagePack path uses explicit string keys
+# the io.ably.pubsub.types.** rule above. (The MessagePack path uses explicit string keys
 # and is unaffected.)
--keep class io.ably.lib.liveobjects.message.** { *; }
+-keep class io.ably.pubsub.liveobjects.message.** { *; }
 
 -keep class org.msgpack.core.** {*;}
--keepclasseswithmembers class io.ably.lib.rest.Auth** {*;}
+-keepclasseswithmembers class io.ably.pubsub.http.Auth** {*;}
 -keep class com.google.gson.** {*;}
 -dontwarn org.msgpack.core.buffer.**
 -dontwarn org.slf4j.**

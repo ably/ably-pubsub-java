@@ -1,12 +1,11 @@
 package com.ably.pubsub
 
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.realtime.RealtimeClient
-import io.ably.lib.realtime.RealtimeClientAdapter
-import io.ably.lib.realtime.channelOptions
-import io.ably.lib.types.ChannelMode
-import io.ably.lib.types.ChannelOptions
-import io.ably.lib.types.ClientOptions
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientAdapter
+import io.ably.pubsub.realtime.channelOptions
+import io.ably.pubsub.types.ChannelMode
+import io.ably.pubsub.types.ChannelOptions
+import io.ably.pubsub.types.ClientOptions
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +16,7 @@ class SdkWrapperAgentChannelParamTest {
 
   @Test
   fun `should add agent information to Realtime channels params`() = runTest {
-    val javaRealtimeClient = createAblyRealtime()
+    val javaRealtimeClient = createRealtimeClient()
     val realtimeClient = RealtimeClientAdapter(javaRealtimeClient)
     val wrapperSdkClient =
       realtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
@@ -40,7 +39,7 @@ class SdkWrapperAgentChannelParamTest {
 
   @Test
   fun `should add agent information to Realtime channels params when channel created with custom options`() = runTest {
-    val javaRealtimeClient = createAblyRealtime()
+    val javaRealtimeClient = createRealtimeClient()
     val realtimeClient = RealtimeClient(javaRealtimeClient)
     val wrapperSdkClient =
       realtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
@@ -81,9 +80,9 @@ class SdkWrapperAgentChannelParamTest {
   }
 }
 
-private fun createAblyRealtime(): AblyRealtime {
+private fun createRealtimeClient(): RealtimeClient {
   val options = ClientOptions("xxxxx:yyyyyyy").apply {
     autoConnect = false
   }
-  return AblyRealtime(options)
+  return RealtimeClient(options)
 }

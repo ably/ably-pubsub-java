@@ -6,9 +6,9 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.util.Side;
+import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.types.ClientOptions;
+import io.ably.pubsub.util.Side;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class PubSubDeviceTest {
 
     @Test
     public void client_stampsDeviceAgent() throws Exception {
-        AblyRealtime client = PubSubDevice.clientBuilder(offlineOptions(FAKE_KEY)).build();
+        RealtimeClient client = PubSubDevice.clientBuilder(offlineOptions(FAKE_KEY)).build();
         assertDeviceFlag(client.options.agents);
     }
 
@@ -65,7 +65,7 @@ public class PubSubDeviceTest {
         callerAgents.put(Side.DEVICE_AGENT_IDENTIFIER, "not-the-real-form");
         options.agents = callerAgents;
 
-        AblyRealtime client = PubSubDevice.clientBuilder(options).build();
+        RealtimeClient client = PubSubDevice.clientBuilder(options).build();
         assertEquals("1.2.3", client.options.agents.get("some-sdk"));
         // The stamp replaces the caller's value: the flag is present and back to versionless.
         assertDeviceFlag(client.options.agents);

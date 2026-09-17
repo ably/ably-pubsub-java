@@ -1,8 +1,8 @@
 package com.ably.pubsub
 
 import com.ably.annotations.InternalAPI
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.realtime.Connection
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.Connection
 
 /**
  * A client that extends the functionality of the {@link Client} and provides additional realtime-specific features.
@@ -28,5 +28,5 @@ public interface RealtimeClient : Client {
    * This property will be removed once public API for new version of ably-java is stable
    */
   @InternalAPI
-  public val javaClient: AblyRealtime
+  public val javaClient: RealtimeClient
 }

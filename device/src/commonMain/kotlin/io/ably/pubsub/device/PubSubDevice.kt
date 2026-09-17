@@ -1,19 +1,19 @@
 package io.ably.pubsub.device
 
-import io.ably.lib.push.Storage
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.rest.Auth
-import io.ably.lib.types.ClientOptions
-import io.ably.lib.types.Param
-import io.ably.lib.types.ProxyOptions
-import io.ably.lib.util.Log
-import io.ably.lib.util.Side
+import io.ably.pubsub.push.Storage
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.http.Auth
+import io.ably.pubsub.types.ClientOptions
+import io.ably.pubsub.types.Param
+import io.ably.pubsub.types.ProxyOptions
+import io.ably.pubsub.util.Log
+import io.ably.pubsub.util.Side
 
 /**
  * Entry point for the Ably Pub/Sub SDK for devices: applications running on end-user devices, whose
  * connections are counted on accounts with monthly-active-user billing.
  *
- * Clients built here are the same [AblyRealtime] objects the core SDK has always returned, and
+ * Clients built here are the same [RealtimeClient] objects the core SDK has always returned, and
  * behave identically. What the artifact adds is the choice itself: the dependency you declare and
  * the factory you call state which side of the connection your code runs on, rather than leaving it
  * to be inferred.
@@ -47,7 +47,7 @@ public object PubSubDevice {
      *
      * This is for callers holding a [ClientOptions] they did not build here: an SDK layered on
      * this package that takes options from its own user, or a test harness passing a
-     * [io.ably.lib.debug.DebugOptions] subclass. To supply an API key or token, prefer
+     * [io.ably.pubsub.debug.DebugOptions] subclass. To supply an API key or token, prefer
      * [ClientBuilder.key] or [ClientBuilder.token] on the no-arg builder over assembling
      * options for it.
      *
@@ -436,11 +436,11 @@ public object PubSubDevice {
         /**
          * Builds the client, which connects immediately unless [autoConnect] was set to false.
          *
-         * @return an [AblyRealtime].
-         * @throws io.ably.lib.types.AblyException if the options are invalid, for example if no
+         * @return an [RealtimeClient].
+         * @throws io.ably.pubsub.types.AblyException if the options are invalid, for example if no
          *         authentication parameters were supplied.
          */
         @Suppress("DEPRECATION") // this factory is the replacement for that constructor
-        public fun build(): AblyRealtime = AblyRealtime(Side.injectSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER))
+        public fun build(): RealtimeClient = RealtimeClient(Side.injectSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER))
     }
 }

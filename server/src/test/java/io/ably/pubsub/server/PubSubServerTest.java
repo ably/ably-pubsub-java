@@ -1,10 +1,10 @@
 package io.ably.pubsub.server;
 
 import com.sun.net.httpserver.HttpServer;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.util.Side;
+import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.http.PubSubHttpClient;
+import io.ably.pubsub.types.AblyException;
+import io.ably.pubsub.util.Side;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -48,13 +48,13 @@ public class PubSubServerTest {
 
     @Test
     public void httpClient_stampsServerAgent() throws AblyException {
-        AblyRest client = PubSubServer.httpClientBuilder().key(FAKE_KEY).build();
+        PubSubHttpClient client = PubSubServer.httpClientBuilder().key(FAKE_KEY).build();
         assertServerFlag(client.options.agents);
     }
 
     @Test
     public void realtimeClient_stampsServerAgent() throws AblyException {
-        AblyRealtime client = PubSubServer
+        RealtimeClient client = PubSubServer
             .realtimeClientBuilder()
             .key(FAKE_KEY)
             .autoConnect(false)
@@ -64,7 +64,7 @@ public class PubSubServerTest {
 
     @Test
     public void key_isCarriedAsKeyAlone() throws AblyException {
-        AblyRest client = PubSubServer.httpClientBuilder().key(FAKE_KEY).build();
+        PubSubHttpClient client = PubSubServer.httpClientBuilder().key(FAKE_KEY).build();
         assertEquals(FAKE_KEY, client.options.key);
         assertNull(client.options.token);
         assertServerFlag(client.options.agents);
@@ -72,7 +72,7 @@ public class PubSubServerTest {
 
     @Test
     public void token_isCarriedAsTokenAlone() throws AblyException {
-        AblyRest client = PubSubServer.httpClientBuilder().token(FAKE_TOKEN).build();
+        PubSubHttpClient client = PubSubServer.httpClientBuilder().token(FAKE_TOKEN).build();
         assertEquals(FAKE_TOKEN, client.options.token);
         assertNull(client.options.key);
         assertServerFlag(client.options.agents);
@@ -82,7 +82,7 @@ public class PubSubServerTest {
     public void callerAgentEntries_arePreserved() throws AblyException {
         Map<String, String> agents = new HashMap<>();
         agents.put("some-sdk", "1.2.3");
-        AblyRest client = PubSubServer
+        PubSubHttpClient client = PubSubServer
             .httpClientBuilder()
             .key(FAKE_KEY)
             .agents(agents)
@@ -95,7 +95,7 @@ public class PubSubServerTest {
     public void callerCannotOverrideTheSideEntry() throws AblyException {
         Map<String, String> agents = new HashMap<>();
         agents.put(Side.SERVER_AGENT_IDENTIFIER, "not-the-real-form");
-        AblyRest client = PubSubServer
+        PubSubHttpClient client = PubSubServer
             .httpClientBuilder()
             .key(FAKE_KEY)
             .agents(agents)
@@ -108,7 +108,7 @@ public class PubSubServerTest {
     public void callersAgentsMap_isNotMutated() throws AblyException {
         Map<String, String> callerAgents = new HashMap<>();
         callerAgents.put("some-sdk", "1.2.3");
-        AblyRest client = PubSubServer
+        PubSubHttpClient client = PubSubServer
             .httpClientBuilder()
             .key(FAKE_KEY)
             .agents(callerAgents)
@@ -148,7 +148,7 @@ public class PubSubServerTest {
         });
         httpServer.start();
         try {
-            AblyRest client = PubSubServer
+            PubSubHttpClient client = PubSubServer
                 .httpClientBuilder()
                 .key(FAKE_KEY)
                 .tls(false)
