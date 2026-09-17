@@ -37,7 +37,7 @@ dependencies {
 
 buildConfig {
     useJavaOutput()
-    packageName = "io.ably.lib"
+    packageName = "io.ably.pubsub"
     buildConfigField("String", "LIBRARY_NAME", "\"java\"")
     buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
@@ -63,7 +63,7 @@ kotlin {
 }
 
 tasks.checkstyleMain.configure {
-    exclude("io/ably/lib/BuildConfig.java")
+    exclude("io/ably/pubsub/BuildConfig.java")
 }
 
 tasks.register<Test>("testRealtimeSuite") {
@@ -85,9 +85,9 @@ tasks.register<Test>("testRealtimeSuite") {
     }
 }
 
-tasks.register<Test>("testRestSuite") {
+tasks.register<Test>("testHttpSuite") {
     filter {
-        includeTestsMatching("*RestSuite")
+        includeTestsMatching("*HttpSuite")
     }
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
@@ -109,13 +109,13 @@ tasks.register<Test>("testRestSuite") {
 /*
 Test task to run pure unit tests, where pure means that they only run
 locally and do not need to communicate with Ably servers.
-This is achieved by excluding everything in the io.ably.lib.test package,
+This is achieved by excluding everything in the io.ably.pubsub.test package,
 as it only contains the REST and Realtime suites.
 */
 tasks.register<Test>("runUnitTests") {
     filter {
-        excludeTestsMatching("io.ably.lib.test.*")
-        excludeTestsMatching("io.ably.lib.uts.*")   // UTS Jupiter suites run via runUts* tasks only
+        excludeTestsMatching("io.ably.pubsub.test.*")
+        excludeTestsMatching("io.ably.pubsub.uts.*")   // UTS Jupiter suites run via runUts* tasks only
     }
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
@@ -126,7 +126,7 @@ tasks.register<Test>("runUnitTests") {
 tasks.register<Test>("runUtsUnitTests") {
     useJUnitPlatform()
     filter {
-        includeTestsMatching("io.ably.lib.uts.unit.*")
+        includeTestsMatching("io.ably.pubsub.uts.unit.*")
     }
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
@@ -137,7 +137,7 @@ tasks.register<Test>("runUtsUnitTests") {
 tasks.register<Test>("runUtsIntegrationTests") {
     useJUnitPlatform()
     filter {
-        includeTestsMatching("io.ably.lib.uts.integration.*")
+        includeTestsMatching("io.ably.pubsub.uts.integration.*")
     }
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")

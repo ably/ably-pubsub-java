@@ -27,7 +27,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :core:testRestSuite -PhttpURLConnection
+      - run: ./gradlew :core:testHttpSuite -PhttpURLConnection
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@d9c87d481d55275bb5441eef3fe0e46805f9ef70 # v3
 
-      - run: ./gradlew :core:testRestSuite
+      - run: ./gradlew :core:testHttpSuite
 
   check-realtime-okhttp:
     runs-on: ubuntu-latest
