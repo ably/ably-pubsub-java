@@ -302,24 +302,6 @@ public class Auth {
          * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
          * @return An Ably authentication token.
          */
-        @Deprecated
-        public static TokenDetails fromJSON(JsonObject json) {
-            return Serialisation.gson.fromJson(json, TokenDetails.class);
-        }
-
-        /**
-         * A static factory method to create a TokenDetails object from a deserialized
-         * TokenDetails-like object or a JSON stringified TokenDetails object.
-         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
-         * For example, in Ruby ttl in the TokenDetails object is exposed in seconds as that is idiomatic for the language,
-         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
-         * By using the fromJson() method when constructing a TokenDetails object,
-         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
-         * <p>
-         * Spec: TD7
-         * @param json A deserialized TokenDetails-like object or a JSON stringified TokenDetails object.
-         * @return An Ably authentication token.
-         */
         public static TokenDetails fromJson(String json) {
             return Serialisation.gson.fromJson(json, TokenDetails.class);
         }
@@ -526,25 +508,6 @@ public class Auth {
          * Spec: TE6
          * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
          * @return An Ably token request object.
-         * @deprecated use fromJsonElement(JsonObject json) instead
-         */
-        @Deprecated
-        public static TokenRequest fromJSON(JsonObject json) {
-            return Serialisation.gson.fromJson(json, TokenRequest.class);
-        }
-
-        /**
-         * A static factory method to create a TokenRequest object from a deserialized TokenRequest-like object
-         * or a JSON stringified TokenRequest object.
-         * This method is provided to minimize bugs as a result of differing types by platform for fields such as timestamp or ttl.
-         * For example, in Ruby ttl in the TokenRequest object is exposed in seconds as that is idiomatic for the language,
-         * yet when serialized to JSON using to_json it is automatically converted to the Ably standard which is milliseconds.
-         * By using the fromJson() method when constructing a TokenRequest object,
-         * Ably ensures that all fields are consistently serialized and deserialized across platforms.
-         * <p>
-         * Spec: TE6
-         * @param json A deserialized TokenRequest-like object or a JSON stringified TokenRequest object to create a TokenRequest.
-         * @return An Ably token request object.
          */
         public static TokenRequest fromJsonElement(JsonObject json) {
             return Serialisation.gson.fromJson(json, TokenRequest.class);
@@ -696,15 +659,6 @@ public class Auth {
         }
         ably.onAuthUpdated(tokenDetails.token, true);
         return tokenDetails;
-    }
-
-    /**
-     * Alias of authorize() (0.9 RSA10l)
-     */
-    @Deprecated
-    public TokenDetails authorise(TokenParams params, AuthOptions options) throws AblyException {
-        Log.w(TAG, "authorise() is deprecated and will be removed in 1.0. Please use authorize() instead");
-        return authorize(params, options);
     }
 
     /**
@@ -1004,15 +958,11 @@ public class Auth {
     }
 
     /**
-     * Renew auth credentials.
-     * Will obtain a new token, even if we already have an apparently valid one.
-     * Authorization will use the parameters supplied on construction.
-     * @deprecated Because the method returns early before renew() completes and does not provide a completion
-     * handler for callers.
-     * Please use {@link Auth#renewAuth} instead
+     * Obtains a new token even if we already have an apparently valid one, and notifies the
+     * client that the credentials changed. The internal half of {@link #renewAuth}, for the
+     * callers that have no completion handler to hand it.
      */
-    @Deprecated
-    public TokenDetails renew() throws AblyException {
+    private TokenDetails renewToken() throws AblyException {
         TokenDetails tokenDetails = assertValidToken(this.tokenParams, this.authOptions, true);
         ably.onAuthUpdated(tokenDetails.token, false);
         return tokenDetails;
@@ -1200,7 +1150,7 @@ public class Auth {
             authHeader = "Basic " + Base64Coder.encodeString(getBasicCredentials());
         } else {
             if (forceRenew) {
-                renew();
+                renewToken();
             } else {
                 assertValidToken();
             }

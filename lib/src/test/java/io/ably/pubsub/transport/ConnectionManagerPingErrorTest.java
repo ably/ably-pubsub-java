@@ -4,8 +4,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-import io.ably.pubsub.realtime.PubSubRealtimeClient;
 import io.ably.pubsub.realtime.CompletionListener;
+import io.ably.pubsub.realtime.PubSubRealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ClientOptions;
 import io.ably.pubsub.types.ErrorInfo;
@@ -22,7 +23,7 @@ public class ConnectionManagerPingErrorTest {
         ClientOptions options = new ClientOptions("appid.keyid:keysecret");
         options.autoConnect = false;
         AtomicReference<ErrorInfo> error = new AtomicReference<>();
-        try (PubSubRealtimeClient ably = new PubSubRealtimeClient(options)) {
+        try (PubSubRealtimeClient ably = RealtimeClientFactory.create(options)) {
             ably.connection.ping(new CompletionListener() {
                 @Override
                 public void onSuccess() {}

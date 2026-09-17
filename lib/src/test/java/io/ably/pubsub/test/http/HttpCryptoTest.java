@@ -14,6 +14,7 @@ import io.ably.pubsub.test.common.Helpers;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -35,10 +36,10 @@ public class HttpCryptoTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         final ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
         final ClientOptions opts_alt = createOptions(testVars.keys[0].keyStr);
         opts_alt.useBinaryProtocol = testParams.useBinaryProtocol;
-        ably_alt = new PubSubHttpClient(opts_alt);
+        ably_alt = HttpClientFactory.create(opts_alt);
     }
 
     /**

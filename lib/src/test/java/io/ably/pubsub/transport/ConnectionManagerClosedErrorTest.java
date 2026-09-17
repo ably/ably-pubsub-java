@@ -5,9 +5,10 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 import io.ably.pubsub.debug.DebugOptions;
-import io.ably.pubsub.realtime.PubSubRealtimeClient;
 import io.ably.pubsub.realtime.CompletionListener;
 import io.ably.pubsub.realtime.ConnectionState;
+import io.ably.pubsub.realtime.PubSubRealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.test.common.Helpers;
 import io.ably.pubsub.test.util.MockWebsocketFactory;
 import io.ably.pubsub.types.AblyException;
@@ -29,7 +30,7 @@ public class ConnectionManagerClosedErrorTest {
         mockTransport.failConnect();
         options.transportFactory = mockTransport;
 
-        try (PubSubRealtimeClient ably = new PubSubRealtimeClient(options)) {
+        try (PubSubRealtimeClient ably = RealtimeClientFactory.create(options)) {
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(ably.connection);
             ably.connection.connect();
             assertThat(connectionWaiter.waitFor(ConnectionState.disconnected, 1, 10000), is(true));

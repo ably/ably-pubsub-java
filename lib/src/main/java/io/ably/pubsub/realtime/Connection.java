@@ -34,8 +34,8 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
 
     /**
      * A unique private connection key used to recover or resume a connection, assigned by Ably.
-     * When recovering a connection explicitly, the recoveryKey is used in the recover client options
-     * as it contains both the key and the last message serial.
+     * When recovering a connection explicitly, the recovery key returned by {@link #createRecoveryKey}
+     * is used in the recover client options as it contains both the key and the last message serial.
      * This private connection key can also be used by other REST clients to publish on behalf of this client.
      * See the
      * <a href="https://ably.com/docs/rest/channels#publish-on-behalf">publishing over REST on behalf of a realtime client docs</a>
@@ -44,17 +44,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      * Spec: RTN9
      */
     public String key;
-
-    /**
-     * The recovery key string can be used by another client to recover this connection's state in the recover client options property.
-     * See <a href="https://ably.com/docs/realtime/connection#connection-state-recover-options">connection state recover options</a>
-     * for more information.
-     * <p>
-     * Spec: RTN16m
-     * @deprecated use createRecoveryKey method instead.
-     */
-    @Deprecated
-    public String recoveryKey;
 
     /**
      * createRecoveryKey is a method that returns a json string which incorporates the @connectionKey@, the
@@ -115,7 +104,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
      */
     public void close() {
         key = null;
-        recoveryKey = null;
         connectionManager.close();
     }
 
@@ -132,7 +120,7 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public void onConnectionStateChange(ConnectionStateChange stateChange) {
         state = stateChange.current;
         reason = stateChange.reason;
-        emit(state, stateChange);
+        emit(state.getConnectionEvent(), stateChange);
     }
 
     @Override
@@ -147,21 +135,6 @@ public class Connection extends EventEmitter<ConnectionEvent, ConnectionStateLis
     public void emitUpdate(ErrorInfo errorInfo) {
         if (state == ConnectionState.connected)
             emit(ConnectionEvent.update, ConnectionStateListener.ConnectionStateChange.createUpdateEvent(errorInfo));
-    }
-
-    @Deprecated
-    public void emit(ConnectionState state, ConnectionStateChange stateChange) {
-        super.emit(state.getConnectionEvent(), stateChange);
-    }
-
-    @Deprecated
-    public void on(ConnectionState state, ConnectionStateListener listener) {
-        super.on(state.getConnectionEvent(), listener);
-    }
-
-    @Deprecated
-    public void once(ConnectionState state, ConnectionStateListener listener) {
-        super.once(state.getConnectionEvent(), listener);
     }
 
     private static final String TAG = Connection.class.getName();

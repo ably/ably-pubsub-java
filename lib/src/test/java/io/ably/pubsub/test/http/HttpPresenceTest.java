@@ -9,6 +9,7 @@ import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -32,7 +33,7 @@ public class HttpPresenceTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts_text = createOptions(testVars.keys[0].keyStr);
-        ably_text = new PubSubHttpClient(opts_text);
+        ably_text = HttpClientFactory.create(opts_text);
     }
 
     /**
