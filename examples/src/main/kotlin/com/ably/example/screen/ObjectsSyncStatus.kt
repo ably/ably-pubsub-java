@@ -16,9 +16,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ably.example.observeObjectsSyncState
-import io.ably.lib.liveobjects.path.types.LiveMapPathObject
-import io.ably.lib.liveobjects.state.ObjectStateEvent
-import io.ably.lib.realtime.Channel
+import io.ably.pubsub.liveobjects.path.types.LiveMapPathObject
+import io.ably.pubsub.liveobjects.state.ObjectStateEvent
+import io.ably.pubsub.realtime.Channel
 
 /**
  * Shows the channel's objects synchronization progress: a spinner with
