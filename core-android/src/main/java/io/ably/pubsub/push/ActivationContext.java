@@ -9,6 +9,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.WeakHashMap;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.Callback;
@@ -60,7 +61,6 @@ public class ActivationContext {
         this.clientId = ably.auth.clientId;
     }
 
-    @SuppressWarnings("deprecation") // internal push-registration client, not an application entry point
     PubSubHttpClient getAbly() throws AblyException {
         if(ably != null) {
             Log.v(TAG, "getAbly(): returning existing Ably instance");
@@ -78,19 +78,18 @@ public class ActivationContext {
         }
         Log.v(TAG, "getAbly(): returning Ably instance using deviceIdentityToken");
         // TODO: We need to persist Ably client options such as the environment with `deviceIdentityToken` and use these options during initialization.
-        return (ably = new PubSubHttpClient(deviceIdentityToken));
+        return (ably = HttpClientFactory.create(new ClientOptions(deviceIdentityToken)));
     }
 
     /**
      * @return PubSubHttpClient instance with device identity token auth. We use this instance to perform
      * deregistration calls in push activation flow.
      */
-    @SuppressWarnings("deprecation") // internal push-registration client, not an application entry point
     PubSubHttpClient getDeviceIdentityTokenBasedAblyClient(String deviceIdentityToken) throws AblyException {
         ClientOptions clientOptions = ably.options.copy();
         clientOptions.clearAuthOptions();
         clientOptions.token = deviceIdentityToken;
-        return new PubSubHttpClient(clientOptions);
+        return HttpClientFactory.create(clientOptions);
     }
 
     public boolean setClientId(String clientId, boolean propagateGotPushDeviceDetails) {

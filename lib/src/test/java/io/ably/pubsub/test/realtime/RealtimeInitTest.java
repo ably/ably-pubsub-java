@@ -8,6 +8,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.transport.Defaults;
 import io.ably.pubsub.types.AblyException;
@@ -24,7 +25,7 @@ public class RealtimeInitTest extends ParameterizedTest {
     public void init_key_string() {
         RealtimeClient ably = null;
         try {
-            ably = new RealtimeClient(testVars.keys[0].keyStr);
+            ably = RealtimeClientFactory.create(new ClientOptions(testVars.keys[0].keyStr));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -40,7 +41,7 @@ public class RealtimeInitTest extends ParameterizedTest {
     public void init_key_opts() {
         RealtimeClient ably = null;
         try {
-            ably = new RealtimeClient(new ClientOptions(testVars.keys[0].keyStr));
+            ably = RealtimeClientFactory.create(new ClientOptions(testVars.keys[0].keyStr));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init1: Unexpected exception instantiating library");
@@ -57,7 +58,7 @@ public class RealtimeInitTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init2: Unexpected exception instantiating library");
@@ -76,7 +77,7 @@ public class RealtimeInitTest extends ParameterizedTest {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             String hostExpected = "some.other.host";
             opts.restHost = hostExpected;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertEquals("Unexpected host mismatch", hostExpected, ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -96,7 +97,7 @@ public class RealtimeInitTest extends ParameterizedTest {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.port = 9998;
             opts.tlsPort = 9999;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), opts.tlsPort);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -114,7 +115,7 @@ public class RealtimeInitTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -133,7 +134,7 @@ public class RealtimeInitTest extends ParameterizedTest {
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertEquals("Unexpected scheme mismatch", Defaults.getPort(opts), Defaults.PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -160,7 +161,7 @@ public class RealtimeInitTest extends ParameterizedTest {
                 }
             };
             opts.logLevel = Log.VERBOSE;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertTrue("Log handler not called", init8_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -187,7 +188,7 @@ public class RealtimeInitTest extends ParameterizedTest {
                 }
             };
             opts.logLevel = Log.NONE;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             assertFalse("Log handler incorrectly called", init9_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();

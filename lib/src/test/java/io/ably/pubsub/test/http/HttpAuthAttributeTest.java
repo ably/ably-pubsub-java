@@ -1,5 +1,6 @@
 package io.ably.pubsub.test.http;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -33,7 +34,7 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
     public void setupClient() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.useTokenAuth = true;
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
     }
 
     /**
@@ -60,7 +61,7 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
             /* init custom AuthOptions */
             Auth.AuthOptions authOptions = new Auth.AuthOptions() {{
                 authCallback = new Auth.TokenCallback() {
-                    private PubSubHttpClient ably = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                    private PubSubHttpClient ably = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
 
                     @Override
                     public Object getTokenRequest(Auth.TokenParams params) throws AblyException {
@@ -70,11 +71,8 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
                 key = testVars.keys[1].keyStr;
             }};
 
-            /* authorise with custom options
-             * Deliberate use of British spelling alias authorise() to check that
-             * it works (0.9 RSA10l) */
-            @SuppressWarnings("deprecation")
-            Auth.TokenDetails tokenDetails1 = ably.auth.authorise(tokenParams, authOptions);
+            /* authorize with custom options */
+            Auth.TokenDetails tokenDetails1 = ably.auth.authorize(tokenParams, authOptions);
 
             /* Verify that,
              * tokenDetails1 isn't null,
@@ -118,12 +116,7 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
             final String expectedClientId = "testClientId";
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = expectedClientId;
-            PubSubHttpClient ablyForTime = new PubSubHttpClient(opts) {
-                @Override
-                public long time() throws AblyException {
-                    return fakeServerTime;
-                }
-            };
+            PubSubHttpClient ablyForTime = new FakeTimeHttpClient(opts, fakeServerTime);
             final Auth.AuthOptions authOptions = new Auth.AuthOptions();
             authOptions.key = ablyForTime.options.key;
             authOptions.queryTime = true;
@@ -172,7 +165,7 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
             /* init ably for token */
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
             optsForToken.clientId = expectedClientId;
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* create custom token callback for capturing timestamp values */
             final List<Long> timestampCapturedList = new ArrayList<>();
@@ -267,4 +260,24 @@ public class HttpAuthAttributeTest extends ParameterizedTest {
             fail("auth_custom_options_authorize: Unexpected exception");
         }
     }
+
+    /**
+     * A client that reports a fixed server time, for the tests that check whether an
+     * {@link AuthOptions#queryTime} request used it. A named subclass rather than an anonymous
+     * one because the client's constructor is not public.
+     */
+    private static class FakeTimeHttpClient extends PubSubHttpClient {
+        private final long fakeServerTime;
+
+        FakeTimeHttpClient(ClientOptions options, long fakeServerTime) throws AblyException {
+            super(options);
+            this.fakeServerTime = fakeServerTime;
+        }
+
+        @Override
+        public long time() throws AblyException {
+            return fakeServerTime;
+        }
+    }
+
 }

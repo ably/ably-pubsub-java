@@ -2,6 +2,7 @@ package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelEvent;
 import io.ably.pubsub.realtime.ChannelState;
@@ -70,7 +71,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_fallback_none() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -100,7 +101,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeHost = "un.reachable.host.example.com";
         opts.environment = null;
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.disconnected);
@@ -133,7 +134,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         opts.realtimeHost = "un.reachable.host";
         opts.environment = null;
         opts.autoConnect = false;
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             Connection connection = Mockito.mock(Connection.class);
             final ConnectionManager.Channels channels = Mockito.mock(ConnectionManager.Channels.class);
 
@@ -202,7 +203,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -250,7 +251,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for disconnected");
@@ -302,7 +303,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
             }
         });
 
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
             System.out.println("waiting for connected");
@@ -319,64 +320,13 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
-     * Test that default fallback happens with a non-default host if
-     * fallbackHostsUseDefault is set.
-     */
-    @Ignore("FIXME: fix exception")
-    @Test
-    public void connectionmanager_reconnect_default_fallback() throws AblyException {
-        DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
-        fillInOptions(opts);
-
-        opts.fallbackHostsUseDefault = true;
-
-        final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
-        final String primaryHost = hosts.getPrimaryHost();
-
-        MockWebsocketFactory mockTransport = new MockWebsocketFactory();
-        opts.transportFactory = mockTransport;
-
-        /* ensure that all connection attempts ultimately resolve to the primary host */
-        mockTransport.setHostTransform(new MockWebsocketFactory.HostTransform() {
-            @Override
-            public String transformHost(String givenHost) {
-                return primaryHost;
-            }
-        });
-
-        /* set up a filter on a mock transport to fail connections to the primary host */
-        mockTransport.failConnect(new MockWebsocketFactory.HostFilter() {
-            @Override
-            public boolean matches(String hostname) {
-                return hostname.equals(primaryHost);
-            }
-        });
-
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
-            ConnectionManager connectionManager = ably.connection.connectionManager;
-
-            System.out.println("waiting for connected");
-            new Helpers.ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
-            System.out.println("got connected");
-            ably.close();
-
-            /* Verify that,
-             *   - connectionManager is connected
-             *   - connectionManager's last host was a fallback host
-             */
-            assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-            assertThat(connectionManager.getHost(), is(not(equalTo(opts.realtimeHost))));
-        }
-    }
-
-    /**
      * Connect, and then perform a close() from the calling ConnectionManager context;
      * verify that the closed state is reached, and the connectionmanager thread has exited
      */
     @Test
     public void close_from_connectionmanager() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        final RealtimeClient ably = new RealtimeClient(opts);
+        final RealtimeClient ably = RealtimeClientFactory.create(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -402,7 +352,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_close_while_connecting() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        final RealtimeClient ably = new RealtimeClient(opts);
+        final RealtimeClient ably = RealtimeClientFactory.create(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
         ConnectionManager connectionManager = ably.connection.connectionManager;
         ably.close();
@@ -423,7 +373,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_restart_race() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        final RealtimeClient ably = new RealtimeClient(opts);
+        final RealtimeClient ably = RealtimeClientFactory.create(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
         ably.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
@@ -458,7 +408,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void open_from_dedicated_thread() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
-        final RealtimeClient ably = new RealtimeClient(opts);
+        final RealtimeClient ably = RealtimeClientFactory.create(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -505,7 +455,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void close_from_dedicated_thread() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
-        final RealtimeClient ably = new RealtimeClient(opts);
+        final RealtimeClient ably = RealtimeClientFactory.create(opts);
         final Thread[] threadContainer = new Thread[1];
         ably.connection.on(ConnectionEvent.connected, new ConnectionStateListener() {
             @Override
@@ -548,7 +498,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void connection_details_has_ttl() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.autoConnect = false;
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             Helpers.MutableConnectionManager connectionManager = new Helpers.MutableConnectionManager(ably);
 
             // connStateTtl set to default value
@@ -574,7 +524,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void connection_is_closed_after_max_idle_interval() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000;
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
 
             // The original max idle interval we receive from the server is 15s.
             // We should wait for this, plus a tiny bit extra (as we set the new idle interval to be very low
@@ -598,7 +548,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     public void connection_has_new_id_when_reconnecting_after_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeRequestTimeout = 2000L;
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             /* We want this greater than newTtl + newIdleInterval */
             final long waitInDisconnectedState = 3000L;
 
@@ -636,7 +586,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_has_same_id_when_reconnecting_before_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
             String firstConnectionId = ably.connection.id;
@@ -659,7 +609,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void channels_are_reattached_after_reconnecting_when_statettl_plus_idleinterval_has_passed() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             /* We want this greater than newTtl + newIdleInterval */
             final long waitInDisconnectedState = 3000L;
             final ChannelState[] expectedAttachedChannelHistory = new ChannelState[]{
@@ -736,7 +686,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_manager_enters_disconnected_state_on_transport_failure() throws AblyException, NoSuchFieldException, IllegalAccessException, InterruptedException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
             connectionManager.connect();
 
@@ -772,7 +722,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connection_manager_enters_suspended_state_on_transport_failure_after_already_being_disconnected_for_2_minutes() throws AblyException, NoSuchFieldException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
             connectionManager.connect();
             new Helpers.ConnectionManagerWaiter(ably.connection.connectionManager).waitFor(ConnectionState.connected);
@@ -816,7 +766,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         opts.transportFactory = new ObservedWebsocketTransport.Factory();
 
         // Connect
-        try(RealtimeClient ably = new RealtimeClient(opts)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
             connectionManager.connect();
             // Wait for connected status

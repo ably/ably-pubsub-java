@@ -2,6 +2,7 @@ package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.realtime.ConnectionState;
@@ -50,8 +51,8 @@ public class RealtimeRecoverTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -87,7 +88,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.recoveryKey;
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
@@ -107,7 +108,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
             recoverOpts.recover = recoverConnectionKey;
-            ablyRxRecover = new RealtimeClient(recoverOpts);
+            ablyRxRecover = RealtimeClientFactory.create(recoverOpts);
             (new ConnectionWaiter(ablyRxRecover.connection)).waitFor(ConnectionState.connected);
 
             /* subscribe to channel */
@@ -150,8 +151,8 @@ public class RealtimeRecoverTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -187,7 +188,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
              * NOTE this depends on knowledge of the internal structure
              * of the library, to simulate a dropped transport without
              * causing the connection itself to be disposed */
-            String recoverConnectionKey = ablyRx.connection.recoveryKey;
+            String recoverConnectionKey = ablyRx.connection.createRecoveryKey();
             ablyRx.connection.connectionManager.requestState(ConnectionState.failed);
 
             /* wait */
@@ -207,7 +208,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             /* establish a new rx connection with recover string, and wait for connection */
             ClientOptions recoverOpts = createOptions(testVars.keys[0].keyStr);
             recoverOpts.recover = recoverConnectionKey;
-            ablyRxRecover = new RealtimeClient(recoverOpts);
+            ablyRxRecover = RealtimeClientFactory.create(recoverOpts);
 
             /* subscribe to channel */
             final Channel channelRxRecover = ablyRxRecover.channels.get(channelName);
@@ -245,8 +246,8 @@ public class RealtimeRecoverTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -348,7 +349,7 @@ public class RealtimeRecoverTest extends ParameterizedTest {
             opts.transportFactory = mockTransport;
 
             opts.autoConnect = false;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
             ably.connection.connect();
             connWaiter.waitFor(ConnectionState.connected);

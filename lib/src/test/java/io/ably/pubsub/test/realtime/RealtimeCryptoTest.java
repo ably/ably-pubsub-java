@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.test.common.Helpers.ChannelWaiter;
@@ -54,7 +55,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel */
             ChannelOptions channelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -112,7 +113,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a key */
             KeyGenerator keygen = KeyGenerator.getInstance("AES");
@@ -181,7 +182,7 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* generate and remember message texts */
             String[] messageTexts = new String[messageCount];
@@ -269,10 +270,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(senderOpts);
+            sender = RealtimeClientFactory.create(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
             receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-            receiver = new RealtimeClient(receiverOpts);
+            receiver = RealtimeClientFactory.create(receiverOpts);
 
             /* create a key */
             final CipherParams params = Crypto.getDefaultParams();
@@ -353,9 +354,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(senderOpts);
+            sender = RealtimeClientFactory.create(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new RealtimeClient(receiverOpts);
+            receiver = RealtimeClientFactory.create(receiverOpts);
 
             /* create a channel */
             final ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -427,9 +428,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(senderOpts);
+            sender = RealtimeClientFactory.create(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new RealtimeClient(receiverOpts);
+            receiver = RealtimeClientFactory.create(receiverOpts);
 
             /* create a channel */
             final Channel senderChannel = sender.channels.get("single_send_unencrypted");
@@ -499,9 +500,9 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(senderOpts);
+            sender = RealtimeClientFactory.create(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
-            receiver = new RealtimeClient(receiverOpts);
+            receiver = RealtimeClientFactory.create(receiverOpts);
 
             /* create a channel */
             ChannelOptions senderChannelOpts = new ChannelOptions() {{ encrypted = true; }};
@@ -570,10 +571,10 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions senderOpts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(senderOpts);
+            sender = RealtimeClientFactory.create(senderOpts);
             ClientOptions receiverOpts = createOptions(testVars.keys[0].keyStr);
             receiverOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
-            receiver = new RealtimeClient(receiverOpts);
+            receiver = RealtimeClientFactory.create(receiverOpts);
 
             /* create a key */
             final CipherParams params1 = Crypto.getDefaultParams();
@@ -675,80 +676,6 @@ public class RealtimeCryptoTest extends ParameterizedTest {
     }
 
     /**
-     * Test channel options creation from the cipher key.
-     *
-     * This test should be removed when we get rid of the methods
-     * ChannelOptions.fromCipherKey(...) which are deprecated and have
-     * been replaced with ChannelOptions.withCipherKey(...).
-     * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#TB3>TB3</a>
-     */
-    @Ignore("FIXME: fix exception")
-    @Test
-    @Deprecated
-    public void channel_options_from_cipher_key() {
-        String channelName = "cipher_params_test_" + testParams.name;
-        RealtimeClient sender = null;
-        RealtimeClient receiver = null;
-        try {
-            ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(opts);
-            receiver = new RealtimeClient(opts);
-
-            /* 128-bit key */
-            byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-            /* Same key but encoded with Base64 */
-            String base64key = "AQIDBAUGBwgJCgsMDQ4PEA==";
-
-            /* create a sending channel using byte[] array */
-            final Channel channelSend = sender.channels.get(channelName, ChannelOptions.fromCipherKey(key));
-            /* create a receiving channel using (the same) key encoded with base64 */
-            final Channel channelReceive = receiver.channels.get(channelName, ChannelOptions.fromCipherKey(base64key));
-
-            /* attach */
-            channelSend.attach();
-            channelReceive.attach();
-            new ChannelWaiter(channelSend).waitFor(ChannelState.attached);
-            new ChannelWaiter(channelReceive).waitFor(ChannelState.attached);
-
-            /* subscribe */
-            MessageWaiter messageWaiter =  new MessageWaiter(channelReceive);
-
-            /* publish to the channel */
-            String messageText = "Test message";
-            CompletionWaiter msgComplete = new CompletionWaiter();
-            channelSend.publish("test_event", messageText, msgComplete);
-
-            /* wait for the publish callback to be called */
-            msgComplete.waitFor();
-            assertTrue("Success callback was not called", msgComplete.success);
-
-            /* wait for the subscription callback to be called */
-            messageWaiter.waitFor(1);
-            assertEquals(
-                "Unexpected number of received messages",
-                messageWaiter.receivedMessages.size(), 1
-            );
-
-            /* check the correct plaintext recovered from the message */
-            assertTrue(
-                "Received message is not correct",
-                messageText.equals(messageWaiter.receivedMessages.get(0).data)
-            );
-
-        } catch (AblyException e) {
-            e.printStackTrace();
-            fail("init0: Unexpected exception instantiating library");
-        } finally {
-            if(sender != null) {
-                sender.close();
-            }
-            if(receiver != null) {
-                receiver.close();
-            }
-        }
-    }
-
-    /**
      * Test channel options creation with the cipher key.
      * @see <a href="https://docs.ably.com/client-lib-development-guide/features/#TB3>TB3</a>
      */
@@ -760,8 +687,8 @@ public class RealtimeCryptoTest extends ParameterizedTest {
         RealtimeClient receiver = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(opts);
-            receiver = new RealtimeClient(opts);
+            sender = RealtimeClientFactory.create(opts);
+            receiver = RealtimeClientFactory.create(opts);
 
             /* 128-bit key */
             byte[] key = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};

@@ -394,9 +394,9 @@ class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
 }
 
 fun TestRealtimeClient(block: ClientOptionsBuilder.() -> Unit): RealtimeClient =
-    RealtimeClient(ClientOptionsBuilder().apply(block))
+    RealtimeClientFactory.create(ClientOptionsBuilder().apply(block))   // or the PubSubServer builder; see below
 fun TestHttpClient(block: ClientOptionsBuilder.() -> Unit): PubSubHttpClient =
-    PubSubHttpClient(ClientOptionsBuilder().apply(block))
+    HttpClientFactory.create(ClientOptionsBuilder().apply(block))
 ```
 
 - It seeds a **dummy API key** (`appId.keyId:keySecret`) — fine, because unit tests never hit a real
@@ -845,7 +845,8 @@ It has **two** `@Test` methods, one per fault-injection style.
 
 ### 11.2 Late imperative injection — `triggerAction`
 The first test creates a **rule-less pass-through** session, authenticates through the proxy (basic key
-auth is TLS-only, so a token is signed locally by an `PubSubHttpClient(app.defaultKey)` in the `authCallback`),
+auth is TLS-only, so a token is signed locally by a `HttpClientFactory.create(ClientOptions(app.defaultKey))`
+client in the `authCallback`),
 and connects:
 ```kotlin
 val session = ProxySession.create(rules = emptyList())
@@ -1002,7 +1003,7 @@ in `infra/unit/ClientFactories.kt`), selected by the `uts.side` system property 
 `UTS_SIDE` environment variable):
 
 ```bash
-./gradlew :uts:runUtsUnitTests                    # core (default): the core constructors
+./gradlew :uts:runUtsUnitTests                    # core (default): the core construction seam, no side declared
 ./gradlew :uts:runUtsUnitTests -Duts.side=server  # io.ably.pubsub:server — the PubSubServer builders
 ```
 

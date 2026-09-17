@@ -2,6 +2,7 @@ package io.ably.pubsub.test.http;
 
 import io.ably.pubsub.network.EngineType;
 import io.ably.pubsub.network.HttpEngineFactory;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.Helpers;
@@ -44,7 +45,7 @@ public class HttpChannelMessageEditTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
         engineType = HttpEngineFactory.getFirstAvailable().getEngineType();
     }
 

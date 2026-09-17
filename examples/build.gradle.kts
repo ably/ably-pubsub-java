@@ -69,6 +69,8 @@ dependencies {
     implementation(project(":liveobjects"))
 
     implementation(project(":core-android"))
+    // The device door: this sample app runs on an end-user device, so it builds its clients here.
+    implementation(project(":device"))
 
     implementation(libs.navigation.compose)
 

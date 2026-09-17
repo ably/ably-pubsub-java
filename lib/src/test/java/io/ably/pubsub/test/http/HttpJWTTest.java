@@ -2,6 +2,7 @@ package io.ably.pubsub.test.http;
 
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpHelpers;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -39,7 +40,7 @@ public class HttpJWTTest extends ParameterizedTest {
     public void auth_jwt_request() {
         try {
             ClientOptions options = buildClientOptions(validKeys);
-            PubSubHttpClient client = new PubSubHttpClient(options);
+            PubSubHttpClient client = HttpClientFactory.create(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -55,7 +56,7 @@ public class HttpJWTTest extends ParameterizedTest {
     public void auth_jwt_request_wrong_keys() {
         try {
             ClientOptions options = buildClientOptions(invalidKeys);
-            PubSubHttpClient client = new PubSubHttpClient(options);
+            PubSubHttpClient client = HttpClientFactory.create(options);
             PaginatedResult<Stats> stats = client.stats(null);
         } catch (AblyException e) {
             assertEquals("Unexpected code from exception", 40144, e.errorInfo.code);
@@ -71,7 +72,7 @@ public class HttpJWTTest extends ParameterizedTest {
     public void auth_jwt_request_embedded_token() {
         try {
             ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbedded}));
-            PubSubHttpClient client = new PubSubHttpClient(options);
+            PubSubHttpClient client = HttpClientFactory.create(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -87,7 +88,7 @@ public class HttpJWTTest extends ParameterizedTest {
     public void auth_jwt_request_embedded_token_encrypted() {
         try {
             ClientOptions options = buildClientOptions(mergeParams(new Param[][]{environment, validKeys, tokenEmbeddedAndEncrypted}));
-            PubSubHttpClient client = new PubSubHttpClient(options);
+            PubSubHttpClient client = HttpClientFactory.create(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -105,7 +106,7 @@ public class HttpJWTTest extends ParameterizedTest {
             ClientOptions options = createOptions();
             options.authUrl = echoServer;
             options.authParams = mergeParams(new Param[][]{environment, validKeys, jwtReturnType});
-            PubSubHttpClient client = new PubSubHttpClient(options);
+            PubSubHttpClient client = HttpClientFactory.create(options);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
         } catch (AblyException e) {
@@ -120,7 +121,7 @@ public class HttpJWTTest extends ParameterizedTest {
     @Test
     public void auth_jwt_request_authcallback() {
         try {
-            final PubSubHttpClient httpJWTRequester = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+            final PubSubHttpClient httpJWTRequester = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
             final boolean[] callbackCalled = new boolean[] { false };
             Auth.TokenCallback authCallback = new Auth.TokenCallback() {
                 @Override
@@ -131,7 +132,7 @@ public class HttpJWTTest extends ParameterizedTest {
             };
             ClientOptions optionsWithCallback = createOptions();
             optionsWithCallback.authCallback = authCallback;
-            PubSubHttpClient client = new PubSubHttpClient(optionsWithCallback);
+            PubSubHttpClient client = HttpClientFactory.create(optionsWithCallback);
             PaginatedResult<Stats> stats = client.stats(null);
             assertNotNull("Stats should not be null", stats);
             assertTrue("Callback was not called", callbackCalled[0]);
@@ -148,7 +149,7 @@ public class HttpJWTTest extends ParameterizedTest {
         try {
             ClientOptions options = createOptions();
             final String[] resultToken = new String[1];
-            PubSubHttpClient rest = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+            PubSubHttpClient rest = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
             HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new HttpCore.ResponseHandler() {
                 @Override
                 public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {

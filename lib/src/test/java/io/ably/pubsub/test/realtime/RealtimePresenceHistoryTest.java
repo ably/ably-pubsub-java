@@ -16,8 +16,10 @@ import org.junit.rules.Timeout;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Auth.TokenParams;
@@ -52,7 +54,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
     public void setUpBefore() throws Exception {
         /* create tokens for specific clientIds */
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        rest = new PubSubHttpClient(opts);
+        rest = HttpClientFactory.create(opts);
         token = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId; }}, null);
 
         /* sync */
@@ -72,7 +74,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
 
             String channelName = "persisted:presencehistory_simple_" + testParams.name;
             String messageText = "Test message (presencehistory_simple)";
@@ -119,7 +121,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
 
             String channelName = "persisted:presencehistory_types_" + testParams.name;
 
@@ -168,7 +170,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
 
             String channelName = "persisted:presencehistory_types_forward_" + testParams.name;
 
@@ -220,10 +222,10 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
             txOpts.clientId = testClientId;
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
 
             ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:presencehistory_second_channel_" + testParams.name;
 
             /* create a channel */
@@ -280,7 +282,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_wait_b_" + testParams.name;
             String messageText = "Test message (presencehistory_wait_b)";
 
@@ -333,7 +335,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_wait_f_" + testParams.name;
             String messageText = "Test message (presencehistory_wait_f)";
 
@@ -386,7 +388,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_mixed_b_" + testParams.name;
             String persistMessageText = "test_event (persisted)";
             String liveMessageText = "test_event (live)";
@@ -446,7 +448,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_mixed_f_" + testParams.name;
             String persistMessageText = "test_event (persisted)";
             String liveMessageText = "test_event (live)";
@@ -503,7 +505,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_limit_f_" + testParams.name;
 
             /* create a channel */
@@ -558,7 +560,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_limit_b_" + testParams.name;
 
             /* create a channel */
@@ -616,7 +618,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_time_f_" + testParams.name;
 
             /* create a channel */
@@ -683,7 +685,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_time_b_" + testParams.name;
 
             /* create a channel */
@@ -748,7 +750,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_paginate_f_" + testParams.name;
 
             /* create a channel */
@@ -821,7 +823,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_paginate_b_" + testParams.name;
 
             /* create a channel */
@@ -894,7 +896,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_paginate_first_f_" + testParams.name;
 
             /* create a channel */
@@ -967,7 +969,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions rtOpts = createOptions();
             rtOpts.token = token.token;
             rtOpts.clientId = testClientId;
-            ably = new RealtimeClient(rtOpts);
+            ably = RealtimeClientFactory.create(rtOpts);
             String channelName = "persisted:presencehistory_paginate_first_b_" + testParams.name;
 
             /* create a channel */
@@ -1044,13 +1046,13 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
             txOpts.clientId = testClientId;
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
 
             DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(rxOpts);
             RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
             rxOpts.protocolListener = rawPresenceWaiter;
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:presencehistory_from_attach_" + testParams.name;
 
             /* create a channel */
@@ -1151,13 +1153,13 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions txOpts = createOptions();
             txOpts.token = token.token;
             txOpts.clientId = testClientId;
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
 
             DebugOptions rxOpts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(rxOpts);
             RawProtocolMonitor rawPresenceWaiter = RawProtocolMonitor.createReceiver(Action.presence);
             rxOpts.protocolListener = rawPresenceWaiter;
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:presencehistory_until_attach_" + testParams.name;
 
             /* create a channel */
@@ -1220,7 +1222,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void presencehistory_until_attach_before_attached() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        RealtimeClient ably = new RealtimeClient(options);
+        RealtimeClient ably = RealtimeClientFactory.create(options);
 
         ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "true")});
         ably.close();
@@ -1235,7 +1237,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void presencehistory_until_attach_invalid_value() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        RealtimeClient ably = new RealtimeClient(options);
+        RealtimeClient ably = RealtimeClientFactory.create(options);
 
         ably.channels.get("test").presence.history(new Param[]{ new Param("untilAttach", "affirmative")});
         ably.close();
@@ -1254,7 +1256,7 @@ public class RealtimePresenceHistoryTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.token = token.token;
             opts.clientId = testClientId;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:presencehistory_islast_" + testParams.name;
             int pageMessageCount = 10;
 

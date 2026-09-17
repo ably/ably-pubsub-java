@@ -83,11 +83,16 @@ Run the following to instantiate a client:
 
 ```java
 import io.ably.pubsub.realtime.RealtimeClient;
-import io.ably.pubsub.types.ClientOptions;
+import io.ably.pubsub.server.PubSubServer;
 
-ClientOptions options = new ClientOptions(apiKey);
-RealtimeClient realtime = new RealtimeClient(options);
+RealtimeClient realtime = PubSubServer.realtimeClientBuilder()
+    .key(apiKey)
+    .build();
 ```
+
+On an end-user device, depend on `io.ably.pubsub:device` and build through
+`PubSubDevice.clientBuilder()` instead; the builder you call declares which side of the
+connection your code runs on.
 
 ---
 
@@ -98,9 +103,10 @@ The following code connects to Ably's realtime messaging service, subscribes to 
 
 ```java
 // Initialize Ably Realtime client
-ClientOptions options = new ClientOptions("your-ably-api-key");
-options.clientId = "me";
-RealtimeClient realtimeClient = new RealtimeClient(options);
+RealtimeClient realtimeClient = PubSubServer.realtimeClientBuilder()
+    .key("your-ably-api-key")
+    .clientId("me")
+    .build();
 
 // Wait for connection to be established
 realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange -> {
@@ -180,14 +186,17 @@ public class AblyWithProxy {
         proxy.password = "your-password";  // Replace with proxy password
         proxy.prefAuthType = HttpAuth.Type.BASIC;  // Choose your preferred authentication type (e.g., BASIC or DIGEST)
 
-        // Attach the proxy settings to the client options
-        options.proxy = proxy;
-
-        // Create an instance of Ably using the configured options
-        PubSubHttpClient ably = new PubSubHttpClient(options);
+        // Create an instance of Ably with the proxy settings attached
+        PubSubHttpClient ably = PubSubServer.httpClientBuilder()
+            .key("your-ably-api-key")
+            .proxy(proxy)
+            .build();
 
         // Alternatively, for real-time connections
-        RealtimeClient realtimeClient = new RealtimeClient(options);
+        RealtimeClient realtimeClient = PubSubServer.realtimeClientBuilder()
+            .key("your-ably-api-key")
+            .proxy(proxy)
+            .build();
 
         // Use the Ably client as usual
     }

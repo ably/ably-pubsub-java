@@ -4,7 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.ably.pubsub.http.HttpUtils
-import io.ably.pubsub.http.PubSubHttpClient
+import io.ably.pubsub.http.HttpClientFactory
 import io.ably.pubsub.types.ClientOptions
 import io.ably.pubsub.uts.infra.integration.SandboxApp
 
@@ -30,7 +30,7 @@ import io.ably.pubsub.uts.infra.integration.SandboxApp
  *  - Values are `{ string }` / `{ number }` / `{ boolean }` / `{ bytes }`(base64) / `{ objectId }`.
  *  - `mapCreate.semantics` is the integer `0` (LWW); its `entries` wrap each value as `{ "data": <value> }`.
  *
- * Compiles against `:java` only (`PubSubHttpClient` + `HttpUtils`), like the unit `Helpers.kt`.
+ * Compiles against `:core` only (`HttpClientFactory` + `HttpUtils`), like the unit `Helpers.kt`.
  */
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ fun counterIncOp(number: Number, objectId: String? = null, path: String? = null,
 fun provisionObjectsViaHttp(apiKey: String, channelName: String, operations: List<JsonObject>): List<String> {
     require(operations.isNotEmpty()) { "operations must not be empty" }
 
-    val rest = PubSubHttpClient(
+    val rest = HttpClientFactory.create(
         ClientOptions().apply {
             key = apiKey
             // Target the same nonprod sandbox host that SandboxApp and the realtime clients use

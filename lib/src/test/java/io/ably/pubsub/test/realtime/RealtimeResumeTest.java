@@ -2,6 +2,7 @@ package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.realtime.ConnectionState;
@@ -53,7 +54,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
         String channelName = "resume_none";
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
@@ -107,8 +108,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -198,8 +199,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -284,8 +285,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channels to send on */
             final Channel channelTx1 = ablyTx.channels.get(channelName + "_1");
@@ -387,8 +388,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -476,8 +477,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ablyRx = new RealtimeClient(opts);
-            ablyTx = new RealtimeClient(opts);
+            ablyRx = RealtimeClientFactory.create(opts);
+            ablyTx = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel channelTx = ablyTx.channels.get(channelName);
@@ -576,8 +577,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         long delay = 200;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            receiver = new RealtimeClient(opts);
-            sender = new RealtimeClient(opts);
+            receiver = RealtimeClientFactory.create(opts);
+            sender = RealtimeClientFactory.create(opts);
 
             /* create and attach channel to send on */
             final Channel senderChannel = sender.channels.get(channelName);
@@ -680,7 +681,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
             senderOptions.logLevel = Log.VERBOSE;
             senderOptions.queueMessages = true;
             senderOptions.transportFactory = mockWebsocketFactory;
-            sender = new RealtimeClient(senderOptions);
+            sender = RealtimeClientFactory.create(senderOptions);
 
             (new ConnectionWaiter(sender.connection)).waitFor(ConnectionState.connected);
             final Channel senderChannel = sender.channels.get(channelName);
@@ -790,7 +791,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
         options.logLevel = Log.VERBOSE;
         options.realtimeRequestTimeout = 2000L;
         options.transportFactory = mockWebsocketFactory;
-        try(RealtimeClient ably = new RealtimeClient(options)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(options)) {
             final long newTtl = 1000L;
             final long newIdleInterval = 1000L;
 
@@ -897,7 +898,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
         options.realtimeRequestTimeout = 2000L;
 
         options.transportFactory = mockWebsocketFactory;
-        try(RealtimeClient ably = new RealtimeClient(options)) {
+        try(RealtimeClient ably = RealtimeClientFactory.create(options)) {
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -1021,8 +1022,8 @@ public class RealtimeResumeTest extends ParameterizedTest {
         String testName = "resume_rewind_1";
         try {
             ClientOptions common_opts = createOptions(testVars.keys[0].keyStr);
-            sender = new RealtimeClient(common_opts);
-            receiver1 = new RealtimeClient(common_opts);
+            sender = RealtimeClientFactory.create(common_opts);
+            receiver1 = RealtimeClientFactory.create(common_opts);
 
             DebugOptions receiver2_opts = createOptions(testVars.keys[0].keyStr);
             receiver2_opts.protocolListener = new DebugOptions.RawProtocolListener() {
@@ -1039,7 +1040,7 @@ public class RealtimeResumeTest extends ParameterizedTest {
                 @Override
                 public void onRawMessageRecv(ProtocolMessage message) {}
             };
-            receiver2 = new RealtimeClient(receiver2_opts);
+            receiver2 = RealtimeClientFactory.create(receiver2_opts);
 
             Channel receiver1_channel = receiver1.channels.get("[?rewind=1]" + testName);
 

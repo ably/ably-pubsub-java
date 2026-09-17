@@ -8,6 +8,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import io.ably.pubsub.http.HttpAuth;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.types.AblyException;
@@ -30,7 +31,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 host = "not-sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* attempt the call, expecting no exception */
             ably.stats(null);
@@ -55,7 +56,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6127;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* attempt the call, expecting no exception */
             ably.stats(null);
@@ -83,7 +84,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -108,7 +109,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6128;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -137,7 +138,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 username = "ably";
                 password = "password";
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
     
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -166,7 +167,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 password = "password";
                 prefAuthType = HttpAuth.Type.DIGEST;
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
     
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);
@@ -192,7 +193,7 @@ public class HttpProxyTest extends ParameterizedTest {
                 username = "ably";
                 password = "password";
             }};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
     
             /* attempt the call, expecting no exception */
             PaginatedResult<Stats> stats = ably.stats(null);

@@ -50,6 +50,7 @@ import io.ably.pubsub.transport.ConnectionManager;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.BaseMessage;
 import io.ably.pubsub.types.Callback;
+import io.ably.pubsub.types.PublishResult;
 import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.types.ErrorResponse;
 import io.ably.pubsub.types.Message;
@@ -161,7 +162,7 @@ public class Helpers {
      * @author paddy
      *
      */
-    public static class CompletionWaiter implements CompletionListener {
+    public static class CompletionWaiter implements CompletionListener, Callback<PublishResult> {
         public boolean success;
         public int successCount;
         public ErrorInfo error;
@@ -229,6 +230,15 @@ public class Helpers {
                 error = reason;
                 notifyAll();
             }
+        }
+
+        /**
+         * Callback&lt;PublishResult&gt; method, so that the same waiter can be passed to the
+         * publish overloads that report a PublishResult.
+         */
+        @Override
+        public void onSuccess(PublishResult result) {
+            onSuccess();
         }
     }
 
@@ -869,13 +879,17 @@ public class Helpers {
          * @author paddy
          *
          */
-        public class Member implements CompletionListener {
+        public class Member implements CompletionListener, Callback<PublishResult> {
             @Override
             public void onSuccess() {
                 synchronized(CompletionSet.this) {
                     pending.remove(this);
                     CompletionSet.this.notifyAll();
                 }
+            }
+            @Override
+            public void onSuccess(PublishResult result) {
+                onSuccess();
             }
             @Override
             public void onError(ErrorInfo reason) {

@@ -6,36 +6,41 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ably.example.screen.MainScreen
 import com.ably.example.ui.theme.AblyTheme
+import io.ably.pubsub.device.PubSubDevice
 import io.ably.pubsub.realtime.RealtimeClient
-import io.ably.pubsub.http.PubSubHttpClient
 import io.ably.pubsub.http.Auth
-import io.ably.pubsub.types.ClientOptions
 import io.ably.pubsub.util.Log
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
   private val realtimeClient: RealtimeClient by lazy {
-    RealtimeClient(
-      ClientOptions().apply {
+    // This app runs on an end-user device, so it builds its client through the device door.
+    PubSubDevice.clientBuilder()
+      .apply {
         if (BuildConfig.ABLY_KEY.isBlank()) {
-          authCallback = Auth.TokenCallback {
-            val apiKey = runBlocking {
-              val sandbox = Sandbox.getInstance()
-              sandbox.apiKey
+          authCallback(
+            Auth.TokenCallback {
+              val apiKey = runBlocking {
+                val sandbox = Sandbox.getInstance()
+                sandbox.apiKey
+              }
+              // A throwaway client that only signs a token; it never connects.
+              PubSubDevice.clientBuilder()
+                .key(apiKey)
+                .environment("sandbox")
+                .autoConnect(false)
+                .build()
+                .use { it.auth.requestToken(null, null) }
             }
-            PubSubHttpClient(ClientOptions().apply {
-              key = apiKey
-              environment = "sandbox"
-            }).auth.requestToken(null, null)
-          }
-          environment = "sandbox"
+          )
+          environment("sandbox")
         } else {
-          key = BuildConfig.ABLY_KEY
+          key(BuildConfig.ABLY_KEY)
         }
-        logLevel = Log.VERBOSE
-        autoConnect = false
+        logLevel(Log.VERBOSE)
+        autoConnect(false)
       }
-    )
+      .build()
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {

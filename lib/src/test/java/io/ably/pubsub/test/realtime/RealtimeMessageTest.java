@@ -39,9 +39,11 @@ import io.ably.pubsub.http.HttpHelpers;
 import io.ably.pubsub.http.HttpScheduler;
 import io.ably.pubsub.http.HttpUtils;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.realtime.ConnectionState;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Helpers.ChannelWaiter;
 import io.ably.pubsub.test.common.Helpers.CompletionSet;
@@ -76,7 +78,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel */
             final Channel channel = ably.channels.get("subscribe_send_binary");
@@ -123,8 +125,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.echoMessages = false;
-            txAbly = new RealtimeClient(opts);
-            rxAbly = new RealtimeClient(opts);
+            txAbly = RealtimeClientFactory.create(opts);
+            rxAbly = RealtimeClientFactory.create(opts);
             String channelName = "subscribe_send_binary_noecho";
 
             /* create a channel */
@@ -181,7 +183,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         String channelName = "subscribe_implicit_attach_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel */
             final Channel channel = ably.channels.get(channelName);
@@ -223,7 +225,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel */
             final Channel channel = ably.channels.get(channelName);
@@ -307,7 +309,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel pubChannel = ably.channels.get("publish_channel_state");
             ChannelWaiter channelWaiter = new ChannelWaiter(pubChannel);
@@ -366,7 +368,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel */
             final Channel channel = ably.channels.get(channelName);
@@ -473,7 +475,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[4].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel; channel3 can subscribe but not publish
              * with this key */
@@ -506,7 +508,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -538,7 +540,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             final Channel channel = ably.channels.get("test");
 
             channel.attach();
@@ -605,9 +607,9 @@ public class RealtimeMessageTest extends ParameterizedTest {
             ClientOptions msgpackOpts = createOptions(testVars.keys[0].keyStr);
             msgpackOpts.useBinaryProtocol = !testParams.useBinaryProtocol;
 
-            PubSubHttpClient httpPublishClient = new PubSubHttpClient(jsonOpts);
-            realtimeSubscribeClientMsgPack = new RealtimeClient(msgpackOpts);
-            realtimeSubscribeClientJson = new RealtimeClient(jsonOpts);
+            PubSubHttpClient httpPublishClient = HttpClientFactory.create(jsonOpts);
+            realtimeSubscribeClientMsgPack = RealtimeClientFactory.create(msgpackOpts);
+            realtimeSubscribeClientJson = RealtimeClientFactory.create(jsonOpts);
 
             final Channel realtimeSubscribeChannelMsgPack = realtimeSubscribeClientMsgPack.channels.get("test-subscribe");
             final Channel realtimeSubscribeChannelJson = realtimeSubscribeClientJson.channels.get("test-subscribe");
@@ -638,9 +640,9 @@ public class RealtimeMessageTest extends ParameterizedTest {
 
             // Publish each data type through MsgPack and JSON and retrieve through raw JSON GET.
 
-            PubSubHttpClient httpPublishClientMsgPack = new PubSubHttpClient(msgpackOpts);
-            PubSubHttpClient httpPublishClientJson = new PubSubHttpClient(jsonOpts);
-            PubSubHttpClient httpRetrieveClient = new PubSubHttpClient(jsonOpts);
+            PubSubHttpClient httpPublishClientMsgPack = HttpClientFactory.create(msgpackOpts);
+            PubSubHttpClient httpPublishClientJson = HttpClientFactory.create(jsonOpts);
+            PubSubHttpClient httpRetrieveClient = HttpClientFactory.create(jsonOpts);
 
             final io.ably.pubsub.http.Channel httpPublishChannelMsgPack = httpPublishClientMsgPack.channels.get("test-publish");
             final io.ably.pubsub.http.Channel httpPublishChannelJson = httpPublishClientJson.channels.get("test-publish");
@@ -706,8 +708,8 @@ public class RealtimeMessageTest extends ParameterizedTest {
             };
             apiOptions.logLevel = Log.INFO;
 
-            PubSubHttpClient httpPublishClient = new PubSubHttpClient(apiOptions);
-            realtimeSubscribeClient = new RealtimeClient(apiOptions);
+            PubSubHttpClient httpPublishClient = HttpClientFactory.create(apiOptions);
+            realtimeSubscribeClient = RealtimeClientFactory.create(apiOptions);
 
             final Channel realtimeSubscribeChannelJson = realtimeSubscribeClient.channels.get("test-encoding");
 
@@ -930,7 +932,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             message.extras = extras;
 
             final ClientOptions clientOptions = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(clientOptions);
+            ably = RealtimeClientFactory.create(clientOptions);
 
             // create a channel and attach to it
             final Channel channel = ably.channels.get(createChannelName("opaque_message_extras"));
@@ -971,7 +973,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[7].keyStr);
         AtomicReference<Message> receivedMessage = new AtomicReference<>();
         opts.clientId = "chat";
-        try (RealtimeClient realtime = new RealtimeClient(opts)) {
+        try (RealtimeClient realtime = RealtimeClientFactory.create(opts)) {
             final Channel channel = realtime.channels.get("foo::$chat::$chatMessages");
             CompletionWaiter msgComplete = new CompletionWaiter();
             channel.subscribe(message -> {
@@ -1010,7 +1012,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
     public void should_not_duplicate_messages() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         String testChannelName = "my-channel" + System.currentTimeMillis();
-        try (PubSubHttpClient rest = new PubSubHttpClient(opts)) {
+        try (PubSubHttpClient rest = HttpClientFactory.create(opts)) {
             final io.ably.pubsub.http.Channel channel = rest.channels.get(testChannelName);
 
             Message[] messages = new Message[] {
@@ -1022,7 +1024,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             channel.publish(messages);
         }
 
-        try (RealtimeClient realtime = new RealtimeClient(opts)) {
+        try (RealtimeClient realtime = RealtimeClientFactory.create(opts)) {
             final ChannelOptions options = new ChannelOptions();
             options.params = new HashMap<>();
             options.params.put("rewind", "10");
@@ -1052,7 +1054,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
     public void should_have_annotations_and_versions() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[7].keyStr);
         AtomicReference<Message> receivedMessage = new AtomicReference<>();
-        try (RealtimeClient realtime = new RealtimeClient(opts)) {
+        try (RealtimeClient realtime = RealtimeClientFactory.create(opts)) {
             final Channel channel = realtime.channels.get("should_have_annotations_and_versions");
             CompletionWaiter msgComplete = new CompletionWaiter();
             channel.subscribe(message -> {
@@ -1065,7 +1067,7 @@ public class RealtimeMessageTest extends ParameterizedTest {
             assertNull(attachListener.waitFor(1, 10_000));
 
             /* publish to the channel */
-            try (PubSubHttpClient rest = new PubSubHttpClient(opts)) {
+            try (PubSubHttpClient rest = HttpClientFactory.create(opts)) {
                 Message[] messages = new Message[] {
                     new Message("message", "hello world!"),
                 };

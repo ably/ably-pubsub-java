@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.test.common.Helpers.ChannelWaiter;
@@ -44,7 +45,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new RealtimeClient(opts);
+        ably = RealtimeClientFactory.create(opts);
         long timeFromService = ably.time();
         timeOffset = timeFromService - System.currentTimeMillis();
     }
@@ -59,7 +60,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_simple_" + testParams.name;
             String messageText = "Test message (channelhistory_simple)";
 
@@ -105,7 +106,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_simple_withoutlistener_" + testParams.name;
             String message1Text = "Test message 1 (channelhistory_simple_withoutlistener)";
             Message message2 = new Message("test_event", "Test message 2 (channelhistory_simple_withoutlistener)");
@@ -162,7 +163,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_types_" + testParams.name;
 
             /* create a channel */
@@ -217,7 +218,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_types_forward_" + testParams.name;
 
             /* create a channel */
@@ -275,9 +276,9 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
             ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:channelhistory_second_channel_" + testParams.name;
 
             /* create a channel */
@@ -332,7 +333,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_wait_b_" + testParams.name;
             String messageText = "Test message (channelhistory_wait_b)";
 
@@ -383,7 +384,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_wait_f_" + testParams.name;
             String messageText = "Test message (channelhistory_wait_f)";
 
@@ -434,7 +435,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_mixed_b_" + testParams.name;
             String messageText = "Test message (channelhistory_mixed_b)";
             String persistEventName = "test_event (persisted)";
@@ -496,7 +497,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_mixed_f_" + testParams.name;
             String messageText = "Test message (channelhistory_mixed_f)";
             String persistEventName = "test_event (persisted)";
@@ -555,7 +556,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_limit_f_" + testParams.name;
 
             /* create a channel */
@@ -611,7 +612,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_limit_b_" + testParams.name;
 
             /* create a channel */
@@ -670,7 +671,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_time_f_" + testParams.name;
 
             /* create a channel */
@@ -738,7 +739,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
             /* first, publish some messages */
             long intervalStart = 0, intervalEnd = 0;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_time_b_" + testParams.name;
 
             /* create a channel */
@@ -804,7 +805,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_paginate_f_" + testParams.name;
 
             /* create a channel */
@@ -892,7 +893,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_paginate_b_" + testParams.name;
 
             /* create a channel */
@@ -980,7 +981,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_paginate_first_f_" + testParams.name;
 
             /* create a channel */
@@ -1068,7 +1069,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_paginate_first_b_" + testParams.name;
 
             /* create a channel */
@@ -1160,9 +1161,9 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
             ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:channelhistory_from_attach_" + testParams.name;
 
             /* create a channel */
@@ -1250,9 +1251,9 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient txAbly = null, rxAbly = null;
         try {
             ClientOptions txOpts = createOptions(testVars.keys[0].keyStr);
-            txAbly = new RealtimeClient(txOpts);
+            txAbly = RealtimeClientFactory.create(txOpts);
             ClientOptions rxOpts = createOptions(testVars.keys[0].keyStr);
-            rxAbly = new RealtimeClient(rxOpts);
+            rxAbly = RealtimeClientFactory.create(rxOpts);
             String channelName = "persisted:channelhistory_until_attach_" + testParams.name;
 
             /* create a channel */
@@ -1315,7 +1316,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void channelhistory_until_attach_before_attached() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        RealtimeClient ably = new RealtimeClient(options);
+        RealtimeClient ably = RealtimeClientFactory.create(options);
 
         ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "true") });
     }
@@ -1329,7 +1330,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
     @Test(expected=AblyException.class)
     public void channelhistory_until_attach_invalid_value() throws AblyException {
         ClientOptions options = createOptions(testVars.keys[0].keyStr);
-        RealtimeClient ably = new RealtimeClient(options);
+        RealtimeClient ably = RealtimeClientFactory.create(options);
 
         ably.channels.get("test").history(new Param[]{ new Param("untilAttach", "affirmative")});
     }
@@ -1345,7 +1346,7 @@ public class RealtimeChannelHistoryTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             String channelName = "persisted:channelhistory_islast_" + testParams.name;
             int pageMessageCount = 10;
 

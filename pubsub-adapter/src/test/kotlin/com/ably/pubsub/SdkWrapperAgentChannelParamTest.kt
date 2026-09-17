@@ -2,6 +2,7 @@ package com.ably.pubsub
 
 import io.ably.pubsub.realtime.RealtimeClient
 import io.ably.pubsub.realtime.RealtimeClientAdapter
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.channelOptions
 import io.ably.pubsub.types.ChannelMode
 import io.ably.pubsub.types.ChannelOptions
@@ -84,5 +85,5 @@ private fun createRealtimeClient(): RealtimeClient {
   val options = ClientOptions("xxxxx:yyyyyyy").apply {
     autoConnect = false
   }
-  return RealtimeClient(options)
+  return RealtimeClientFactory.create(options)
 }

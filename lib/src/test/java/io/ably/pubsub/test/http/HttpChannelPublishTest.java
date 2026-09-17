@@ -3,6 +3,7 @@ package io.ably.pubsub.test.http;
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.network.HttpRequest;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Channel;
@@ -39,7 +40,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
     }
 
     /**
@@ -154,7 +155,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -216,7 +217,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -293,7 +294,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             Auth.AuthOptions httpAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -307,7 +308,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* publish message */
             Channel pubChannel = ably.channels.get(channelName);
@@ -363,7 +364,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
                 @Override
                 public void onRawHttpException(String id, String method, Throwable t) {}
             };
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish messages */
             pubChannel = ably.channels.get(channelName);
@@ -401,7 +402,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
 
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             Auth.AuthOptions httpAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -416,7 +417,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
             opts.fallbackHosts = new String[]{ablyForToken.httpCore.getPrimaryHost().toUpperCase(Locale.ROOT)};
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* publish message */
             Channel pubChannel = ably.channels.get(channelName);

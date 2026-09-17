@@ -1,6 +1,7 @@
 package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.test.common.Helpers;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -43,7 +44,7 @@ public class RealtimeChannelMessageEditTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new RealtimeClient(opts);
+        ably = RealtimeClientFactory.create(opts);
     }
 
     @After

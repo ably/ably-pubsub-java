@@ -2,6 +2,8 @@ package io.ably.pubsub.uts.infra.unit
 
 import io.ably.pubsub.debug.DebugOptions
 import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
+import io.ably.pubsub.http.HttpClientFactory
 import io.ably.pubsub.http.PubSubHttpClient
 import io.ably.pubsub.server.PubSubServer
 
@@ -22,7 +24,8 @@ class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
  * Which package's entry points the suite constructs clients through, selected by the
  * `uts.side` system property (uts/build.gradle.kts forwards it to the test JVM):
  *
- * - `core` (default): the core constructors, the entry shape of today's package.
+ * - `core` (default): the core construction seam ([RealtimeClientFactory] / [HttpClientFactory]),
+ *   which declares no side.
  * - `server`: `io.ably.pubsub:server` — both client kinds via its side-stamping builders.
  *
  * There is no `device` mode, unlike ably-js's UTS: `io.ably.pubsub:device` is an Android
@@ -40,7 +43,7 @@ val utsSide: String = System.getProperty("uts.side").let { if (it.isNullOrEmpty(
 fun TestRealtimeClient(block: ClientOptionsBuilder.() -> Unit): RealtimeClient {
     val options = ClientOptionsBuilder().apply(block)
     return when (utsSide) {
-        "core" -> RealtimeClient(options)
+        "core" -> RealtimeClientFactory.create(options)
         "server" -> PubSubServer.realtimeClientBuilder(options).build()
         else -> throw IllegalArgumentException("Unknown uts.side '$utsSide': use 'core' or 'server'")
     }
@@ -49,7 +52,7 @@ fun TestRealtimeClient(block: ClientOptionsBuilder.() -> Unit): RealtimeClient {
 fun TestHttpClient(block: ClientOptionsBuilder.() -> Unit): PubSubHttpClient {
     val options = ClientOptionsBuilder().apply(block)
     return when (utsSide) {
-        "core" -> PubSubHttpClient(options)
+        "core" -> HttpClientFactory.create(options)
         "server" -> PubSubServer.httpClientBuilder(options).build()
         else -> throw IllegalArgumentException("Unknown uts.side '$utsSide': use 'core' or 'server'")
     }

@@ -38,6 +38,8 @@ import io.ably.pubsub.push.Push;
 import io.ably.pubsub.push.PushBase;
 import io.ably.pubsub.push.PushChannel;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Channel;
@@ -136,12 +138,12 @@ public class AndroidPushTest {
                 }
                 activationContext.setActivationStateMachine(machine);
 
-                rest = new PubSubHttpClient(options);
+                rest = HttpClientFactory.create(options);
                 rest.auth.authorize(null, null);
                 activationContext.setAbly(rest);
                 rest.setAndroidContext(context);
 
-                adminHttp = new PubSubHttpClient(options);
+                adminHttp = HttpClientFactory.create(options);
                 adminHttp.auth.authorize(new Auth.TokenParams() {{
                     clientId = Auth.WILDCARD_CLIENTID;
                 }}, null);
@@ -1442,7 +1444,7 @@ public class AndroidPushTest {
     @Test
     @SdkSuppress(minSdkVersion = 21)
     public void Realtime_push_interface() throws Exception {
-        RealtimeClient realtime = new RealtimeClient(new ClientOptions() {{
+        RealtimeClient realtime = RealtimeClientFactory.create(new ClientOptions() {{
             autoConnect = false;
             key = "madeup";
         }});

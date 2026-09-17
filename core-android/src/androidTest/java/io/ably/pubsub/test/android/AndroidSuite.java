@@ -15,6 +15,7 @@ import java.util.Map;
 
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Setup;
 import io.ably.pubsub.transport.Defaults;
@@ -56,7 +57,7 @@ public class AndroidSuite {
             opts.tls = false;
             opts.port = server.getListeningPort();
             opts.restHost = "localhost";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.time();
 

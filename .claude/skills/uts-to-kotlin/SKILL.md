@@ -717,7 +717,7 @@ Import `org.junit.jupiter.params.ParameterizedTest` and `org.junit.jupiter.param
 | Pseudocode | Kotlin |
 |---|---|
 | `AWAIT channel.attach()` | `channel.attach()` then `awaitChannelState(channel, ChannelState.attached, 10.seconds)` |
-| `AWAIT channel.publish(name, data)` (await the ack) | wrap the **non-deprecated** `publish(name, data, Callback<PublishResult>)` overload in `suspendCancellableCoroutine` — resume on `onSuccess`, fail on `onError` (the `CompletionListener` overload is deprecated) |
+| `AWAIT channel.publish(name, data)` (await the ack) | wrap the `publish(name, data, Callback<PublishResult>)` overload in `suspendCancellableCoroutine` — resume on `onSuccess`, fail on `onError` |
 | `poll_until(() => AWAIT channel.history().items.length == N, …)` | `pollUntil(10.seconds, 500.milliseconds) { channel.history(null).items().size == N }` (`history()` is a blocking REST call; `null` = no params) |
 
 Use generous timeouts (10–30s) — real network is involved. Everything else is the shared foundation described at the top of this section; a direct-sandbox test just skips the proxy-only subsections (`ProxySession`, rule factories, the event log).

@@ -2,11 +2,13 @@ package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.realtime.ConnectionEvent;
 import io.ably.pubsub.realtime.ConnectionState;
 import io.ably.pubsub.realtime.ConnectionStateListener;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Auth.TokenCallback;
@@ -57,7 +59,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions("not_an_app.invalid_key_id:invalid_key_value");
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
@@ -78,7 +80,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         try {
             String keyId = testVars.keys[0].keyName.split("\\.")[1];
             ClientOptions opts = createOptions(testVars.appId + "." + keyId + ":invalid_key_value");
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
@@ -98,7 +100,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.realtimeHost = "non.existent.host";
         opts.environment = null;
-        RealtimeClient ably = new RealtimeClient(opts);
+        RealtimeClient ably = RealtimeClientFactory.create(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
         connectionWaiter.waitFor(ConnectionState.disconnected);
@@ -118,7 +120,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.realtimeHost = "non.existent.host";
             opts.environment = null;
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.suspended);
@@ -145,7 +147,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
         opts.disconnectedRetryTimeout = Integer.MAX_VALUE;
         opts.suspendedRetryTimeout = Integer.MAX_VALUE;
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionWaiter waiter = new ConnectionWaiter(ably.connection);
             waiter.waitFor(ConnectionState.connecting);
             ably.connection.connectionManager.requestState(ConnectionState.suspended);
@@ -170,7 +172,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.realtimeHost = "non.existent.host";
             opts.environment = null;
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
             connectionWaiter.waitFor(ConnectionState.disconnected);
@@ -198,7 +200,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_token_expire_disconnected() {
         try {
             final ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             Auth.AuthOptions httpAuthOptions = new Auth.AuthOptions() {{
                 key = optsForToken.key;
                 queryTime = true;
@@ -223,7 +225,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.tokenDetails = tokenDetails;
             opts.authCallback = authCallback;
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
 
             ably.connection.on(new ConnectionStateListener() {
                 @Override
@@ -266,7 +268,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_token_expire_inplace_reauth() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             /* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -290,7 +292,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                     return ablyForToken.auth.requestToken(params, null);
                 }
             };
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
@@ -338,7 +340,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.recover = "not_a_valid_connection_id:99";
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo fail = connectionWaiter.waitFor(ConnectionState.failed);
             assertEquals("Verify failed state is reached", ConnectionState.failed, ably.connection.state);
@@ -364,7 +366,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             String recoveryKey =
                 "{\"connectionKey\":\"0123456789abcdef-99\",\"msgSerial\":5,\"channelSerials\":{\"channel1\":\"98\",\"channel2\":\"32\",\"channel3\":\"09\"}}";
             opts.recover = recoveryKey;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ErrorInfo connectedError = connectionWaiter.waitFor(ConnectionState.connected);
             assertEquals("Verify connected state is reached", ConnectionState.connected, ably.connection.state);
@@ -389,7 +391,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             final int[] numberOfErrors = new int[]{0};
 
             // assume we are in connecting state now
@@ -440,7 +442,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            PubSubHttpClient pubSubHttpClient = new PubSubHttpClient(opts);
+            PubSubHttpClient pubSubHttpClient = HttpClientFactory.create(opts);
             final TokenDetails tokenDetails = pubSubHttpClient.auth.requestToken(new TokenParams() {{ ttl = 2000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -455,7 +457,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                 }
             };
             optsForRealtime.tokenDetails = tokenDetails;
-            final RealtimeClient realtimeClient = new RealtimeClient(optsForRealtime);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(optsForRealtime);
 
             (new ConnectionWaiter(realtimeClient.connection)).waitFor(ConnectionState.connected);
             final List<ConnectionState> correctHistory = Arrays.asList(
@@ -507,7 +509,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.disconnectedRetryTimeout = 1000;
 
-            pubSubHttpClient = new PubSubHttpClient(opts);
+            pubSubHttpClient = HttpClientFactory.create(opts);
             final TokenDetails tokenDetails = pubSubHttpClient.auth.requestToken(new TokenParams() {{ ttl = 5000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
 
@@ -521,7 +523,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
                         throw AblyException.fromErrorInfo(new ErrorInfo("Auth failure", 90000));
                 }
             };
-            realtimeClient = new RealtimeClient(optsForRealtime);
+            realtimeClient = RealtimeClientFactory.create(optsForRealtime);
 
             realtimeClient.connection.on(new ConnectionStateListener() {
                 @Override
@@ -565,7 +567,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             opts.realtimeHost = "non.existent.host";
             opts.environment = null;
             opts.disconnectedRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             final ArrayList<Long> disconnectedRetryTimeouts = new ArrayList<>();
 
@@ -617,7 +619,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ((MockWebsocketFactory)opts.transportFactory).allowSend();
             fillInOptions(opts);
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             /* Block send() */
@@ -682,7 +684,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
             ((MockWebsocketFactory)opts.transportFactory).allowSend();
             fillInOptions(opts);
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             /* Block send() */
