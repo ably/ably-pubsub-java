@@ -2,13 +2,13 @@ package com.ably.pubsub
 
 import com.ably.Subscription
 import com.ably.annotations.InternalAPI
-import io.ably.lib.realtime.ChannelBase.MessageListener
-import io.ably.lib.realtime.ChannelState
-import io.ably.lib.realtime.CompletionListener
-import io.ably.lib.types.ChannelOptions
-import io.ably.lib.types.ChannelProperties
-import io.ably.lib.types.ErrorInfo
-import io.ably.lib.types.Message
+import io.ably.pubsub.realtime.ChannelBase.MessageListener
+import io.ably.pubsub.realtime.ChannelState
+import io.ably.pubsub.realtime.CompletionListener
+import io.ably.pubsub.types.ChannelOptions
+import io.ably.pubsub.types.ChannelProperties
+import io.ably.pubsub.types.ErrorInfo
+import io.ably.pubsub.types.Message
 
 
 /**
@@ -45,7 +45,7 @@ public interface RealtimeChannel : Channel {
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published
    * on the channel are received by any channel listeners registered using [subscribe].
    * Any resulting channel state change will be emitted to any listeners registered using the
-   * [io.ably.lib.util.EventEmitter.on] or [io.ably.lib.util.EventEmitter.once] methods.
+   * [io.ably.pubsub.util.EventEmitter.on] or [io.ably.pubsub.util.EventEmitter.once] methods.
    * As a convenience, `attach()` is called implicitly if [subscribe] for the channel is called,
    * or [RealtimePresence.enter] or [RealtimePresence.subscribe] are called on the [RealtimePresence] object for this channel.
    *
@@ -56,7 +56,7 @@ public interface RealtimeChannel : Channel {
   /**
    * Detach from this channel.
    * Any resulting channel state change is emitted to any listeners registered using the
-   * [io.ably.lib.util.EventEmitter.on] or [io.ably.lib.util.EventEmitter.once] methods.
+   * [io.ably.pubsub.util.EventEmitter.on] or [io.ably.pubsub.util.EventEmitter.once] methods.
    * Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
    *
    * Spec: RTL5e
@@ -150,5 +150,5 @@ public interface RealtimeChannel : Channel {
    * This property will be removed once public API for new version of ably-java is stable
    */
   @InternalAPI
-  public val javaChannel: io.ably.lib.realtime.Channel
+  public val javaChannel: io.ably.pubsub.realtime.Channel
 }

@@ -1,6 +1,6 @@
 package io.ably.pubsub.device
 
-import io.ably.lib.util.Side
+import io.ably.pubsub.util.Side
 import org.junit.Assert
 import org.junit.Test
 

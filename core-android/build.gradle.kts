@@ -4,14 +4,14 @@ plugins {
 }
 
 android {
-    namespace = "io.ably.lib"
+    namespace = "io.ably.pubsub"
     defaultConfig {
         minSdk = 19
         compileSdk = 34
         buildConfigField("String", "LIBRARY_NAME", "\"android\"")
         buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
         testInstrumentationRunner = "android.support.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArguments["class"] = "io.ably.lib.test.android.AndroidPushTest"
+        testInstrumentationRunnerArguments["class"] = "io.ably.pubsub.test.android.AndroidPushTest"
         testInstrumentationRunnerArguments["timeout_msec"] = "300000"
         consumerProguardFiles("proguard.txt")
     }

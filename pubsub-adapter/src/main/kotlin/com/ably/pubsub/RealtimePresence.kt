@@ -1,10 +1,10 @@
 package com.ably.pubsub
 
 import com.ably.Subscription
-import io.ably.lib.realtime.ChannelState
-import io.ably.lib.realtime.CompletionListener
-import io.ably.lib.realtime.Presence.PresenceListener
-import io.ably.lib.types.PresenceMessage
+import io.ably.pubsub.realtime.ChannelState
+import io.ably.pubsub.realtime.CompletionListener
+import io.ably.pubsub.realtime.Presence.PresenceListener
+import io.ably.pubsub.types.PresenceMessage
 import java.util.*
 
 
@@ -15,7 +15,7 @@ public interface RealtimePresence : Presence {
 
   /**
    * Retrieves the current members present on the channel and the metadata for each member,
-   * such as their [io.ably.lib.types.PresenceMessage.Action] and ID.
+   * such as their [io.ably.pubsub.types.PresenceMessage.Action] and ID.
    * Returns an array of [PresenceMessage] objects.
    *
    * Spec: RTP11
