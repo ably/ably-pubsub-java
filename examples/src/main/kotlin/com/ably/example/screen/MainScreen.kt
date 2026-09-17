@@ -8,11 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import io.ably.lib.realtime.AblyRealtime
+import io.ably.pubsub.realtime.RealtimeClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(realtimeClient: AblyRealtime) {
+fun MainScreen(realtimeClient: RealtimeClient) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val isSandbox = realtimeClient.options.environment == "sandbox"
 

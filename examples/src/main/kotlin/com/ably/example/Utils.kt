@@ -1,13 +1,13 @@
 /**
  * The LiveObjects bridge layer for the example app: Compose observers plus coroutine
- * wrappers over the path-based API (`io.ably.lib.liveobjects`).
+ * wrappers over the path-based API (`io.ably.pubsub.liveobjects`).
  *
- * The app works exclusively with [io.ably.lib.liveobjects.path.PathObject]s — references
+ * The app works exclusively with [io.ably.pubsub.liveobjects.path.PathObject]s — references
  * to a *location* in the channel's objects graph, not to a particular object. A PathObject
  * resolves its path lazily on every call, so a stored reference stays valid even when the
  * object at that location is replaced (e.g. "Reset all" swaps in brand-new counters), and
  * a path subscription automatically observes whatever object currently lives there. The
- * identity-bound alternative, [io.ably.lib.liveobjects.instance.Instance] (obtained via
+ * identity-bound alternative, [io.ably.pubsub.liveobjects.instance.Instance] (obtained via
  * `pathObject.instance()`), tracks one specific object wherever it moves — not needed here,
  * since every screen wants location semantics.
  *
@@ -27,19 +27,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import io.ably.lib.liveobjects.ValueType
-import io.ably.lib.liveobjects.path.types.LiveCounterPathObject
-import io.ably.lib.liveobjects.path.types.LiveMapPathObject
-import io.ably.lib.liveobjects.state.ObjectStateEvent
-import io.ably.lib.liveobjects.value.LiveCounter
-import io.ably.lib.liveobjects.value.LiveMap
-import io.ably.lib.liveobjects.value.LiveMapValue
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.realtime.Channel
-import io.ably.lib.realtime.ChannelState
-import io.ably.lib.realtime.ChannelStateListener
-import io.ably.lib.types.ChannelMode
-import io.ably.lib.types.ChannelOptions
+import io.ably.pubsub.liveobjects.ValueType
+import io.ably.pubsub.liveobjects.path.types.LiveCounterPathObject
+import io.ably.pubsub.liveobjects.path.types.LiveMapPathObject
+import io.ably.pubsub.liveobjects.state.ObjectStateEvent
+import io.ably.pubsub.liveobjects.value.LiveCounter
+import io.ably.pubsub.liveobjects.value.LiveMap
+import io.ably.pubsub.liveobjects.value.LiveMapValue
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.Channel
+import io.ably.pubsub.realtime.ChannelState
+import io.ably.pubsub.realtime.ChannelStateListener
+import io.ably.pubsub.types.ChannelMode
+import io.ably.pubsub.types.ChannelOptions
 import kotlinx.coroutines.future.await
 
 /**
@@ -207,7 +207,7 @@ fun observeRootObject(channel: Channel): LiveMapPathObject? {
 }
 
 @Composable
-fun getRealtimeChannel(realtimeClient: AblyRealtime, channelName: String): Channel {
+fun getRealtimeChannel(realtimeClient: RealtimeClient, channelName: String): Channel {
   val channel = realtimeClient.channels.get(channelName)
 
   DisposableEffect(channel) {

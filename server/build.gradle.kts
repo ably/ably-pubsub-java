@@ -11,8 +11,8 @@ java {
 
 dependencies {
     /*
-     * api, not implementation: the factories return io.ably.lib.rest.AblyRest and
-     * io.ably.lib.realtime.AblyRealtime, and consumers configure them with io.ably.lib.types.*,
+     * api, not implementation: the factories return io.ably.pubsub.http.PubSubHttpClient and
+     * io.ably.pubsub.realtime.RealtimeClient, and consumers configure them with io.ably.pubsub.types.*,
      * so the core is part of this module's compile-time ABI.
      */
     api(project(":core"))

@@ -1,7 +1,7 @@
 package com.ably.pubsub
 
-import io.ably.lib.realtime.ChannelState
-import io.ably.lib.types.ChannelOptions
+import io.ably.pubsub.realtime.ChannelState
+import io.ably.pubsub.types.ChannelOptions
 
 /**
  * Represents collection of managed Channel instances

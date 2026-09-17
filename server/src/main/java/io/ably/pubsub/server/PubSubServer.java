@@ -1,15 +1,15 @@
 package io.ably.pubsub.server;
 
-import io.ably.lib.push.Storage;
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.rest.Auth;
-import io.ably.lib.types.AblyException;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.Param;
-import io.ably.lib.types.ProxyOptions;
-import io.ably.lib.util.Log.LogHandler;
-import io.ably.lib.util.Side;
+import io.ably.pubsub.push.Storage;
+import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.http.PubSubHttpClient;
+import io.ably.pubsub.http.Auth;
+import io.ably.pubsub.types.AblyException;
+import io.ably.pubsub.types.ClientOptions;
+import io.ably.pubsub.types.Param;
+import io.ably.pubsub.types.ProxyOptions;
+import io.ably.pubsub.util.Log.LogHandler;
+import io.ably.pubsub.util.Side;
 
 import java.util.Map;
 
@@ -17,7 +17,7 @@ import java.util.Map;
  * Entry point for the Ably Pub/Sub SDK for servers: applications running on infrastructure you
  * control, whose traffic is exempt from monthly-active-user billing.
  * <p>
- * Clients built here are the same {@link AblyRest} and {@link AblyRealtime} objects the core SDK
+ * Clients built here are the same {@link PubSubHttpClient} and {@link RealtimeClient} objects the core SDK
  * has always returned, and behave identically. What the artifact adds is the choice itself: the
  * dependency you declare and the factory you call state which side of the connection your code runs
  * on, rather than leaving it to be inferred.
@@ -25,11 +25,11 @@ import java.util.Map;
  * If your code runs on an end-user device, use the {@code io.ably.pubsub:device} artifact instead.
  *
  * <pre>{@code
- * AblyRest http = PubSubServer.httpClientBuilder()
+ * PubSubHttpClient http = PubSubServer.httpClientBuilder()
  *     .key("xVLyHw.MHOCLg:...")
  *     .build();
  *
- * AblyRealtime realtime = PubSubServer.realtimeClientBuilder()
+ * RealtimeClient realtime = PubSubServer.realtimeClientBuilder()
  *     .key("xVLyHw.MHOCLg:...")
  *     .echoMessages(false)
  *     .build();
@@ -59,7 +59,7 @@ public final class PubSubServer {
      * <p>
      * This is for callers holding a {@link ClientOptions} they did not build here: an SDK
      * layered on this package that takes options from its own user, or a test harness passing
-     * a {@link io.ably.lib.debug.DebugOptions} subclass. To supply an API key or token, prefer
+     * a {@link io.ably.pubsub.debug.DebugOptions} subclass. To supply an API key or token, prefer
      * {@link ClientBuilder#key(String)} or {@link ClientBuilder#token(String)} on the no-arg
      * builder over assembling options for it.
      * <p>
@@ -97,7 +97,7 @@ public final class PubSubServer {
      * <p>
      * This is for callers holding a {@link ClientOptions} they did not build here: an SDK
      * layered on this package that takes options from its own user, or a test harness passing
-     * a {@link io.ably.lib.debug.DebugOptions} subclass. To supply an API key or token, prefer
+     * a {@link io.ably.pubsub.debug.DebugOptions} subclass. To supply an API key or token, prefer
      * {@link ClientBuilder#key(String)} or {@link ClientBuilder#token(String)} on the no-arg
      * builder over assembling options for it.
      * <p>
@@ -533,7 +533,7 @@ public final class PubSubServer {
     /**
      * Builds a stateless HTTP client. Obtain one from {@link PubSubServer#httpClientBuilder()}.
      * <p>
-     * Deliberately does not expose the realtime-only options, since an {@link AblyRest} never
+     * Deliberately does not expose the realtime-only options, since an {@link PubSubHttpClient} never
      * opens a connection for them to apply to.
      */
     public static final class HttpClientBuilder extends ClientBuilder<HttpClientBuilder> {
@@ -548,13 +548,13 @@ public final class PubSubServer {
         /**
          * Builds the client.
          *
-         * @return an {@link AblyRest}.
+         * @return an {@link PubSubHttpClient}.
          * @throws AblyException if the options are invalid, for example if no authentication
          *                       parameters were supplied.
          */
         @SuppressWarnings("deprecation") // this factory is the replacement for that constructor
-        public AblyRest build() throws AblyException {
-            return new AblyRest(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+        public PubSubHttpClient build() throws AblyException {
+            return new PubSubHttpClient(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 
@@ -684,13 +684,13 @@ public final class PubSubServer {
          * Builds the client, which connects immediately unless {@link #autoConnect(boolean)} was
          * set to false.
          *
-         * @return an {@link AblyRealtime}.
+         * @return an {@link RealtimeClient}.
          * @throws AblyException if the options are invalid, for example if no authentication
          *                       parameters were supplied.
          */
         @SuppressWarnings("deprecation") // this factory is the replacement for that constructor
-        public AblyRealtime build() throws AblyException {
-            return new AblyRealtime(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+        public RealtimeClient build() throws AblyException {
+            return new RealtimeClient(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 }

@@ -5,7 +5,7 @@
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Ensure you have added suitable tests and the test suite is passing(`./gradlew core:testRestSuite core:testRealtimeSuite core-android:connectedAndroidTest`)
+4. Ensure you have added suitable tests and the test suite is passing(`./gradlew core:testHttpSuite core:testRealtimeSuite core-android:connectedAndroidTest`)
 5. Push to the branch (`git push origin my-new-feature`)
 6. Create a new Pull Request
 
@@ -135,7 +135,7 @@ This will create a project with separate core and core-android modules.
 Interactive run/debug configurations to execute the unit tests can be created as follows:
 - select Run->Edit configurations ...
 - for the core project, create a new "JUnit" run configuration; or for the core-android project create a new "Android Instrumented Tests" configuration;
-- select the Class as RealtimeSuite or RestSuite;
+- select the Class as RealtimeSuite or HttpSuite;
 - select the relevant module for the classpath.
 
 In order to run the Android configuration it is necessary to set up the Android SDK path by selecting a project of module and opening the module settings. The Android SDK needs to be added under Platform Settings->SDKs.
@@ -155,7 +155,7 @@ Interactive run/debug configurations for the core project can be created as foll
 - select Run->Run configurations ...
 - create a new JUnit configuration
 - select the core project;
-- select the Class as RealtimeSuite or RestSuite;
+- select the Class as RealtimeSuite or HttpSuite;
 - select JUnit 4 as the test runner.
 
 #### Importing into Android studio
@@ -183,10 +183,10 @@ but on Windows there is a batch file:
 
     gradlew.bat <task name>
 
-Tests are based on JUnit, and there are separate suites for the REST and Realtime libraries, with gradle tasks
+Tests are based on JUnit, and there are separate suites for the HTTP and Realtime libraries, with gradle tasks
 for the JRE-specific library:
 
-    ./gradlew core:testRestSuite
+    ./gradlew core:testHttpSuite
 
     ./gradlew core:testRealtimeSuite
 

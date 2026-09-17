@@ -3,10 +3,10 @@ package com.ably.pubsub
 import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
 import com.ably.http.HttpMethod
-import io.ably.lib.http.HttpCore
-import io.ably.lib.push.Push
-import io.ably.lib.rest.Auth
-import io.ably.lib.types.*
+import io.ably.pubsub.http.HttpCore
+import io.ably.pubsub.push.Push
+import io.ably.pubsub.http.Auth
+import io.ably.pubsub.types.*
 
 /**
  * A client that offers a base interface to interact with Ably's API.

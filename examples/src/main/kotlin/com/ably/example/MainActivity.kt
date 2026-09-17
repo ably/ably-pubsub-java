@@ -6,16 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ably.example.screen.MainScreen
 import com.ably.example.ui.theme.AblyTheme
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.rest.AblyRest
-import io.ably.lib.rest.Auth
-import io.ably.lib.types.ClientOptions
-import io.ably.lib.util.Log
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.http.PubSubHttpClient
+import io.ably.pubsub.http.Auth
+import io.ably.pubsub.types.ClientOptions
+import io.ably.pubsub.util.Log
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
-  private val realtimeClient: AblyRealtime by lazy {
-    AblyRealtime(
+  private val realtimeClient: RealtimeClient by lazy {
+    RealtimeClient(
       ClientOptions().apply {
         if (BuildConfig.ABLY_KEY.isBlank()) {
           authCallback = Auth.TokenCallback {
@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
               val sandbox = Sandbox.getInstance()
               sandbox.apiKey
             }
-            AblyRest(ClientOptions().apply {
+            PubSubHttpClient(ClientOptions().apply {
               key = apiKey
               environment = "sandbox"
             }).auth.requestToken(null, null)

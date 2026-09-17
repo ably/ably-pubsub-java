@@ -42,18 +42,18 @@ tasks.withType<Test>().configureEach {
 
 tasks.register<Test>("runLiveObjectsUnitTests") {
     filter {
-        includeTestsMatching("io.ably.lib.liveobjects.unit.*")     // the module's own unit tests
-        includeTestsMatching("io.ably.lib.liveobjects.uts.unit.*") // UTS objects unit suite (skill-generated)
+        includeTestsMatching("io.ably.pubsub.liveobjects.unit.*")     // the module's own unit tests
+        includeTestsMatching("io.ably.pubsub.liveobjects.uts.unit.*") // UTS objects unit suite (skill-generated)
     }
 }
 
 tasks.register<Test>("runLiveObjectsIntegrationTests") {
     filter {
-        includeTestsMatching("io.ably.lib.liveobjects.integration.*")
-        includeTestsMatching("io.ably.lib.liveobjects.uts.integration.*")   // NEW
-        includeTestsMatching("io.ably.lib.liveobjects.uts.proxy.*")         // NEW
+        includeTestsMatching("io.ably.pubsub.liveobjects.integration.*")
+        includeTestsMatching("io.ably.pubsub.liveobjects.uts.integration.*")   // NEW
+        includeTestsMatching("io.ably.pubsub.liveobjects.uts.proxy.*")         // NEW
         // Exclude the base integration test class
-        excludeTestsMatching("io.ably.lib.liveobjects.integration.setup.IntegrationTest")
+        excludeTestsMatching("io.ably.pubsub.liveobjects.integration.setup.IntegrationTest")
     }
 }
 

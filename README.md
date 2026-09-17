@@ -82,11 +82,11 @@ implementation 'org.slf4j:slf4j-simple:2.0.7'
 Run the following to instantiate a client:
 
 ```java
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.types.ClientOptions;
+import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.types.ClientOptions;
 
 ClientOptions options = new ClientOptions(apiKey);
-AblyRealtime realtime = new AblyRealtime(options);
+RealtimeClient realtime = new RealtimeClient(options);
 ```
 
 ---
@@ -100,7 +100,7 @@ The following code connects to Ably's realtime messaging service, subscribes to 
 // Initialize Ably Realtime client
 ClientOptions options = new ClientOptions("your-ably-api-key");
 options.clientId = "me";
-AblyRealtime realtimeClient = new AblyRealtime(options);
+RealtimeClient realtimeClient = new RealtimeClient(options);
 
 // Wait for connection to be established
 realtimeClient.connection.on(ConnectionEvent.connected, connectionStateChange -> {
@@ -158,12 +158,12 @@ Enable proxy support by specifying proxy settings in the ClientOptions when init
 The following example sets up a proxy using the Pub/Sub Java SDK:
 
 ```java
-import io.ably.lib.realtime.AblyRealtime;
-import io.ably.lib.rest.AblyRest;
-import io.ably.lib.transport.Defaults;
-import io.ably.lib.types.ClientOptions;
-import io.ably.lib.types.ProxyOptions;
-import io.ably.lib.http.HttpAuth;
+import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.transport.Defaults;
+import io.ably.pubsub.types.ClientOptions;
+import io.ably.pubsub.types.ProxyOptions;
+import io.ably.pubsub.http.HttpAuth;
+import io.ably.pubsub.http.PubSubHttpClient;
 
 public class AblyWithProxy {
     public static void main(String[] args) throws Exception {
@@ -184,10 +184,10 @@ public class AblyWithProxy {
         options.proxy = proxy;
 
         // Create an instance of Ably using the configured options
-        AblyRest ably = new AblyRest(options);
+        PubSubHttpClient ably = new PubSubHttpClient(options);
 
         // Alternatively, for real-time connections
-        AblyRealtime ablyRealtime = new AblyRealtime(options);
+        RealtimeClient realtimeClient = new RealtimeClient(options);
 
         // Use the Ably client as usual
     }

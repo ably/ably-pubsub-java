@@ -1,8 +1,7 @@
 package com.ably
 
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.rest.AblyRest
-import io.ably.lib.types.ClientOptions
+import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.types.ClientOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -19,7 +18,7 @@ suspend fun waitFor(timeoutInMs: Long = 10_000, block: suspend () -> Boolean) {
   }
 }
 
-fun createAblyRealtime(port: Int): AblyRealtime {
+fun createCoreRealtimeClient(port: Int): RealtimeClient {
   val options = ClientOptions("xxxxx:yyyyyyy").apply {
     this.port = port
     useBinaryProtocol = false
@@ -29,18 +28,5 @@ fun createAblyRealtime(port: Int): AblyRealtime {
     autoConnect = false
   }
 
-  return AblyRealtime(options)
-}
-
-fun createAblyRest(port: Int): AblyRest {
-  val options = ClientOptions("xxxxx:yyyyyyy").apply {
-    this.port = port
-    useBinaryProtocol = false
-    realtimeHost = "localhost"
-    restHost = "localhost"
-    tls = false
-    autoConnect = false
-  }
-
-  return AblyRest(options)
+  return RealtimeClient(options)
 }

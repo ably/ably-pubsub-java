@@ -1,7 +1,7 @@
 package com.ably.pubsub
 
 import com.ably.query.OrderBy
-import io.ably.lib.types.*
+import io.ably.pubsub.types.*
 
 /**
  * Enables get historic presence set for a channel.

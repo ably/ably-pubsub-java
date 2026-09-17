@@ -16,11 +16,11 @@ import androidx.compose.ui.unit.sp
 import com.ably.example.getRealtimeChannel
 import com.ably.example.observeCounter
 import com.ably.example.observeRootObject
-import io.ably.lib.realtime.AblyRealtime
+import io.ably.pubsub.realtime.RealtimeClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ColorVotingScreen(realtimeClient: AblyRealtime) {
+fun ColorVotingScreen(realtimeClient: RealtimeClient) {
   val channel = getRealtimeChannel(realtimeClient, "objects-live-counter")
 
   val root = observeRootObject(channel)

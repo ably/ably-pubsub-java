@@ -1,11 +1,11 @@
 package com.ably.pubsub
 
 import com.ably.query.OrderBy
-import io.ably.lib.types.*
+import io.ably.pubsub.types.*
 
 /**
  * An interface representing a Channel in the Ably API. This serves as the base interface
- * for both [RealtimeChannel] and [RestChannel], providing common channel functionality
+ * for [RealtimeChannel], providing common channel functionality
  * such as history retrieval and presence management.
  *
  * A channel is the medium through which messages are distributed. Channels can represent
