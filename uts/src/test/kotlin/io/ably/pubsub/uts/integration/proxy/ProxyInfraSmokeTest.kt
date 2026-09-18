@@ -23,7 +23,6 @@ import org.junit.jupiter.api.TestInstance
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds

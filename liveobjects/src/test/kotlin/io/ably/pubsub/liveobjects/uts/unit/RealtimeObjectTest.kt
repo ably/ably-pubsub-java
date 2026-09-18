@@ -28,7 +28,6 @@ import io.ably.pubsub.uts.infra.awaitChannelState
 import io.ably.pubsub.uts.infra.pollUntil
 import io.ably.pubsub.uts.infra.unit.ConnectionDetails
 import io.ably.pubsub.uts.infra.unit.FakeClock
-import io.ably.pubsub.uts.infra.unit.MockEvent
 import io.ably.pubsub.uts.infra.unit.MockWebSocket
 import io.ably.pubsub.uts.infra.unit.TestRealtimeClient
 import kotlinx.coroutines.future.await
