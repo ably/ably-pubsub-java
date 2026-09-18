@@ -2,6 +2,7 @@ package io.ably.pubsub.device
 
 import io.ably.pubsub.push.Storage
 import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.http.Auth
 import io.ably.pubsub.types.ClientOptions
 import io.ably.pubsub.types.Param
@@ -288,16 +289,6 @@ public object PubSubDevice {
         public fun fallbackHosts(fallbackHosts: Array<String>): ClientBuilder = apply { options.fallbackHosts = fallbackHosts }
 
         /**
-         * Sets [ClientOptions.fallbackHostsUseDefault].
-         *
-         * @param fallbackHostsUseDefault the value to set.
-         * @return this builder.
-         */
-        @Deprecated("Deprecated on ClientOptions itself; use fallbackHosts to supply custom hosts.")
-        @Suppress("DEPRECATION")
-        public fun fallbackHostsUseDefault(fallbackHostsUseDefault: Boolean): ClientBuilder = apply { options.fallbackHostsUseDefault = fallbackHostsUseDefault }
-
-        /**
          * Sets [ClientOptions.fallbackRetryTimeout].
          *
          * @param fallbackRetryTimeout the value to set.
@@ -440,7 +431,7 @@ public object PubSubDevice {
          * @throws io.ably.pubsub.types.AblyException if the options are invalid, for example if no
          *         authentication parameters were supplied.
          */
-        @Suppress("DEPRECATION") // this factory is the replacement for that constructor
-        public fun build(): RealtimeClient = RealtimeClient(Side.injectSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER))
+        public fun build(): RealtimeClient =
+            RealtimeClientFactory.create(Side.injectSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER))
     }
 }

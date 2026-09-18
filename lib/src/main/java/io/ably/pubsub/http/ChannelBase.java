@@ -5,7 +5,6 @@ import io.ably.pubsub.http.Http;
 import io.ably.pubsub.http.HttpScheduler;
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpUtils;
-import io.ably.pubsub.realtime.CompletionListener;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.AsyncPaginatedResult;
 import io.ably.pubsub.types.Callback;
@@ -91,28 +90,6 @@ public class ChannelBase {
     }
 
     /**
-     * Publish a message on this channel using the REST API.
-     * Since the REST API is stateless, this request is made independently
-     * of any other request on this or any other channel.
-     *
-     * @param name the event name
-     * @param data the message payload;
-     * @param listener a listener to be notified of the outcome of this message.
-     * <p>
-     * This listener is invoked on a background thread.
-     * @deprecated Use {@link #publishAsync(String, Object, Callback)} instead.
-     */
-    @Deprecated
-    public void publishAsync(String name, Object data, CompletionListener listener) {
-        publishAsync(ably.http, name, data, listener);
-    }
-
-    @NonBlocking
-    void publishAsync(Http http, String name, Object data, CompletionListener listener) {
-        publishImpl(http, name, data).async(new CompletionListener.ToCallback<>(listener));
-    }
-
-    /**
      * Asynchronously publish a message on this channel using the REST API.
      * Since the REST API is stateless, this request is made independently
      * of any other request on this or any other channel.
@@ -166,26 +143,6 @@ public class ChannelBase {
     @Blocking
     public PublishResult publishWithResult(final Message[] messages) throws AblyException {
         return publishImpl(ably.http, messages).sync();
-    }
-
-    /**
-     * Asynchronously publish an array of messages on this channel
-     *
-     * @param messages the message
-     * @param listener a listener to be notified of the outcome of this message.
-     * @deprecated Use {@link #publishAsync(Message[], Callback)} instead.
-     * <p>
-     * This listener is invoked on a background thread.
-     */
-    @Deprecated
-    @NonBlocking
-    public void publishAsync(final Message[] messages, final CompletionListener listener) {
-        publishAsync(ably.http, messages, listener);
-    }
-
-    @Deprecated
-    void publishAsync(Http http, final Message[] messages, final CompletionListener listener) {
-        publishImpl(http, messages).async(new CompletionListener.ToCallback<>(listener));
     }
 
     /**

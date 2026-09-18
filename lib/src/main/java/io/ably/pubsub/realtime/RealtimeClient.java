@@ -51,34 +51,17 @@ public class RealtimeClient extends PubSubHttpClient {
     private final LiveObjectsPlugin liveObjectsPlugin;
 
     /**
-     * Constructs a Realtime client object using an Ably API key or token string.
-     * <p>
-     * Spec: RSC1
-     * @param key The Ably API key or token string used to validate the client.
-     * @throws AblyException
-     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
-     *             {@code io.ably.pubsub:device} artifact if this code runs on an end-user device, or
-     *             {@code io.ably.pubsub.server.PubSubServer#realtimeClientBuilder()} from the
-     *             {@code io.ably.pubsub:server} artifact if it runs on infrastructure you control.
-     */
-    @Deprecated
-    public RealtimeClient(String key) throws AblyException {
-        this(new ClientOptions(key));
-    }
-
-    /**
      * Constructs a RealtimeClient object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Not public: a client is obtained from the builders of the {@code io.ably.pubsub:device} or
+     * {@code io.ably.pubsub:server} artifact, which name the side of the connection your code
+     * runs on. {@link RealtimeClientFactory} is the seam those builders construct through.
      * <p>
      * Spec: RSC1
      * @param options A {@link ClientOptions} object.
      * @throws AblyException
-     * @deprecated use {@code io.ably.pubsub.device.PubSubDevice#clientBuilder()} from the
-     *             {@code io.ably.pubsub:device} artifact if this code runs on an end-user device, or
-     *             {@code io.ably.pubsub.server.PubSubServer#realtimeClientBuilder()} from the
-     *             {@code io.ably.pubsub:server} artifact if it runs on infrastructure you control.
      */
-    @Deprecated
-    public RealtimeClient(ClientOptions options) throws AblyException {
+    protected RealtimeClient(ClientOptions options) throws AblyException {
         super(options);
         final InternalChannels channels = new InternalChannels();
         this.channels = channels;

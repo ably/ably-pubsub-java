@@ -4,7 +4,9 @@ import com.google.gson.JsonObject;
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.push.PushBase.ChannelSubscription;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.CompletionListener;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.DeviceDetails;
 import io.ably.pubsub.test.common.Helpers;
@@ -78,8 +80,8 @@ public class HttpPushTest extends ParameterizedTest {
         httpTracker = new Helpers.RawHttpTracker();
         DebugOptions options = createOptions(testVars.keys[0].keyStr);
         options.httpListener = httpTracker;
-        rest = new PubSubHttpClient(options);
-        realtime = new RealtimeClient(options);
+        rest = HttpClientFactory.create(options);
+        realtime = RealtimeClientFactory.create(options);
 
         deviceDetails = DeviceDetails.fromJsonObject(JsonUtils.object()
                 .add("id", "testDeviceDetails")

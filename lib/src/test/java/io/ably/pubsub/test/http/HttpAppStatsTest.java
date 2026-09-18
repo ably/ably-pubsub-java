@@ -2,6 +2,7 @@ package io.ably.pubsub.test.http;
 
 import io.ably.pubsub.http.HttpHelpers;
 import io.ably.pubsub.http.HttpUtils;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.test.common.Setup;
@@ -34,14 +35,14 @@ public class HttpAppStatsTest extends ParameterizedTest {
     @Before
     public void setUpBefore() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        ably = new PubSubHttpClient(opts);
+        ably = HttpClientFactory.create(opts);
     }
 
     @BeforeClass
     public static void populateStats() {
         try {
             ClientOptions opts = testVars.createOptions(testVars.keys[0].keyStr, Setup.TestParameters.TEXT);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* get time, preferring time from Ably */
             long currentTime = System.currentTimeMillis();
             try {

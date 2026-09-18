@@ -10,6 +10,7 @@ import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpScheduler;
 import io.ably.pubsub.http.HttpUtils;
 import io.ably.pubsub.http.HttpHelpers;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.loader.ArgumentLoader;
 import io.ably.pubsub.test.loader.ResourceLoader;
@@ -206,7 +207,7 @@ public class Setup {
                     opts.port = port;
                     opts.tlsPort = tlsPort;
                     opts.tls = true;
-                    ably = new PubSubHttpClient(opts);
+                    ably = HttpClientFactory.create(opts);
                 } catch(AblyException e) {
                     TerminationReason.UNABLE_TO_INSTANCE_REST.exit(e);
                 }
@@ -257,7 +258,7 @@ public class Setup {
                 opts.port = port;
                 opts.tlsPort = tlsPort;
                 opts.tls = true;
-                ably = new PubSubHttpClient(opts);
+                ably = HttpClientFactory.create(opts);
                 ably.http.request(new Http.Execute<Void>() {
                     @Override
                     public void execute(HttpScheduler http, Callback<Void> callback) throws AblyException {

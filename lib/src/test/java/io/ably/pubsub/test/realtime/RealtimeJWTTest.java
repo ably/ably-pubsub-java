@@ -6,12 +6,13 @@ import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpCore.ResponseHandler;
 import io.ably.pubsub.http.HttpHelpers;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
-import io.ably.pubsub.realtime.CompletionListener;
 import io.ably.pubsub.realtime.ConnectionEvent;
 import io.ably.pubsub.realtime.ConnectionState;
 import io.ably.pubsub.realtime.ConnectionStateListener;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth.TokenCallback;
 import io.ably.pubsub.http.Auth.TokenParams;
@@ -20,10 +21,12 @@ import io.ably.pubsub.test.common.Helpers.ConnectionWaiter;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.test.common.Setup.Key;
 import io.ably.pubsub.types.AblyException;
+import io.ably.pubsub.types.Callback;
 import io.ably.pubsub.types.ClientOptions;
 import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.types.Message;
 import io.ably.pubsub.types.Param;
+import io.ably.pubsub.types.PublishResult;
 import io.ably.pubsub.types.ProtocolMessage;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -65,7 +68,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token */
             ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, clientIdParam), null);
             assertNotNull("Expected token value", realtimeOptions.token);
-            RealtimeClient realtimeClient = new RealtimeClient(realtimeOptions);
+            RealtimeClient realtimeClient = RealtimeClientFactory.create(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(realtimeClient.connection);
@@ -93,7 +96,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has subscribe-only capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, susbcribeOnlyCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final RealtimeClient realtimeClient = new RealtimeClient(realtimeOptions);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(realtimeClient.connection);
@@ -106,9 +109,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
             new ChannelWaiter(channel).waitFor(ChannelState.attached);
 
             /* publish and verify that it fails */
-            channel.publish(messageName, null, new CompletionListener() {
+            channel.publish(messageName, null, new Callback<PublishResult>() {
                 @Override
-                public void onSuccess() {
+                public void onSuccess(PublishResult result) {
                     realtimeClient.close();
                     fail("It should not succeed");
                 }
@@ -138,7 +141,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that has publish capabilities */
             ClientOptions realtimeOptions = buildClientOptions(keys, publishCapability);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final RealtimeClient realtimeClient = new RealtimeClient(realtimeOptions);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(realtimeClient.connection);
@@ -152,9 +155,9 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
             /* publish, verify that it succeeds then close */
             final Message message = new Message(messageName, null);
-            channel.publish(message, new CompletionListener() {
+            channel.publish(message, new Callback<PublishResult>() {
                 @Override
-                public void onSuccess() {
+                public void onSuccess(PublishResult result) {
                     System.out.println("Message " + messageName + " published successfully");
                     realtimeClient.close();
                 }
@@ -183,7 +186,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
             /* create ably realtime with JWT token that expires in 5 seconds */
             ClientOptions realtimeOptions = buildClientOptions(mergeParams(keys, shortTokenTtl), null);
             assertNotNull("Expected token value", realtimeOptions.token);
-            final RealtimeClient realtimeClient = new RealtimeClient(realtimeOptions);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(realtimeOptions);
 
             /* wait for connected state */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(realtimeClient.connection);
@@ -236,7 +239,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                     }
                 }
             };
-            final RealtimeClient realtimeClient = new RealtimeClient(options);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(options);
 
             /* Once connected for the first time capture the assigned token */
             realtimeClient.connection.once(ConnectionEvent.connected, new ConnectionStateListener() {
@@ -300,7 +303,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                 @Override
                 public Object getTokenRequest(TokenParams params) throws AblyException {
                     final String[] resultToken = new String[1];
-                    PubSubHttpClient rest = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+                    PubSubHttpClient rest = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
                     HttpHelpers.getUri(rest.httpCore, echoServer, new Param[]{}, mergeParams(keys, mediumTokenTtl), new ResponseHandler() {
                         @Override
                         public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {
@@ -341,7 +344,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
                 }
             };
 
-            final RealtimeClient realtimeClient = new RealtimeClient(options);
+            final RealtimeClient realtimeClient = RealtimeClientFactory.create(options);
 
             /* Once connected for the first time capture the assigned token and
             * verify the callback has been called once */
@@ -400,7 +403,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
     private ClientOptions buildClientOptions(Param[] params, String capability) {
         try {
             final String[] resultToken = new String[1];
-            PubSubHttpClient rest = new PubSubHttpClient(createOptions(testVars.keys[0].keyStr));
+            PubSubHttpClient rest = HttpClientFactory.create(createOptions(testVars.keys[0].keyStr));
             HttpHelpers.getUri(rest.httpCore, echoServer, null, params, new ResponseHandler() {
                 @Override
                 public Object handleResponse(HttpCore.Response response, ErrorInfo error) throws AblyException {

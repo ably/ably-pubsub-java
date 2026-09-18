@@ -1286,7 +1286,6 @@ public class ConnectionManager implements ConnectListener {
 
     private void onChannelMessage(ProtocolMessage message) {
         channels.onMessage(message);
-        connection.recoveryKey = connection.createRecoveryKey();
     }
 
     private synchronized void onConnected(ProtocolMessage message) {
@@ -1335,8 +1334,6 @@ public class ConnectionManager implements ConnectListener {
             requestState(transport, new StateIndication(ConnectionState.failed, e.errorInfo));
             return;
         }
-
-        connection.recoveryKey = connection.createRecoveryKey();
 
         /* indicated connected currentState */
         final StateIndication stateIndication = new StateIndication(ConnectionState.connected, message.error, null, null);
@@ -1460,7 +1457,6 @@ public class ConnectionManager implements ConnectListener {
             if(connection.key != null) {
                 Log.v(TAG, "Clearing stale connection key to suppress resume");
                 connection.key = null;
-                connection.recoveryKey = null;
             }
             return true;
         }
@@ -1520,22 +1516,24 @@ public class ConnectionManager implements ConnectListener {
         if (currentState.state == ConnectionState.connected) {
             Log.v(TAG, "Server initiated reauth");
 
-            ErrorInfo errorInfo = null;
-
             /*
              * It is a server initiated reauth, it is issued while previous token is still valid for ~30 seconds,
              * we have to clear cached token and get a new one
              */
             try {
-                ably.auth.renew();
+                /* the UPDATE event is emitted from the completion callback, so that it reports the
+                 * outcome of the reauth rather than only the fact that one was started */
+                ably.auth.renewAuth((success, tokenDetails, errorInfo) -> emitReauthUpdate(errorInfo));
             } catch (AblyException e) {
-                errorInfo = e.errorInfo;
+                emitReauthUpdate(e.errorInfo);
             }
+        }
+    }
 
-            /* report connection currentState in UPDATE event */
-            if (currentState.state == ConnectionState.connected) {
-                connection.emitUpdate(errorInfo);
-            }
+    /** Reports the outcome of a server initiated reauth in an UPDATE event, if still connected. */
+    private void emitReauthUpdate(ErrorInfo errorInfo) {
+        if (currentState.state == ConnectionState.connected) {
+            connection.emitUpdate(errorInfo);
         }
     }
 

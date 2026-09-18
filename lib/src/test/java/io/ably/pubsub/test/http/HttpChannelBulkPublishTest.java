@@ -1,8 +1,10 @@
 package io.ably.pubsub.test.http;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Helpers.ChannelWaiter;
 import io.ably.pubsub.test.common.Helpers.MessageWaiter;
@@ -46,7 +48,7 @@ public class HttpChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -90,8 +92,8 @@ public class HttpChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
-            rxAbly = new RealtimeClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
+            rxAbly = RealtimeClientFactory.create(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -172,7 +174,7 @@ public class HttpChannelBulkPublishTest extends ParameterizedTest  {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.idempotentRestPublishing = true;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish some messages */
             int channelCount = 5;
@@ -240,7 +242,7 @@ public class HttpChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[6].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish some messages */
             String baseChannelName = "persisted:" + testParams.name + ":channel";

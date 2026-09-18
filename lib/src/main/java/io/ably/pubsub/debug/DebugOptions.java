@@ -69,7 +69,6 @@ public class DebugOptions extends ClientOptions {
         copied.realtimeRequestTimeout = realtimeRequestTimeout;
         copied.disconnectedRetryTimeout = disconnectedRetryTimeout;
         copied.suspendedRetryTimeout = suspendedRetryTimeout;
-        copied.fallbackHostsUseDefault = fallbackHostsUseDefault;
         copied.fallbackRetryTimeout = fallbackRetryTimeout;
         copied.defaultTokenParams = defaultTokenParams;
         copied.channelRetryTimeout = channelRetryTimeout;

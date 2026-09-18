@@ -1,8 +1,10 @@
 package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Helpers;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -157,9 +159,9 @@ public class RealtimeAnnotationsTest extends ParameterizedTest {
         TestChannel(String channelName) throws AblyException {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.clientId = UUID.randomUUID().toString();
-            rest = new PubSubHttpClient(opts);
+            rest = HttpClientFactory.create(opts);
             httpChannel = rest.channels.get(channelName);
-            realtime = new RealtimeClient(opts);
+            realtime = RealtimeClientFactory.create(opts);
             ChannelOptions channelOptions = new ChannelOptions();
             channelOptions.modes = new ChannelMode[] {
                 ChannelMode.publish, ChannelMode.subscribe, ChannelMode.annotation_publish, ChannelMode.annotation_subscribe

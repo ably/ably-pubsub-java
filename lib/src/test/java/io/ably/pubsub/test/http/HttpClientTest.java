@@ -1,6 +1,7 @@
 package io.ably.pubsub.test.http;
 
 import io.ably.pubsub.debug.DebugOptions;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Helpers;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -35,7 +36,7 @@ public class HttpClientTest extends ParameterizedTest {
         opts.httpListener = httpListener;
         /* disable addRequestIds */
         opts.addRequestIds = false;
-        PubSubHttpClient ablyA = new PubSubHttpClient(opts);
+        PubSubHttpClient ablyA = HttpClientFactory.create(opts);
 
         ablyA.channels.get("test").publish("foo", "bar");
         /* verify client_id is not a part of url query */
@@ -43,7 +44,7 @@ public class HttpClientTest extends ParameterizedTest {
 
         /* enable addRequestIds */
         opts.addRequestIds = true;
-        PubSubHttpClient ablyB = new PubSubHttpClient(opts);
+        PubSubHttpClient ablyB = HttpClientFactory.create(opts);
 
         ablyB.channels.get("test").publish("foo", "bar");
         /* verify client_id is a part of url query */
@@ -65,7 +66,7 @@ public class HttpClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "";
         opts.fallbackHosts = new String[]{"ably.com"};
-        PubSubHttpClient ably = new PubSubHttpClient(opts);
+        PubSubHttpClient ably = HttpClientFactory.create(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");
@@ -92,7 +93,7 @@ public class HttpClientTest extends ParameterizedTest {
         opts.environment = null;
         opts.restHost = "invalid-host1.com";
         opts.fallbackHosts = new String[]{"invalid-host2.com", "invalid-host3.com"};
-        PubSubHttpClient ably = new PubSubHttpClient(opts);
+        PubSubHttpClient ably = HttpClientFactory.create(opts);
 
         try{
             ably.channels.get("test").publish("foo", "bar");

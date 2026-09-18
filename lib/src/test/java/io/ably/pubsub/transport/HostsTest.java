@@ -116,39 +116,6 @@ public class HostsTest {
     }
 
     /**
-     * Expect that returned host is contained within default host list
-     * when realtimeHost is non-default and fallbackHostsUseDefault is set
-     */
-    @Test
-    public void hosts_fallback_use_default() throws AblyException {
-        // Given
-        options.fallbackHostsUseDefault = true;
-        String host = "overridden.ably.io";
-
-        // When
-        Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getPrimaryHost(), is(host));
-        // the returned fallback hosts should have the same elements as default host fallbacks
-        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.HOST_FALLBACKS));
-    }
-
-    /**
-     * It is not allowed to use default fallback hosts and at the same time
-     * provide custom fallback hosts.
-     */
-    @Test(expected = AblyException.class)
-    public void hosts_fallback_use_default_and_set_fallback_hosts() throws AblyException {
-        // Given
-        options.fallbackHostsUseDefault = true;
-        options.fallbackHosts = new String[] { "custom.ably-realtime.com" };
-
-        // When
-        new Hosts(null, Defaults.HOST_REALTIME, options);
-    }
-
-    /**
      * Expect that returned fallback hosts containing the environment information.
      */
     @Test
@@ -163,23 +130,6 @@ public class HostsTest {
         // Then
         assertThat(hosts.getPrimaryHost(), is("sandbox-" + Defaults.HOST_REALTIME));
         assertThat(collectFallbackHosts(hosts), containsInAnyOrder(expectedEnvironmentFallbackHosts));
-    }
-
-    /**
-     * Expect that returned default fallback hosts without environment according to RSC15g4.
-     */
-    @Test
-    public void hosts_fallback_use_default_fallback_hosts_and_environment() throws AblyException {
-        // Given
-        options.fallbackHostsUseDefault = true;
-        options.environment = "sandbox";
-
-        // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getPrimaryHost(), is("sandbox-" + Defaults.HOST_REALTIME));
-        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
     /**
@@ -242,16 +192,6 @@ public class HostsTest {
 
         // Then
         assertThat(hosts.getFallback("custom.ably.com"), is("custom-fallback.ably.com"));
-    }
-
-    @Test(expected = AblyException.class)
-    public void hosts_use_default_fallback_hosts_and_tlsport_are_defined() throws AblyException {
-        // Given
-        options.tlsPort = 8081;
-        options.fallbackHostsUseDefault = true;
-
-        // When
-        new Hosts(null, Defaults.HOST_REALTIME, options);
     }
 
     private List<String> collectFallbackHosts(Hosts hosts) {

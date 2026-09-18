@@ -2,6 +2,7 @@ package io.ably.pubsub.test.realtime;
 
 import fi.iki.elonen.NanoHTTPD;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.test.common.ParameterizedTest;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ClientOptions;
@@ -62,7 +63,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
 
             server.resetRequestParameters();
-            realtime = new RealtimeClient(opts);
+            realtime = RealtimeClientFactory.create(opts);
             Map<String, List<String>> requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}
@@ -102,7 +103,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
             opts.echoMessages = false;
             server.resetRequestParameters();
-            realtime = new RealtimeClient(opts);
+            realtime = RealtimeClientFactory.create(opts);
             requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}
@@ -128,7 +129,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             opts.clientId = clientId;
 
             server.resetRequestParameters();
-            realtime = new RealtimeClient(opts);
+            realtime = RealtimeClientFactory.create(opts);
             requestParameters = null;
             for (int i = 0; requestParameters == null && i<10; i++) {
                 try { Thread.sleep(100); } catch (InterruptedException e) {}

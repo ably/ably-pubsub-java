@@ -2,6 +2,8 @@ package io.ably.pubsub.server;
 
 import io.ably.pubsub.push.Storage;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.types.AblyException;
@@ -439,20 +441,6 @@ public final class PubSubServer {
         }
 
         /**
-         * Sets {@link ClientOptions#fallbackHostsUseDefault}.
-         *
-         * @param fallbackHostsUseDefault the value to set.
-         * @return this builder.
-         * @deprecated deprecated on {@link ClientOptions} itself; use
-         *             {@link #fallbackHosts(String[])} to supply custom hosts.
-         */
-        @Deprecated
-        public T fallbackHostsUseDefault(boolean fallbackHostsUseDefault) {
-            options.fallbackHostsUseDefault = fallbackHostsUseDefault;
-            return self();
-        }
-
-        /**
          * Sets {@link ClientOptions#fallbackRetryTimeout}.
          *
          * @param fallbackRetryTimeout the value to set.
@@ -552,9 +540,8 @@ public final class PubSubServer {
          * @throws AblyException if the options are invalid, for example if no authentication
          *                       parameters were supplied.
          */
-        @SuppressWarnings("deprecation") // this factory is the replacement for that constructor
         public PubSubHttpClient build() throws AblyException {
-            return new PubSubHttpClient(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+            return HttpClientFactory.create(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 
@@ -688,9 +675,8 @@ public final class PubSubServer {
          * @throws AblyException if the options are invalid, for example if no authentication
          *                       parameters were supplied.
          */
-        @SuppressWarnings("deprecation") // this factory is the replacement for that constructor
         public RealtimeClient build() throws AblyException {
-            return new RealtimeClient(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+            return RealtimeClientFactory.create(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 }

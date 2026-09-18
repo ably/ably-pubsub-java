@@ -21,7 +21,6 @@ public class Hosts {
     private final String defaultHost;
     private final String[] fallbackHosts;
     private final boolean fallbackHostsIsDefault;
-    private final boolean fallbackHostsUseDefault;
     private final long fallbackRetryTimeout;
 
     private final Preferred preferred = new Preferred();
@@ -44,18 +43,8 @@ public class Hosts {
      */
     public Hosts(final String primaryHost, final String defaultHost, final ClientOptions options) throws AblyException {
         this.defaultHost = defaultHost;
-        this.fallbackHostsUseDefault = options.fallbackHostsUseDefault;
         boolean hasCustomPrimaryHost = primaryHost != null && !primaryHost.equalsIgnoreCase(defaultHost);
         String[] tempFallbackHosts = options.fallbackHosts;
-        if (options.fallbackHostsUseDefault) {
-            if (options.fallbackHosts != null) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHosts and fallbackHostsUseDefault cannot both be set", 40000, 400));
-            }
-            if (options.port != 0 || options.tlsPort != 0) {
-                throw AblyException.fromErrorInfo(new ErrorInfo("fallbackHostsUseDefault cannot be set when port or tlsPort are set", 40000, 400));
-            }
-            tempFallbackHosts = Defaults.HOST_FALLBACKS;
-        }
 
         boolean isProduction = options.environment == null || options.environment.isEmpty() || "production".equalsIgnoreCase(options.environment);
 
@@ -127,9 +116,8 @@ public class Hosts {
         int idx;
         if (lastHost.equals(primaryHost)) {
             /* RSC15b, RTN17b: only use fallback if the hostname has not been overridden
-             * or if ClientOptions#fallbackHostsUseDefault is true
              * or if ClientOptions#fallbackHosts was provided. */
-            if (!primaryHostIsDefault && !fallbackHostsUseDefault && fallbackHostsIsDefault)
+            if (!primaryHostIsDefault && fallbackHostsIsDefault)
                 return null;
             idx = 0;
         } else if(lastHost.equals(preferred.getHostOrClearIfExpired(clock))) {

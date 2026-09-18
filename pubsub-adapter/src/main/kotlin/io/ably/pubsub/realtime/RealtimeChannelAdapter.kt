@@ -7,6 +7,7 @@ import com.ably.pubsub.RealtimePresence
 import com.ably.query.OrderBy
 import io.ably.pubsub.buildHistoryParams
 import io.ably.pubsub.types.*
+import io.ably.pubsub.util.Listeners
 
 
 @OptIn(InternalAPI::class)
@@ -47,13 +48,18 @@ internal class RealtimeChannelAdapter(override val javaChannel: Channel) : Realt
     }
   }
 
+  /*
+   * The core publish overloads report a PublishResult, so a CompletionListener handed to this
+   * adapter is wrapped into one; the wrapper drops the result and calls the listener.
+   */
   override fun publish(name: String?, data: Any?, listener: CompletionListener?) =
-    javaChannel.publish(name, data, listener)
+    javaChannel.publish(name, data, Listeners.fromCompletionListener<PublishResult>(listener))
 
-  override fun publish(message: Message, listener: CompletionListener?) = javaChannel.publish(message, listener)
+  override fun publish(message: Message, listener: CompletionListener?) =
+    javaChannel.publish(message, Listeners.fromCompletionListener<PublishResult>(listener))
 
   override fun publish(messages: List<Message>, listener: CompletionListener?) =
-    javaChannel.publish(messages.toTypedArray(), listener)
+    javaChannel.publish(messages.toTypedArray(), Listeners.fromCompletionListener<PublishResult>(listener))
 
   override fun setOptions(options: ChannelOptions) = javaChannel.setOptions(options)
 

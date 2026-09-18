@@ -1,6 +1,7 @@
 package io.ably.pubsub.uts.integration.standard.realtime
 
 import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.ConnectionState
 import io.ably.pubsub.http.Auth
 import io.ably.pubsub.uts.infra.awaitState
@@ -57,7 +58,7 @@ class TokenRequestTest {
 
     /** The token-consuming client — a plain core client on every leg; see the class doc. */
     private fun tokenConsumingClient(block: ClientOptionsBuilder.() -> Unit): RealtimeClient =
-        RealtimeClient(ClientOptionsBuilder().apply(block))
+        RealtimeClientFactory.create(ClientOptionsBuilder().apply(block))
 
     /**
      * @UTS realtime/integration/RSA9a/token-request-server-accepted-0

@@ -17,15 +17,6 @@ public class RegistrationTokenTypeTest {
         assertEquals(RegistrationToken.Type.FCM, RegistrationToken.Type.fromName("Fcm"));
         assertEquals(RegistrationToken.Type.FCM, RegistrationToken.Type.fromName("FCm"));
         assertEquals(RegistrationToken.Type.FCM, RegistrationToken.Type.fromName("fCm"));
-
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("GCM"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("gCM"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("gcM"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("gcm"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("GcM"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("Gcm"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("GCm"));
-        assertEquals(RegistrationToken.Type.GCM, RegistrationToken.Type.fromName("gCm"));
     }
 
     @Test
@@ -39,6 +30,8 @@ public class RegistrationTokenTypeTest {
         assertNull(RegistrationToken.Type.fromName("FĆM\'"));
         assertNull(RegistrationToken.Type.fromName("FĆM\""));
         assertNull(RegistrationToken.Type.fromName("\nFCM"));
+        assertNull(RegistrationToken.Type.fromName("GCM"));
+        assertNull(RegistrationToken.Type.fromName("gcm"));
         assertNull(RegistrationToken.Type.fromName("GÇM"));
         assertNull(RegistrationToken.Type.fromName("\\GCM"));
         assertNull(RegistrationToken.Type.fromName("\'GCM"));
@@ -53,7 +46,6 @@ public class RegistrationTokenTypeTest {
     @Test
     public void toNameProducesNameCorrectly() {
         assertEquals("fcm", new RegistrationToken(RegistrationToken.Type.FCM, "token").type.toName());
-        assertEquals("gcm", new RegistrationToken(RegistrationToken.Type.GCM, "token").type.toName());
     }
 
 }

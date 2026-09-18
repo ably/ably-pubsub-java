@@ -1,11 +1,13 @@
 package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.realtime.ConnectionEvent;
 import io.ably.pubsub.realtime.ConnectionState;
 import io.ably.pubsub.realtime.ConnectionStateListener;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Auth.TokenCallback;
@@ -54,7 +56,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -70,7 +72,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            RealtimeClient realtimeClient = new RealtimeClient(opts);
+            RealtimeClient realtimeClient = RealtimeClientFactory.create(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(realtimeClient.connection);
@@ -138,7 +140,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first (good) token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -154,7 +156,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            RealtimeClient realtimeClient = new RealtimeClient(opts);
+            RealtimeClient realtimeClient = RealtimeClientFactory.create(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(realtimeClient.connection);
@@ -215,7 +217,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first (good) token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -230,7 +232,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            RealtimeClient realtimeClient = new RealtimeClient(opts);
+            RealtimeClient realtimeClient = RealtimeClientFactory.create(opts);
 
             /* wait for connected state */
             Helpers.ConnectionWaiter connectionWaiter = new Helpers.ConnectionWaiter(realtimeClient.connection);
@@ -302,7 +304,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
 
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -314,7 +316,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId;
             opts.tokenDetails = firstToken;
-            RealtimeClient realtimeClient = new RealtimeClient(opts);
+            RealtimeClient realtimeClient = RealtimeClientFactory.create(opts);
 
             realtimeClient.connection.on(new ConnectionStateListener() {
                 @Override
@@ -381,7 +383,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
     public void reauth_token_expire_inplace_reauth() {
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             /* Server will send reauth message 30 seconds before token expiration time i.e. in 4 seconds */
             TokenDetails tokenDetails = ablyForToken.auth.requestToken(new TokenParams() {{ ttl = 34000L; }}, null);
             assertNotNull("Expected token value", tokenDetails.token);
@@ -405,7 +407,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
                     return ablyForToken.auth.requestToken(params, null);
                 }
             };
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {
@@ -464,7 +466,7 @@ public class RealtimeReauthTest extends ParameterizedTest {
             opts.clientId = "testClientId";
             opts.useTokenAuth = true;
             opts.defaultTokenParams.ttl = 34000L;
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
 
             /* Test UPDATE event delivery */
             ably.connection.on(ConnectionEvent.update, new ConnectionStateListener() {

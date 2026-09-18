@@ -1,6 +1,7 @@
 package com.ably
 
 import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.types.ClientOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -28,5 +29,5 @@ fun createCoreRealtimeClient(port: Int): RealtimeClient {
     autoConnect = false
   }
 
-  return RealtimeClient(options)
+  return RealtimeClientFactory.create(options)
 }

@@ -2,6 +2,7 @@ package io.ably.pubsub.chat;
 
 import com.google.gson.JsonObject;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.test.common.Helpers;
@@ -31,7 +32,7 @@ public class ChatMessagesTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[7].keyStr);
             opts.clientId = "sandbox-client";
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ChatRoom room = new ChatRoom(roomId, ably);
 
             /* create a channel and attach */
@@ -123,11 +124,11 @@ public class ChatMessagesTest extends ParameterizedTest {
         try {
             ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
             opts1.clientId = "clientId1";
-            ablyClient1 = new RealtimeClient(opts1);
+            ablyClient1 = RealtimeClientFactory.create(opts1);
 
             ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
             opts2.clientId = "clientId2";
-            ablyClient2 = new RealtimeClient(opts2);
+            ablyClient2 = RealtimeClientFactory.create(opts2);
 
             ChatRoom room = new ChatRoom(roomId, ablyClient1);
 
@@ -236,11 +237,11 @@ public class ChatMessagesTest extends ParameterizedTest {
         try {
             ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
             opts1.clientId = "clientId1";
-            ablyClient1 = new RealtimeClient(opts1);
+            ablyClient1 = RealtimeClientFactory.create(opts1);
 
             ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
             opts2.clientId = "clientId2";
-            ablyClient2 = new RealtimeClient(opts2);
+            ablyClient2 = RealtimeClientFactory.create(opts2);
 
             ChatRoom room = new ChatRoom(roomId, ablyClient1);
 
@@ -329,11 +330,11 @@ public class ChatMessagesTest extends ParameterizedTest {
         try {
             ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
             opts1.clientId = "clientId1";
-            ablyClient1 = new RealtimeClient(opts1);
+            ablyClient1 = RealtimeClientFactory.create(opts1);
 
             ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
             opts2.clientId = "clientId2";
-            ablyClient2 = new RealtimeClient(opts2);
+            ablyClient2 = RealtimeClientFactory.create(opts2);
 
             ChatRoom room = new ChatRoom(roomId, ablyClient1);
 
@@ -449,11 +450,11 @@ public class ChatMessagesTest extends ParameterizedTest {
         try {
             ClientOptions opts1 = createOptions(testVars.keys[7].keyStr);
             opts1.clientId = "clientId1";
-            ablyClient1 = new RealtimeClient(opts1);
+            ablyClient1 = RealtimeClientFactory.create(opts1);
 
             ClientOptions opts2 = createOptions(testVars.keys[7].keyStr);
             opts2.clientId = "clientId2";
-            ablyClient2 = new RealtimeClient(opts2);
+            ablyClient2 = RealtimeClientFactory.create(opts2);
 
             ChatRoom room = new ChatRoom(roomId, ablyClient1);
 

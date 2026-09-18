@@ -3,6 +3,7 @@ package io.ably.pubsub.test.realtime;
 import com.google.gson.JsonObject;
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelState;
 import io.ably.pubsub.test.common.Helpers.ChannelWaiter;
@@ -46,7 +47,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             Channel channel = ably.channels.get("[?delta=vcdiff]" + testName);
 
             /* subscribe */
@@ -92,7 +93,7 @@ public class RealtimeDeltaDecoderTest extends ParameterizedTest {
         try {
             DebugOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.transportFactory = websocketFactory;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             ChannelOptions options = new ChannelOptions();
             options.params = Collections.singletonMap("delta", "vcdiff");

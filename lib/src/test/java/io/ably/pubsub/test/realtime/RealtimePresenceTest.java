@@ -31,6 +31,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.ChannelEvent;
 import io.ably.pubsub.realtime.ChannelState;
@@ -57,6 +58,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.Auth.TokenParams;
@@ -102,9 +104,9 @@ public class RealtimePresenceTest extends ParameterizedTest {
         TestChannel() {
             try {
                 ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-                rest = new PubSubHttpClient(opts);
+                rest = HttpClientFactory.create(opts);
                 httpChannel = rest.channels.get(channelName);
-                realtime = new RealtimeClient(opts);
+                realtime = RealtimeClientFactory.create(opts);
                 realtimeChannel = realtime.channels.get(channelName);
                 realtimeChannel.attach();
                 (new ChannelWaiter(realtimeChannel)).waitFor(ChannelState.attached);
@@ -130,7 +132,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
     public void setUpBefore() throws Exception {
         /* create tokens for specific clientIds */
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        PubSubHttpClient rest = new PubSubHttpClient(opts);
+        PubSubHttpClient rest = HttpClientFactory.create(opts);
         token1 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId1; }}, null);
         token2 = rest.auth.requestToken(new TokenParams() {{ clientId = testClientId2; }}, null);
         wildcardToken = rest.auth.requestToken(new TokenParams() {{ clientId = "*"; }}, null);
@@ -152,7 +154,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -202,7 +204,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -250,7 +252,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -295,7 +297,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -354,7 +356,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -422,7 +424,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -491,7 +493,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             }};
             fillInOptions(client1Opts);
             client1Opts.useBinaryProtocol = true;
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -559,7 +561,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -617,7 +619,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -673,7 +675,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -726,7 +728,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -785,7 +787,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -810,7 +812,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId2;
             }};
             fillInOptions(client2Opts);
-            clientAbly2 = new RealtimeClient(client2Opts);
+            clientAbly2 = RealtimeClientFactory.create(client2Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly2.connection)).waitFor(ConnectionState.connected);
@@ -861,7 +863,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 tokenDetails = wildcardToken;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -888,7 +890,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId2;
             }};
             fillInOptions(client2Opts);
-            clientAbly2 = new RealtimeClient(client2Opts);
+            clientAbly2 = RealtimeClientFactory.create(client2Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly2.connection)).waitFor(ConnectionState.connected);
@@ -946,7 +948,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel and attach */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -962,7 +964,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId2;
             }};
             fillInOptions(client2Opts);
-            clientAbly2 = new RealtimeClient(client2Opts);
+            clientAbly2 = RealtimeClientFactory.create(client2Opts);
 
             /* get channel and subscribe to presence */
             Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
@@ -1014,7 +1016,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -1066,7 +1068,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -1124,7 +1126,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel and attach */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -1140,7 +1142,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId2;
             }};
             fillInOptions(client2Opts);
-            clientAbly2 = new RealtimeClient(client2Opts);
+            clientAbly2 = RealtimeClientFactory.create(client2Opts);
 
             /* get channel and subscribe to presence */
             Channel client2Channel = clientAbly2.channels.get(testChannel.channelName);
@@ -1189,7 +1191,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 tokenDetails = wildcardToken;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* get channel and attach */
             Channel client1Channel = clientAbly1.channels.get(testChannel.channelName);
@@ -1274,7 +1276,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
             requiresClose = true;
 
             /* get channel */
@@ -1338,8 +1340,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -1416,8 +1418,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -1495,8 +1497,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -1571,8 +1573,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -1638,7 +1640,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
             option1.clientId = "client1";
-            ably = new RealtimeClient(option1);
+            ably = RealtimeClientFactory.create(option1);
 
             /* create a channel and set attachOnSubscribe to false */
             final Channel channel = ably.channels.get(ablyChannel);
@@ -1695,7 +1697,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         String ablyChannel = "subscribe_" + testParams.name;
         ClientOptions option1 = createOptions(testVars.keys[0].keyStr);
         option1.clientId = "client1";
-        try (RealtimeClient ably = new RealtimeClient(option1)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(option1)) {
             /* create a channel and set attachOnSubscribe to false */
             final Channel channel = ably.channels.get(ablyChannel);
             ChannelOptions chOpts = new ChannelOptions();
@@ -1742,8 +1744,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
 
@@ -1834,8 +1836,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -1903,7 +1905,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
             final String channelName = "realtime_presence_attach_implicit_subscribe_fail" + testParams.name;
 
             /* get first token */
@@ -1931,7 +1933,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             opts.autoConnect = false;
             opts.tokenDetails = token;
             opts.clientId = testClientId1;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             final ArrayList<PresenceMessage> presenceMessages = new ArrayList<>();
             Presence.PresenceListener listener = new Presence.PresenceListener() {
@@ -2027,7 +2029,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
             opts.clientId = "theClient";
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2066,7 +2068,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2103,7 +2105,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2143,7 +2145,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2183,7 +2185,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2220,7 +2222,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2259,7 +2261,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         final String channelName = "presence_suspended_reenter" + testParams.name;
         mockTransport.allowSend();
 
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
 
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -2316,7 +2318,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             PaginatedResult<PresenceMessage> presentMembers;
 
-            try (PubSubHttpClient httpClient = new PubSubHttpClient(opts)) {
+            try (PubSubHttpClient httpClient = HttpClientFactory.create(opts)) {
                 long timeout = 10_000;
                 presentMembers = httpClient.channels.get(channelName).presence.get(null);
                 while (presentMembers.items().length != 1 && System.currentTimeMillis() - reconnectTimestamp < timeout) {
@@ -2350,7 +2352,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             final String channelName = "newness_comparison_" + testParams.name;
             Channel channel = ably.channels.get(channelName);
             channel.attach();
@@ -2515,7 +2517,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions client1Opts = new ClientOptions(testVars.keys[0].keyStr);
             fillInOptions(client1Opts);
             client1Opts.tokenDetails = wildcardToken;
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             /* wait until connected */
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
@@ -2546,7 +2548,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             client2Opts.autoConnect = false;
 
             mockTransport20.allowSend();
-            clientAbly2 = new RealtimeClient(client2Opts);
+            clientAbly2 = RealtimeClientFactory.create(client2Opts);
 
             /* wait until connected */
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(clientAbly2.connection);
@@ -2619,7 +2621,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             final String channelName = "presence_sync_test" + testParams.name;
 
@@ -2777,7 +2779,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             final MockWebsocketFactory mockTransport = new MockWebsocketFactory();
             opts.transportFactory = mockTransport;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             final String channelName = "presence_state_change" + testParams.name;
             Channel channel = ably.channels.get(channelName);
@@ -2892,7 +2894,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -2909,7 +2911,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId1;
             opts.tokenDetails = token;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get(channelName);
             channel.attach();
@@ -2952,8 +2954,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
         final String channelName = "sync_complete" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably1 = new RealtimeClient(opts);
-            ably2 = new RealtimeClient(opts);
+            ably1 = RealtimeClientFactory.create(opts);
+            ably2 = RealtimeClientFactory.create(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.presence.enterClient(testClientId1);
@@ -2989,7 +2991,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -3004,7 +3006,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId1;
             opts.tokenDetails = token;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get(channelName);
             ChannelWaiter channelWaiter = new ChannelWaiter(channel);
@@ -3033,7 +3035,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -3049,7 +3051,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             ClientOptions opts = createOptions();
             opts.clientId = testClientId1;
             opts.tokenDetails = token;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get(channelName);
             channel.attach();
@@ -3088,7 +3090,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         try {
             /* init ably for token */
             ClientOptions optsForToken = createOptions(testVars.keys[0].keyStr);
-            final PubSubHttpClient ablyForToken = new PubSubHttpClient(optsForToken);
+            final PubSubHttpClient ablyForToken = HttpClientFactory.create(optsForToken);
 
             /* get first token */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -3099,7 +3101,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
 
             ClientOptions opts = createOptions(token.token);
             opts.clientId = testClientId1;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get(channelName);
             channel.attach();
@@ -3165,7 +3167,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             fillInOptions(opts);
             opts.clientId = testClientId1;
             opts.transportFactory = mockTransport;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get("protocol_enter_message_format_" + testParams.name);
             /* using testClientId1 */
@@ -3229,7 +3231,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
             opts.transportFactory = mockTransport;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             Channel channel = ably.channels.get("protocol_enterclient_message_format_" + testParams.name);
             /* using testClientId2 */
@@ -3273,8 +3275,8 @@ public class RealtimePresenceTest extends ParameterizedTest {
             /* Set up two connections: one for entering, one for listening */
             final String channelName = "presence_encoding" + testParams.name;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably1 = new RealtimeClient(opts);
-            ably2 = new RealtimeClient(opts);
+            ably1 = RealtimeClientFactory.create(opts);
+            ably2 = RealtimeClientFactory.create(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
             Channel channel2 = ably2.channels.get(channelName);
@@ -3343,7 +3345,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             /* Set up two connections: one for entering, one for listening */
             final String channelName = "presence_get" + testParams.name;
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably1 = new RealtimeClient(opts);
+            ably1 = RealtimeClientFactory.create(opts);
 
             Channel channel1 = ably1.channels.get(channelName);
             CompletionWaiter completionWaiter = new CompletionWaiter();
@@ -3352,7 +3354,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             completionWaiter.waitFor(2);
 
             opts.autoConnect = false;
-            ably2 = new RealtimeClient(opts);
+            ably2 = RealtimeClientFactory.create(opts);
             Channel channel2 = ably2.channels.get(channelName);
             PresenceWaiter waiter2 = new PresenceWaiter(channel2);
 
@@ -3444,7 +3446,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
                 clientId = testClientId1;
             }};
             fillInOptions(client1Opts);
-            clientAbly1 = new RealtimeClient(client1Opts);
+            clientAbly1 = RealtimeClientFactory.create(client1Opts);
 
             (new ConnectionWaiter(clientAbly1.connection)).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", clientAbly1.connection.state, ConnectionState.connected);
@@ -3494,7 +3496,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions httpOpts = createOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ablyForToken = new PubSubHttpClient(httpOpts);
+            PubSubHttpClient ablyForToken = HttpClientFactory.create(httpOpts);
 
             /* Initialize connection so clientId is not known before actual connection */
             Auth.TokenParams tokenParams = new Auth.TokenParams();
@@ -3509,7 +3511,7 @@ public class RealtimePresenceTest extends ParameterizedTest {
             opts.defaultTokenParams.clientId = "*";
             opts.token = token.token;
             opts.autoConnect = false;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* enter without attaching first */
             Channel channel = ably.channels.get("enter_before_clientid_is_known"+testParams.name);

@@ -2,6 +2,7 @@ package io.ably.pubsub.test.realtime;
 
 import io.ably.pubsub.debug.DebugOptions;
 import io.ably.pubsub.realtime.RealtimeClient;
+import io.ably.pubsub.realtime.RealtimeClientFactory;
 import io.ably.pubsub.realtime.Channel;
 import io.ably.pubsub.realtime.Channel.MessageListener;
 import io.ably.pubsub.realtime.ChannelEvent;
@@ -74,7 +75,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -105,7 +106,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel and attach */
             final Channel channel = ably.channels.get(channelName);
@@ -132,7 +133,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel and attach */
             final Channel channel = ably.channels.get(channelName);
@@ -160,7 +161,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -193,7 +194,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -227,7 +228,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -267,7 +268,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -306,7 +307,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -343,7 +344,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -386,7 +387,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel and attach */
             final Channel channel = ably.channels.get(channelName);
@@ -424,7 +425,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* create a channel and set attachOnSubscribe to false */
             final Channel channel = ably.channels.get(channelName);
@@ -507,8 +508,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -585,8 +586,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -663,8 +664,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -753,8 +754,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -839,8 +840,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             ClientOptions option2 = createOptions(testVars.keys[0].keyStr);
             option2.clientId = "receiver client";
 
-            ably1 = new RealtimeClient(option1);
-            ably2 = new RealtimeClient(option2);
+            ably1 = RealtimeClientFactory.create(option1);
+            ably2 = RealtimeClientFactory.create(option2);
 
             Channel channel1 = ably1.channels.get(channelName);
             channel1.attach();
@@ -906,7 +907,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -937,7 +938,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -970,7 +971,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1029,7 +1030,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1065,7 +1066,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1099,7 +1100,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1139,7 +1140,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1184,7 +1185,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connWaiter = new ConnectionWaiter(ably.connection);
 
             /* wait until connected */
@@ -1257,7 +1258,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1292,7 +1293,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1335,7 +1336,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             final MockWebsocketFactory transportFactory = new MockWebsocketFactory();
             opts.transportFactory = transportFactory;
             opts.logLevel = Log.VERBOSE;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1389,7 +1390,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
             opts.logLevel = Log.VERBOSE;
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1429,7 +1430,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1474,7 +1475,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         String channelName = "transient_publish_connected_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            subAbly = new RealtimeClient(opts);
+            subAbly = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
@@ -1485,7 +1486,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
             new ChannelWaiter(subChannel).waitFor(ChannelState.attached);
 
-            pubAbly = new RealtimeClient(opts);
+            pubAbly = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
             Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
             final Channel pubChannel = pubAbly.channels.get(channelName);
@@ -1524,7 +1525,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         String channelName = "transient_publish_connecting_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            subAbly = new RealtimeClient(opts);
+            subAbly = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(subAbly.connection).waitFor(ConnectionState.connected);
@@ -1536,7 +1537,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Helpers.MessageWaiter messageWaiter = new Helpers.MessageWaiter(subChannel);
             channelWaiter.waitFor(ChannelState.attached);
 
-            pubAbly = new RealtimeClient(opts);
+            pubAbly = RealtimeClientFactory.create(opts);
             final Channel pubChannel = pubAbly.channels.get(channelName);
             Helpers.CompletionWaiter completionWaiter = new Helpers.CompletionWaiter();
             pubChannel.publish("Lorem", "Ipsum!", completionWaiter);
@@ -1573,7 +1574,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         String channelName = "transient_publish_connection_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions("not:a.key");
-            pubAbly = new RealtimeClient(opts);
+            pubAbly = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.failed);
             assertEquals("Verify failed state reached", pubAbly.connection.state, ConnectionState.failed);
 
@@ -1608,7 +1609,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         String channelName = "transient_publish_channel_failed_" + testParams.name;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            pubAbly = new RealtimeClient(opts);
+            pubAbly = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(pubAbly.connection).waitFor(ConnectionState.connected);
             assertEquals("Verify connected state reached", pubAbly.connection.state, ConnectionState.connected);
 
@@ -1648,7 +1649,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[1].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -1673,7 +1674,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         RealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1708,7 +1709,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -1769,7 +1770,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Defaults.realtimeRequestTimeout = 1000;
             opts.channelRetryTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
@@ -1818,7 +1819,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Defaults.realtimeRequestTimeout = 1000;
             opts.channelRetryTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
@@ -1876,7 +1877,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Defaults.realtimeRequestTimeout = 1000;
             opts.channelRetryTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
 
             Channel channel = ably.channels.get(channelName);
@@ -1931,7 +1932,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ably.connect();
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -2006,7 +2007,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             ably.connect();
             connectionWaiter.waitFor(ConnectionState.connected);
@@ -2105,7 +2106,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
@@ -2221,7 +2222,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
@@ -2287,7 +2288,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             /* Reduce timeout for test to run faster */
             Defaults.realtimeRequestTimeout = 5000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
             connectionWaiter.waitFor(ConnectionState.connected);
 
@@ -2349,7 +2350,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             /* init Ably */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            RealtimeClient ably = new RealtimeClient(opts);
+            RealtimeClient ably = RealtimeClientFactory.create(opts);
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -2412,7 +2413,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
 
             DebugOptions common_opts = createOptions(testVars.keys[0].keyStr);
             common_opts.protocolListener = new DetachingProtocolListener();
-            senderReceiver = new RealtimeClient(common_opts);
+            senderReceiver = RealtimeClientFactory.create(common_opts);
 
             Channel sender_channel = senderReceiver.channels.get(testName);
             ((DetachingProtocolListener)common_opts.protocolListener).theChannel = sender_channel;
@@ -2460,7 +2461,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
             Defaults.realtimeRequestTimeout = 1000;
             opts.channelRetryTimeout = 1000;
 
-            ably = new RealtimeClient(opts);
+            ably = RealtimeClientFactory.create(opts);
             Channel channel = ably.channels.get(channelName);
             channel.attach();
             (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
@@ -2488,7 +2489,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void connect_on_closed_client_should_reinitialize_channels() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2532,7 +2533,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void connect_on_closing_client_should_reinitialize_channels() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
 
             /* wait until connected */
             (new ConnectionWaiter(ably.connection)).waitFor(ConnectionState.connected);
@@ -2575,7 +2576,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void release_should_not_prevent_graceful_test_end() throws Exception {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ably.channels.get("channel_should_be_released");
             ably.channels.release("channel_should_be_released");
         }
@@ -2616,7 +2617,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void connect_should_not_rewrite_immediate_attach() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ably.close();
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.closed);
             assertEquals("Verify closed state reached", ConnectionState.closed, ably.connection.state);
@@ -2632,7 +2633,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void channel_get_objects_throws_exception() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        try (RealtimeClient ably = new RealtimeClient(opts)) {
+        try (RealtimeClient ably = RealtimeClientFactory.create(opts)) {
 
             /* wait until connected */
             new ConnectionWaiter(ably.connection).waitFor(ConnectionState.connected);
@@ -2665,7 +2666,7 @@ public class RealtimeChannelTest extends ParameterizedTest {
     @Test
     public void channel_state_is_attaching_on_reconnected() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        RealtimeClient ably = new RealtimeClient(opts);
+        RealtimeClient ably = RealtimeClientFactory.create(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
         /* attach channel and wait for it to be fully attached */

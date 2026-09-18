@@ -2,8 +2,9 @@ package io.ably.pubsub.uts.integration.proxy
 
 import io.ably.pubsub.realtime.ChannelState
 import io.ably.pubsub.realtime.ConnectionState
-import io.ably.pubsub.http.PubSubHttpClient
+import io.ably.pubsub.http.HttpClientFactory
 import io.ably.pubsub.http.Auth
+import io.ably.pubsub.types.ClientOptions
 import io.ably.pubsub.uts.infra.awaitChannelState
 import io.ably.pubsub.uts.infra.awaitState
 import io.ably.pubsub.uts.infra.integration.SandboxApp
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.TestInstance
 import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -71,7 +71,7 @@ class ProxyInfraSmokeTest {
         val session = ProxySession.create(rules = emptyList())
         assertTrue(session.proxyPort > 0)
 
-        val tokenSigner = PubSubHttpClient(app.defaultKey)
+        val tokenSigner = HttpClientFactory.create(ClientOptions(app.defaultKey))
         val authCallbackCount = AtomicInteger(0)
         val client = TestRealtimeClient {
             // Basic key auth is TLS-only, so authenticate through the proxy with a locally-signed
@@ -134,7 +134,7 @@ class ProxyInfraSmokeTest {
             ),
         )
 
-        val tokenSigner = PubSubHttpClient(app.defaultKey)
+        val tokenSigner = HttpClientFactory.create(ClientOptions(app.defaultKey))
         val client = TestRealtimeClient {
             authCallback = Auth.TokenCallback { params ->
                 tokenSigner.auth.createTokenRequest(params, null)

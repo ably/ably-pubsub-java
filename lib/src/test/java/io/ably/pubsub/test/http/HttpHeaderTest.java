@@ -1,6 +1,7 @@
 package io.ably.pubsub.test.http;
 
 import fi.iki.elonen.NanoHTTPD;
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.http.Channel;
 import io.ably.pubsub.test.common.ParameterizedTest;
@@ -62,7 +63,7 @@ public class HttpHeaderTest extends ParameterizedTest {
             opts.tls = false;
             opts.port = server.getListeningPort();
             opts.restHost = "localhost";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* Publish message */
             String messageName = "test message";
@@ -109,7 +110,7 @@ public class HttpHeaderTest extends ParameterizedTest {
             opts.port = server.getListeningPort();
             opts.restHost = "localhost";
             opts.clientId = "test client";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* Publish message */
             String messageName = "test message";

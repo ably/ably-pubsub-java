@@ -12,32 +12,17 @@ import io.ably.pubsub.util.JavaPlatformAgentProvider;
  */
 public class PubSubHttpClient extends PubSubBase {
     /**
-     * Constructs a client object using an Ably API key or token string.
-     * <p>
-     * Spec: RSC1
-     * @param key The Ably API key or token string used to validate the client.
-     * @throws AblyException
-     * @deprecated use {@code io.ably.pubsub.server.PubSubServer#httpClientBuilder()} from the
-     *             {@code io.ably.pubsub:server} artifact instead, which names the side of the
-     *             connection your code runs on.
-     */
-    @Deprecated
-    public PubSubHttpClient(String key) throws AblyException {
-        super(key, new JavaPlatformAgentProvider());
-    }
-
-    /**
      * Construct a client object using an Ably {@link ClientOptions} object.
+     * <p>
+     * Not public: a client is obtained from the builders of the {@code io.ably.pubsub:device} or
+     * {@code io.ably.pubsub:server} artifact, which name the side of the connection your code
+     * runs on. {@link HttpClientFactory} is the seam those builders construct through.
      * <p>
      * Spec: RSC1
      * @param options A {@link ClientOptions} object to configure the client connection to Ably.
      * @throws AblyException
-     * @deprecated use {@code io.ably.pubsub.server.PubSubServer#httpClientBuilder()} from the
-     *             {@code io.ably.pubsub:server} artifact instead, which names the side of the
-     *             connection your code runs on.
      */
-    @Deprecated
-    public PubSubHttpClient(ClientOptions options) throws AblyException {
+    protected PubSubHttpClient(ClientOptions options) throws AblyException {
         super(options, new JavaPlatformAgentProvider());
     }
 }

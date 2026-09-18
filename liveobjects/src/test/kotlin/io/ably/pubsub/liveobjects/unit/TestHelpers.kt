@@ -2,7 +2,7 @@ package io.ably.pubsub.liveobjects.unit
 
 import io.ably.pubsub.liveobjects.adapter.AblyClientAdapter
 import io.ably.pubsub.liveobjects.connectionManager
-import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.Channel
 import io.ably.pubsub.realtime.ChannelState
 import io.ably.pubsub.transport.ConnectionManager
@@ -18,7 +18,7 @@ internal fun getMockRealtimeChannel(
   channelName: String,
   clientId: String = "client1",
   channelModes: Array<ChannelMode> = arrayOf(ChannelMode.object_publish, ChannelMode.object_subscribe)): Channel {
-    val client = RealtimeClient(ClientOptions().apply {
+    val client = RealtimeClientFactory.create(ClientOptions().apply {
       autoConnect = false
       key = "keyName:Value"
       this.clientId = clientId

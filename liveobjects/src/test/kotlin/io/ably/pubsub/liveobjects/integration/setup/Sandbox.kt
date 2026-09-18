@@ -3,6 +3,7 @@ package io.ably.pubsub.liveobjects.integration.setup
 import io.ably.pubsub.liveobjects.ablyException
 import io.ably.pubsub.liveobjects.integration.helpers.HttpObjects
 import io.ably.pubsub.realtime.RealtimeClient
+import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.ConnectionEvent
 import io.ably.pubsub.realtime.ConnectionState
 import io.ably.pubsub.types.ClientOptions
@@ -34,7 +35,7 @@ internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): Re
     key = apiKey
     environment = "sandbox"
   }
-  return RealtimeClient(clientOptions)
+  return RealtimeClientFactory.create(clientOptions)
 }
 
 internal fun Sandbox.createHttpObjects(): HttpObjects {

@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Locale;
 
+import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.common.Setup;
 import io.ably.pubsub.test.common.Setup.TestVars;
@@ -30,7 +31,7 @@ public class HttpInitTest {
     public void init_key_string() {
         try {
             TestVars testVars = Setup.getTestVars();
-            new PubSubHttpClient(testVars.keys[0].keyStr);
+            HttpClientFactory.create(new ClientOptions(testVars.keys[0].keyStr));
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init0: Unexpected exception instantiating library");
@@ -44,7 +45,7 @@ public class HttpInitTest {
     public void init_null_key_string() {
         try {
             String key = null;
-            new PubSubHttpClient(key);
+            HttpClientFactory.create(new ClientOptions(key));
             fail("init_null_key_string: Expected AblyException to be thrown when instantiating library with null key");
         } catch (AblyException e) {}
     }
@@ -57,7 +58,7 @@ public class HttpInitTest {
         try {
             String sampleKey = "sample:key";
             ClientOptions opts = new ClientOptions(sampleKey);
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init_key_opts: Unexpected exception instantiating library");
@@ -71,7 +72,7 @@ public class HttpInitTest {
     public void init_null_key_opts() {
         try {
             ClientOptions opts = new ClientOptions(null);
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
             fail("init_null_key_opts: Expected AblyException to be thrown when instantiating library with null key in options");
         } catch (AblyException e) {}
     }
@@ -84,7 +85,7 @@ public class HttpInitTest {
         try {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init2: Unexpected exception instantiating library");
@@ -99,7 +100,7 @@ public class HttpInitTest {
     public void init_no_auth() {
         try {
             ClientOptions opts = new ClientOptions();
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
             fail("init2: Unexpected success instantiating library");
         } catch (AblyException e) {
             ErrorInfo err = e.errorInfo;
@@ -118,7 +119,7 @@ public class HttpInitTest {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.restHost = hostExpected;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected host mismatch", hostExpected, ably.options.restHost);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -137,7 +138,7 @@ public class HttpInitTest {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.port = 9998;
             opts.tlsPort = 9999;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), opts.tlsPort);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -154,7 +155,7 @@ public class HttpInitTest {
         try {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected port mismatch", Defaults.getPort(opts), Defaults.TLS_PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -172,7 +173,7 @@ public class HttpInitTest {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected scheme mismatch", Defaults.getPort(opts), Defaults.PORT);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -214,7 +215,7 @@ public class HttpInitTest {
                 }
             };
             opts.logLevel = Log.VERBOSE;
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
             assertTrue("Log handler not called", init8_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -239,7 +240,7 @@ public class HttpInitTest {
                 }
             };
             opts.logLevel = Log.NONE;
-            new PubSubHttpClient(opts);
+            HttpClientFactory.create(opts);
             assertFalse("Log handler incorrectly called", init9_logCalled);
         } catch (AblyException e) {
             e.printStackTrace();
@@ -280,7 +281,7 @@ public class HttpInitTest {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.environment = "production";
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected host mismatch", Defaults.HOST_REST, ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -299,7 +300,7 @@ public class HttpInitTest {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.environment = givenEnvironment;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected host mismatch", String.format(Locale.ROOT, "%s-%s", givenEnvironment, Defaults.HOST_REST), ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
@@ -320,7 +321,7 @@ public class HttpInitTest {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.restHost = specifiedHost;
             opts.environment = givenEnvironment;
-            PubSubHttpClient ably = new PubSubHttpClient(opts);
+            PubSubHttpClient ably = HttpClientFactory.create(opts);
             fail("init4: Expected exception instantiating library");
             assertEquals("Unexpected host mismatch", specifiedHost, ably.options.restHost);
         } catch (AblyException e) {
