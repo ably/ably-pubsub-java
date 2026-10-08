@@ -56,7 +56,7 @@ public class AndroidSuite {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.time();

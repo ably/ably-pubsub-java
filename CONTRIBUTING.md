@@ -190,11 +190,11 @@ for the JRE-specific library:
 
     ./gradlew core:testRealtimeSuite
 
-To run tests against a specific host, specify in the environment:
+To run tests against a specific endpoint, specify it in the environment:
 
-    env ABLY_ENV=staging ./gradlew testRealtimeSuite
+    env ABLY_ENDPOINT=nonprod:staging ./gradlew testRealtimeSuite
 
-Tests will run against the sandbox environment by default.
+Tests will run against the `nonprod:sandbox` endpoint by default.
 
 Tests can be run on the Android-specific library. An Android device must be connected,
 either a real device or the Android emulator.

@@ -623,10 +623,9 @@ REST provisioning" convention survives even though the module's internals are vi
 > envelope on the legacy `sandbox-rest.ably.io` host; both were aligned upstream — to this V2 shape and to
 > the canonical nonprod sandbox host `sandbox.realtime.ably-nonprod.net` — in ably/specification#497.
 >
-> **Sandbox host.** `provisionObjectsViaRest` sets `restHost = SandboxApp.sandboxHost`
-> (`sandbox.realtime.ably-nonprod.net`) — the same nonprod host `SandboxApp` and the realtime clients use,
-> **not** `environment="sandbox"` (which resolves to the legacy `sandbox-rest.ably.io`, and
-> can't be combined with `restHost` per `Hosts.java` TO3k2/TO3k3). The REST call hits the live sandbox
+> **Sandbox host.** `provisionObjectsViaRest` sets `endpoint = SandboxApp.sandboxEndpoint`
+> (`nonprod:sandbox`, resolving to `sandbox.realtime.ably-nonprod.net`) — the same endpoint `SandboxApp`
+> and the realtime clients use. The REST call hits the live sandbox
 > today, and the realtime client observes the provisioned data through the SDK's OBJECT_SYNC +
 > `RealtimeObject.get()` (both implemented).
 

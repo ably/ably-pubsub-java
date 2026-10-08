@@ -33,9 +33,10 @@ public class Defaults {
     public static final String ABLY_AGENT_HEADER = "Ably-Agent";
 
     /* Hosts */
-    public static final String[] HOST_FALLBACKS     = { "A.ably-realtime.com", "B.ably-realtime.com", "C.ably-realtime.com", "D.ably-realtime.com", "E.ably-realtime.com" };
-    public static final String HOST_REST            = "rest.ably.io";
-    public static final String HOST_REALTIME        = "realtime.ably.io";
+    /* REC1a: the endpoint used when ClientOptions#endpoint is unset */
+    public static final String ENDPOINT             = "main";
+    /* REC2c1: the fallback domains for the default endpoint */
+    public static final String[] HOST_FALLBACKS     = getEndpointFallbackHosts(ENDPOINT);
     public static final int PORT                    = 80;
     public static final int TLS_PORT                = 443;
 
@@ -74,14 +75,68 @@ public class Defaults {
             : ((options.port != 0) ? options.port : Defaults.PORT);
     }
 
-    /* Construct environment fallback hosts as per RSC15i */
-    public static String[] getEnvironmentFallbackHosts(String environment) {
+    /**
+     * Resolves the primary domain that both REST requests and realtime connections use.
+     * <p>
+     * Spec: REC1
+     *
+     * @param endpoint the configured endpoint, or null for the default
+     * @return the primary domain
+     */
+    public static String getPrimaryDomain(String endpoint) {
+        if (endpoint == null) {
+            endpoint = ENDPOINT;
+        }
+        /* REC1b2 */
+        if (isHostname(endpoint)) {
+            return endpoint;
+        }
+        /* REC1b3 */
+        if (endpoint.startsWith(NONPROD_PREFIX)) {
+            return endpoint.substring(NONPROD_PREFIX.length()) + ".realtime.ably-nonprod.net";
+        }
+        /* REC1b4 */
+        return endpoint + ".realtime.ably.net";
+    }
+
+    /**
+     * Resolves the default fallback domains for an endpoint, used when ClientOptions#fallbackHosts is unset.
+     * <p>
+     * Spec: REC2c
+     *
+     * @param endpoint the configured endpoint, or null for the default
+     * @return the fallback domains; empty when the endpoint is a hostname
+     */
+    public static String[] getEndpointFallbackHosts(String endpoint) {
+        if (endpoint == null) {
+            endpoint = ENDPOINT;
+        }
+        /* REC2c2 */
+        if (isHostname(endpoint)) {
+            return new String[0];
+        }
+        /* REC2c3 */
+        if (endpoint.startsWith(NONPROD_PREFIX)) {
+            return fallbackHosts(endpoint.substring(NONPROD_PREFIX.length()), "ably-realtime-nonprod.com");
+        }
+        /* REC2c1, REC2c4 */
+        return fallbackHosts(endpoint, "ably-realtime.com");
+    }
+
+    private static final String NONPROD_PREFIX = "nonprod:";
+
+    /* REC1b2: an endpoint is a hostname if it contains '.' or '::', or is "localhost" */
+    private static boolean isHostname(String endpoint) {
+        return endpoint.contains(".") || endpoint.contains("::") || endpoint.equals("localhost");
+    }
+
+    private static String[] fallbackHosts(String routingPolicyId, String domain) {
         return new String[] {
-            environment + "-a-fallback.ably-realtime.com",
-            environment + "-b-fallback.ably-realtime.com",
-            environment + "-c-fallback.ably-realtime.com",
-            environment + "-d-fallback.ably-realtime.com",
-            environment + "-e-fallback.ably-realtime.com"
+            routingPolicyId + ".a.fallback." + domain,
+            routingPolicyId + ".b.fallback." + domain,
+            routingPolicyId + ".c.fallback." + domain,
+            routingPolicyId + ".d.fallback." + domain,
+            routingPolicyId + ".e.fallback." + domain
         };
     }
 }

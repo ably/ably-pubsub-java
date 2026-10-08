@@ -69,14 +69,13 @@ class TokenRequestTest {
         // Client A signs TokenRequests locally with the API key (no network).
         val creator = TestHttpClient {
             key = app.defaultKey
-            restHost = SandboxApp.sandboxHost
+            endpoint = SandboxApp.sandboxEndpoint
         }
 
         // Client B connects using a TokenRequest produced by client A.
         val client = tokenConsumingClient {
             authCallback = Auth.TokenCallback { params -> creator.auth.createTokenRequest(params, null) }
-            realtimeHost = SandboxApp.sandboxHost
-            restHost = SandboxApp.sandboxHost
+            endpoint = SandboxApp.sandboxEndpoint
             useBinaryProtocol = false
             autoConnect = false
         }
@@ -103,7 +102,7 @@ class TokenRequestTest {
 
         val creator = TestHttpClient {
             key = app.defaultKey
-            restHost = SandboxApp.sandboxHost
+            endpoint = SandboxApp.sandboxEndpoint
         }
 
         // The TokenRequest is signed with the specific clientId, producing a token that
@@ -114,8 +113,7 @@ class TokenRequestTest {
                 creator.auth.createTokenRequest(params, null)
             }
             clientId = testClientId
-            realtimeHost = SandboxApp.sandboxHost
-            restHost = SandboxApp.sandboxHost
+            endpoint = SandboxApp.sandboxEndpoint
             useBinaryProtocol = false
             autoConnect = false
         }

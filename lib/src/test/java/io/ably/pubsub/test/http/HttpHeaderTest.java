@@ -59,10 +59,9 @@ public class HttpHeaderTest extends ParameterizedTest {
         try {
             /* Init values for local server */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.environment = null;
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* Publish message */
@@ -105,10 +104,9 @@ public class HttpHeaderTest extends ParameterizedTest {
         try {
             /* Init values for local server */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.environment = null;
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             opts.clientId = "test client";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 

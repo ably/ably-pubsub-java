@@ -175,8 +175,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void authinit2() {
         try {
             ClientOptions opts = createOptions();
-            opts.restHost = testVars.restHost;
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.port = testVars.port;
             opts.tlsPort = testVars.tlsPort;
             opts.tls = testVars.tls;
@@ -329,7 +328,7 @@ public class HttpAuthTest extends ParameterizedTest {
             assertNotNull("Expected token value", tokenDetails.token);
             ClientOptions opts = new ClientOptions();
             opts.token = tokenDetails.token;
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             PubSubHttpClient ably = HttpClientFactory.create(opts);
             assertEquals("Unexpected Auth method mismatch", ably.auth.getAuthMethod(), AuthMethod.token);
             assertEquals("Unexpected clientId mismatch", ably.auth.clientId, null);
@@ -347,7 +346,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authURL_tokenrequest() {
         try {
             ClientOptions opts = createOptions();
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.authUrl = "http://localhost:8982/get-token-request";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
@@ -372,7 +371,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authURL_tokenrequest_post() {
         try {
             ClientOptions opts = createOptions();
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.authUrl = "http://localhost:8982/post-token-request";
             opts.authMethod = HttpConstants.Methods.POST;
             PubSubHttpClient ably = HttpClientFactory.create(opts);
@@ -399,7 +398,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authURL_token() {
         try {
             ClientOptions opts = createOptions();
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.authUrl = "http://localhost:8982/get-token";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
@@ -424,7 +423,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authURL_err() {
         try {
             ClientOptions opts = createOptions();
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.authUrl = "http://localhost:8982/404";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
             /* make a call to trigger token request */
@@ -449,7 +448,7 @@ public class HttpAuthTest extends ParameterizedTest {
     public void auth_authURL_timeout() {
         try {
             ClientOptions opts = createOptions();
-            opts.environment = testVars.environment;
+            opts.endpoint = testVars.endpoint;
             opts.authUrl = "http://localhost:8982/wait?delay=6000";
             opts.httpRequestTimeout = 5000;
             PubSubHttpClient ably = HttpClientFactory.create(opts);
@@ -1631,7 +1630,7 @@ public class HttpAuthTest extends ParameterizedTest {
             nanoHTTPD.clearRequestHistory();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             opts.tls = false;
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             opts.port = nanoHTTPD.getListeningPort();
             opts.queryTime = true;
 

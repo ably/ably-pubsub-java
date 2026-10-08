@@ -791,7 +791,7 @@ public class ConnectionManager implements ConnectListener {
         this.liveObjectsPlugin = liveObjectsPlugin;
 
         ClientOptions options = ably.options;
-        this.hosts = new Hosts(options.realtimeHost, Defaults.HOST_REALTIME, options);
+        this.hosts = new Hosts(options);
 
         /* debug options */
         ITransport.Factory transportFactory = null;
