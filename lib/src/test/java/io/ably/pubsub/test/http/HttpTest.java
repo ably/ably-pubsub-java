@@ -13,7 +13,6 @@ import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.test.util.EmptyPlatformAgentProvider;
 import io.ably.pubsub.test.util.StatusHandler;
 import io.ably.pubsub.test.util.TimeHandler;
-import io.ably.pubsub.transport.Defaults;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.Callback;
 import io.ably.pubsub.types.ClientOptions;
@@ -76,7 +75,8 @@ import static org.mockito.Mockito.verify;
  */
 public class HttpTest {
 
-    private static final String PATTERN_HOST_FALLBACK = "(?i)[a-e]\\.ably-realtime.com";
+    private static final String DEFAULT_PRIMARY_HOST = "main.realtime.ably.net";
+    private static final String PATTERN_HOST_FALLBACK = "(?i)main\\.[a-e]\\.fallback\\.ably-realtime\\.com";
     private static final String CUSTOM_PATTERN_HOST_FALLBACK = "(?i)[f-k]\\.ably-realtime.com";
     private static final String[] CUSTOM_HOSTS = { "f.ably-realtime.com", "g.ably-realtime.com", "h.ably-realtime.com", "i.ably-realtime.com", "j.ably-realtime.com", "k.ably-realtime.com" };
     private static final String TEST_SERVER_HOST = "localhost";
@@ -187,7 +187,7 @@ public class HttpTest {
          */
         int expectedCallCount = options.httpMaxRetryCount + 1;
         assertThat(urlHostArgumentStack.size(), is(equalTo(expectedCallCount)));
-        assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+        assertThat(urlHostArgumentStack.get(0), is(equalTo(DEFAULT_PRIMARY_HOST)));
 
         for (int i = 1; i < expectedCallCount; i++) {
             urlHostArgumentStack.get(i).matches(PATTERN_HOST_FALLBACK);
@@ -195,7 +195,7 @@ public class HttpTest {
     }
 
     /**
-     * Validates that fallbacks are disabled when ClientOptions#fallbackHosts are set to empty and the only host used is Defaults#HOST_REST
+     * Validates that fallbacks are disabled when ClientOptions#fallbackHosts are set to empty and the only host used is the default primary host
      * @throws AblyException
      */
 
@@ -243,9 +243,9 @@ public class HttpTest {
             assertTrue(false);
         }
 
-        /* Validate that only one host is used and it is Defaults#HOST_REST */
+        /* Validate that only one host is used and it is the default primary host */
         Assert.assertTrue(urlHostArgumentStack.size() == 1);
-        assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+        assertThat(urlHostArgumentStack.get(0), is(equalTo(DEFAULT_PRIMARY_HOST)));
     }
 
     /**
@@ -302,7 +302,7 @@ public class HttpTest {
                 false /* Ignore */
         );
 
-        assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+        assertThat("Unexpected default primary host", url.getAllValues().get(0).getHost(), is(equalTo(DEFAULT_PRIMARY_HOST)));
         assertThat("Unexpected host fallback", url.getAllValues().get(1).getHost().matches(hostExpectedPattern), is(true));
         assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
 
@@ -332,7 +332,7 @@ public class HttpTest {
                         anyBoolean(), /* Ignore */
                         any(HttpCore.ResponseHandler.class) /* Ignore */
                 );
-        assertThat("Unexpected default primary host", url.getAllValues().get(2).getHost(), is(equalTo(Defaults.HOST_REST)));
+        assertThat("Unexpected default primary host", url.getAllValues().get(2).getHost(), is(equalTo(DEFAULT_PRIMARY_HOST)));
         assertThat("Unexpected response", responseActual2, is(equalTo(responseExpected)));
     }
 
@@ -352,7 +352,7 @@ public class HttpTest {
     public void http_ably_execute_overriden_host() throws AblyException {
         final String fakeHost = "fake.ably.io";
         ClientOptions options = new ClientOptions("not:a.key");
-        options.restHost = fakeHost;
+        options.endpoint = fakeHost;
         PubSubHttpClient ably = HttpClientFactory.create(options);
 
         HttpCore httpCore = Mockito.spy(new HttpCore(ably.options, ably.auth, platformAgentProvider));
@@ -500,7 +500,7 @@ public class HttpTest {
                         anyBoolean(), /* Ignore */
                         any(HttpCore.ResponseHandler.class) /* Ignore */
                 );
-        assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+        assertThat("Unexpected host", url.getAllValues().get(0).getHost(), is(equalTo(DEFAULT_PRIMARY_HOST)));
     }
 
     /**
@@ -576,7 +576,7 @@ public class HttpTest {
          * - other calls executed against a random custom fallback host */
         List<URL> allValues = url.getAllValues();
         assertThat("Unexpected response", responseActual, is(equalTo(responseExpected)));
-        assertThat("Unexpected default primary host", allValues.get(0).getHost(), is(equalTo(Defaults.HOST_REST)));
+        assertThat("Unexpected default primary host", allValues.get(0).getHost(), is(equalTo(DEFAULT_PRIMARY_HOST)));
         for (int i = 1; i < allValues.size(); i++) {
             assertThat("Unexpected host fallback", fallbackHostsList.contains(allValues.get(i).getHost()), is(true));
         }
@@ -604,7 +604,7 @@ public class HttpTest {
             public <T> T httpExecuteWithRetry(URL url, String method, Param[] headers, RequestBody requestBody, ResponseHandler<T> responseHandler, boolean allowAblyAuth) throws AblyException {
                 urlArgumentStack.add(url.getHost());
                 /* verify if fallback hosts are from specified list */
-                if(!url.getHost().equals(Defaults.HOST_REST))
+                if(!url.getHost().equals(DEFAULT_PRIMARY_HOST))
                     assertTrue(Arrays.asList(CUSTOM_HOSTS).contains(url.getHost()));
 
                 return super.httpExecuteWithRetry(url, method, headers, requestBody, responseHandler, allowAblyAuth);
@@ -636,7 +636,7 @@ public class HttpTest {
 
         int expectedCallCount = options.httpMaxRetryCount + 1;
         Assert.assertTrue(urlHostArgumentStack.size() == expectedCallCount);
-        assertThat(urlHostArgumentStack.get(0), is(equalTo(Defaults.HOST_REST)));
+        assertThat(urlHostArgumentStack.get(0), is(equalTo(DEFAULT_PRIMARY_HOST)));
 
         for (int i = 1; i < expectedCallCount; i++) {
             Assert.assertTrue(urlHostArgumentStack.get(i).matches(CUSTOM_PATTERN_HOST_FALLBACK));
@@ -659,7 +659,7 @@ public class HttpTest {
         HttpCore httpCore = Mockito.spy(new HttpCore(new ClientOptions(), null, platformAgentProvider));
 
         String responseExpected = "Lorem Ipsum";
-        String hostExpected = Defaults.HOST_REST;
+        String hostExpected = DEFAULT_PRIMARY_HOST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -866,7 +866,7 @@ public class HttpTest {
         opts.fallbackRetryTimeout = 2000L;
         HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
-        String hostExpected = Defaults.HOST_REST;
+        String hostExpected = DEFAULT_PRIMARY_HOST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -951,7 +951,7 @@ public class HttpTest {
         opts.fallbackRetryTimeout = 2000L;
         HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
-        String primaryHost = Defaults.HOST_REST;
+        String primaryHost = DEFAULT_PRIMARY_HOST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -1040,7 +1040,7 @@ public class HttpTest {
         opts.fallbackRetryTimeout = 2000L;
         HttpCore httpCore = Mockito.spy(new HttpCore(opts, null, platformAgentProvider));
 
-        String hostExpected = Defaults.HOST_REST;
+        String hostExpected = DEFAULT_PRIMARY_HOST;
         ArgumentCaptor<URL> url = ArgumentCaptor.forClass(URL.class);
 
         /* Partially mock httpCore */
@@ -1281,7 +1281,7 @@ public class HttpTest {
         try {
             ClientOptions options = new ClientOptions("not.a:key");
             options.tls = false;
-            options.restHost = TEST_SERVER_HOST;
+            options.endpoint = TEST_SERVER_HOST;
             options.port = TEST_SERVER_PORT;
             if(poolSize > 0) {
                 options.asyncHttpThreadpoolSize = poolSize;
@@ -1416,7 +1416,7 @@ public class HttpTest {
         final AtomicInteger requestCount = new AtomicInteger(0);
 
         DebugOptions opts = new DebugOptions("appId.keyId:keySecret");
-        opts.restHost = primaryHost;
+        opts.endpoint = primaryHost;
         opts.fallbackHosts = new String[]{fallbackHost};
         opts.fallbackRetryTimeout = 100L;
         opts.httpMaxRetryCount = 1;

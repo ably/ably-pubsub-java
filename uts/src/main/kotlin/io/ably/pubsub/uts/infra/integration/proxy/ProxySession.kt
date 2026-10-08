@@ -3,6 +3,7 @@ package io.ably.pubsub.uts.infra.integration.proxy
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import io.ably.pubsub.transport.Defaults
 import io.ably.pubsub.uts.infra.integration.SandboxApp
 import io.ably.pubsub.uts.infra.unit.ClientOptionsBuilder
 import io.ktor.client.HttpClient
@@ -214,20 +215,20 @@ class ProxySession private constructor(
          * @param rules       Initial rule set applied to all traffic through this session.
          * @param port        Specific port to listen on; `0` (default) lets the proxy choose.
          * @param timeoutMs   Session idle-timeout in ms; `null` uses the proxy default (30 000 ms).
-         * @param realtimeHost Upstream Ably realtime host (defaults to sandbox).
-         * @param restHost     Upstream Ably REST host (defaults to sandbox).
+         * @param endpoint  Upstream Ably endpoint (defaults to sandbox). Realtime and REST share the
+         *                  host it resolves to (REC1), so the proxy targets that host for both.
          */
         suspend fun create(
             rules: List<ProxyRule> = emptyList(),
             port: Int = 0,
             timeoutMs: Long? = null,
-            realtimeHost: String = SandboxApp.sandboxHost,
-            restHost: String = SandboxApp.sandboxHost,
+            endpoint: String = SandboxApp.sandboxEndpoint,
         ): ProxySession {
+            val upstreamHost = Defaults.getPrimaryDomain(endpoint)
             val body = JsonObject().apply {
                 add("target", JsonObject().apply {
-                    addProperty("realtimeHost", realtimeHost)
-                    addProperty("restHost", restHost)
+                    addProperty("realtimeHost", upstreamHost)
+                    addProperty("restHost", upstreamHost)
                 })
                 add("rules", gson.toJsonTree(rules))
                 if (port != 0) addProperty("port", port)
@@ -346,15 +347,14 @@ class ProxySession private constructor(
  * }
  * ```
  *
- * Sets `realtimeHost` and `restHost` to the proxy host, `port` to the session's assigned port,
+ * Sets `endpoint` to the proxy host, `port` to the session's assigned port,
  * and `tls = false` (the proxy serves plain HTTP/WS; TLS is only used upstream to the sandbox).
  * `useBinaryProtocol` is already `false` by default in [ClientOptionsBuilder].
  *
- * Setting explicit hosts disables fallback hosts automatically, so no `fallbackHosts` is needed.
+ * A hostname endpoint has no default fallback hosts (REC2c2), so no `fallbackHosts` is needed.
  */
 fun ClientOptionsBuilder.connectThroughProxy(session: ProxySession) {
-    realtimeHost = session.proxyHost
-    restHost = session.proxyHost
+    endpoint = session.proxyHost
     port = session.proxyPort
     tls = false
 }

@@ -23,8 +23,7 @@ fun createCoreRealtimeClient(port: Int): PubSubRealtimeClient {
   val options = ClientOptions("xxxxx:yyyyyyy").apply {
     this.port = port
     useBinaryProtocol = false
-    realtimeHost = "localhost"
-    restHost = "localhost"
+    endpoint = "localhost"
     tls = false
     autoConnect = false
   }

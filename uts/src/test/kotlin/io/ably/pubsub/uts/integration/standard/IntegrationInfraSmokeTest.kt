@@ -128,8 +128,7 @@ class IntegrationInfraSmokeTest {
     /** A realtime client wired straight to the nonprod sandbox (no proxy). */
     private fun newRealtimeClient(useBinaryProtocol: Boolean): PubSubRealtimeClient = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = SandboxApp.sandboxHost
-        restHost = SandboxApp.sandboxHost
+        endpoint = SandboxApp.sandboxEndpoint
         this.useBinaryProtocol = useBinaryProtocol
         autoConnect = false
     }
@@ -137,7 +136,7 @@ class IntegrationInfraSmokeTest {
     /** A REST client wired straight to the nonprod sandbox (the REST half of the infra). */
     private fun newHttpClient(useBinaryProtocol: Boolean): PubSubHttpClient = TestHttpClient {
         key = app.defaultKey
-        restHost = SandboxApp.sandboxHost
+        endpoint = SandboxApp.sandboxEndpoint
         this.useBinaryProtocol = useBinaryProtocol
     }
 

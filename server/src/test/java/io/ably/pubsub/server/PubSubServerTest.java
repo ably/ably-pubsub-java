@@ -152,7 +152,7 @@ public class PubSubServerTest {
                 .httpClientBuilder()
                 .key(FAKE_KEY)
                 .tls(false)
-                .restHost("127.0.0.1")
+                .endpoint("127.0.0.1")
                 .port(httpServer.getAddress().getPort())
                 .build();
             client.time();

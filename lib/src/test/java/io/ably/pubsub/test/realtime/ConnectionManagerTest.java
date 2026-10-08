@@ -81,7 +81,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
              *   - connectionManager is connected to the host without any fallback
              */
             assertThat(connectionManager.getConnectionState().state, is(ConnectionState.connected));
-            assertThat(connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
+            assertThat(connectionManager.getHost(), is(equalTo(Defaults.getPrimaryDomain(opts.endpoint))));
         }
     }
 
@@ -99,8 +99,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_fallback_none_customhost() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        opts.realtimeHost = "un.reachable.host.example.com";
-        opts.environment = null;
+        opts.endpoint = "un.reachable.host.example.com";
         try(PubSubRealtimeClient ably = RealtimeClientFactory.create(opts)) {
             ConnectionManager connectionManager = ably.connection.connectionManager;
 
@@ -111,7 +110,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
              *   - connectionManager's last host did not have any fallback
              */
             assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-            assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+            assertThat(connectionManager.getHost(), is(equalTo(opts.endpoint)));
         }
     }
 
@@ -131,8 +130,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     @Test
     public void connectionmanager_fallback_none_withoutconnection() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        opts.realtimeHost = "un.reachable.host";
-        opts.environment = null;
+        opts.endpoint = "un.reachable.host";
         opts.autoConnect = false;
         try(PubSubRealtimeClient ably = RealtimeClientFactory.create(opts)) {
             Connection connection = Mockito.mock(Connection.class);
@@ -154,7 +152,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
              *   - connectionManager did not apply any fallback behavior
              */
             assertThat(connectionManager.getConnectionState().state, is(ConnectionState.disconnected));
-            assertThat(connectionManager.getHost(), is(equalTo(opts.realtimeHost)));
+            assertThat(connectionManager.getHost(), is(equalTo(opts.endpoint)));
 
             connectionManager.close();
         }
@@ -163,8 +161,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     /**
      * <p>
      * Verifies that fallback behaviour is applied and HTTP client is using same fallback
-     * endpoint, when the default realtime.ably.io endpoint is being used and has not been
-     * overriden, and a fallback is applied
+     * endpoint, when a routing policy endpoint is being used, and a fallback is applied
      * </p>
      * <p>
      * Spec: RTN17b, RTN17c
@@ -177,11 +174,9 @@ public class ConnectionManagerTest extends ParameterizedTest {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
 
-        final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+        /* the routing policy endpoint has default fallback hosts */
+        final Hosts hosts = new Hosts(opts);
         final String primaryHost = hosts.getPrimaryHost();
-
-        /* clear the environment override, so we trigger default fallback behaviour */
-        opts.environment = null;
 
         /* set up mock transport */
         MockWebsocketFactory mockTransport = new MockWebsocketFactory();
@@ -218,7 +213,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
-     * Verify that when environment is overridden, no fallback is used by default
+     * Verify that when the endpoint is a hostname, no fallback is used by default
      *
      * <p>
      * Spec: RTN17b
@@ -229,7 +224,9 @@ public class ConnectionManagerTest extends ParameterizedTest {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
 
-        final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+        /* a hostname endpoint has no default fallback hosts (REC2c2) */
+        opts.endpoint = Defaults.getPrimaryDomain(opts.endpoint);
+        final Hosts hosts = new Hosts(opts);
         final String primaryHost = hosts.getPrimaryHost();
 
         MockWebsocketFactory mockTransport = new MockWebsocketFactory();
@@ -268,7 +265,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
     }
 
     /**
-     * Verify that when environment is overridden and fallback specified, the fallback is used
+     * Verify that when the endpoint is a hostname and fallback specified, the fallback is used
      *
      * <p>
      * Spec: RTN17b
@@ -279,7 +276,9 @@ public class ConnectionManagerTest extends ParameterizedTest {
         DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
         fillInOptions(opts);
 
-        final Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, opts);
+        /* a hostname endpoint has no default fallback hosts (REC2c2) */
+        opts.endpoint = Defaults.getPrimaryDomain(opts.endpoint);
+        final Hosts hosts = new Hosts(opts);
         final String primaryHost = hosts.getPrimaryHost();
 
         opts.fallbackHosts = new String[]{"fallback 1", "fallback 2"};
@@ -362,7 +361,7 @@ public class ConnectionManagerTest extends ParameterizedTest {
         assertEquals(1 , connectionWaiter.getCount(ConnectionState.connecting));
         assertEquals(0 , connectionWaiter.getCount(ConnectionState.connected));
         assertEquals("Verify closed state is reached", ConnectionState.closed, ably.connection.state);
-        assertThat("fallback hasn't been invoked", connectionManager.getHost(), is(equalTo(opts.environment + "-realtime.ably.io")));
+        assertThat("fallback hasn't been invoked", connectionManager.getHost(), is(equalTo(Defaults.getPrimaryDomain(opts.endpoint))));
     }
 
     /**

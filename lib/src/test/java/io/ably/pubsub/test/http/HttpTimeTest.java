@@ -48,14 +48,13 @@ public class HttpTimeTest extends ParameterizedTest {
     }
 
     /**
-     * Verify time fails without valid restHost
+     * Verify time fails without valid endpoint
      */
     @Test
     public void time2() {
         try {
             ClientOptions opts = createOptions("not:a.key");
-            opts.environment = null;
-            opts.restHost = "this.restHost.does.not.exist";
+            opts.endpoint = "this.endpoint.does.not.exist";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
             ably.time();
             fail("time2: Unexpected success getting time");

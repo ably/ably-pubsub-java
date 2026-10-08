@@ -68,10 +68,13 @@ class SandboxApp private constructor(
 
   companion object {
     /**
-     * The Ably **nonprod sandbox** host — the `nonprod:sandbox` endpoint (used uniformly across the
-     * realtime/objects/rest integration specs), resolved to a hostname. Realtime and REST share this
-     * single host, so point both transports at it: set `realtimeHost` and/or `restHost` from here.
+     * The Ably **nonprod sandbox** endpoint, used uniformly across the realtime/objects/rest
+     * integration specs. Set it as the client's `endpoint`; realtime and REST share the host it
+     * resolves to ([sandboxHost]).
      */
+    const val sandboxEndpoint = "nonprod:sandbox"
+
+    /** The hostname [sandboxEndpoint] resolves to, for direct HTTP calls. */
     const val sandboxHost = "sandbox.realtime.ably-nonprod.net"
 
     private const val sandboxBaseUrl = "https://$sandboxHost"

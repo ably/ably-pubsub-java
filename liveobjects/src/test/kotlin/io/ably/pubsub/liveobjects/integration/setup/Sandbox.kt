@@ -33,7 +33,7 @@ internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): Pu
   val clientOptions = ClientOptions().apply {
     apply(options)
     key = apiKey
-    environment = "sandbox"
+    endpoint = SandboxApp.sandboxEndpoint
   }
   return RealtimeClientFactory.create(clientOptions)
 }
@@ -41,7 +41,7 @@ internal fun Sandbox.createRealtimeClient(options: ClientOptions.() -> Unit): Pu
 internal fun Sandbox.createHttpObjects(): HttpObjects {
   val options = ClientOptions().apply {
     key = apiKey
-    environment = "sandbox"
+    endpoint = SandboxApp.sandboxEndpoint
     useBinaryProtocol = false
   }
   return HttpObjects(options)

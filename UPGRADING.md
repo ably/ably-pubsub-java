@@ -149,3 +149,53 @@ find src -name '*.java' -o -name '*.kt' | xargs sed -i \
 | `TokenDetails.fromJSON(…)`, `TokenRequest.fromJSON(…)` | `fromJsonElement(…)` |
 | `ClientOptions.fallbackHostsUseDefault` | Drop it. Default fallback hosts apply automatically; set `fallbackHosts` only for custom hosts. |
 | `RegistrationToken.Type.GCM` (Android) | `RegistrationToken.Type.FCM` |
+
+## 5. Choose the host with `endpoint`
+
+2.0 replaces `ClientOptions.environment`, `restHost` and `realtimeHost` with a single
+`ClientOptions.endpoint` option, and the builder methods `environment(…)`, `restHost(…)` and
+`realtimeHost(…)` with `endpoint(…)`. REST requests and the realtime connection now always use the
+same host.
+
+| 1.x | 2.0 |
+|-----|-----|
+| No host options | No change; traffic moves to `main.realtime.ably.net` (see below) |
+| `environment = "sandbox"` | `endpoint = "nonprod:sandbox"` |
+| `environment = "acme"` (dedicated cluster) | `endpoint = "acme"` |
+| `restHost` / `realtimeHost = "localhost"` | `endpoint = "localhost"` |
+| `restHost` and `realtimeHost` set to the same custom host | `endpoint = "<that host>"` |
+| `restHost` and `realtimeHost` set to different hosts | Not supported; use one host that serves both, or contact Ably |
+| Custom `fallbackHosts` | Unchanged |
+
+How `endpoint` resolves:
+
+| `endpoint` | Primary host | Default fallback hosts |
+|------------|--------------|------------------------|
+| Unset | `main.realtime.ably.net` | `main.[a-e].fallback.ably-realtime.com` |
+| A routing policy name, e.g. `acme` | `acme.realtime.ably.net` | `acme.[a-e].fallback.ably-realtime.com` |
+| `nonprod:` plus a name, e.g. `nonprod:sandbox` | `sandbox.realtime.ably-nonprod.net` | `sandbox.[a-e].fallback.ably-realtime-nonprod.com` |
+| A hostname (contains `.` or `::`, or is `localhost`) | The value as given | None |
+
+An explicit `fallbackHosts` always replaces the default fallback hosts. A custom `port` or `tlsPort`
+no longer disables the default fallback hosts.
+
+**Before (1.x):**
+
+```java
+ClientOptions options = new ClientOptions("xVLyHw.MHOCLg:...");
+options.environment = "sandbox";
+AblyRealtime realtime = new AblyRealtime(options);
+```
+
+**After (2.0):**
+
+```java
+PubSubRealtimeClient realtime = PubSubServer.realtimeClientBuilder()
+    .key("xVLyHw.MHOCLg:...")
+    .endpoint("nonprod:sandbox")
+    .build();
+```
+
+**Firewalls and proxies.** 1.x connected to `rest.ably.io`, `realtime.ably.io` and
+`[a-e].ably-realtime.com` by default. If your network restricts outbound traffic, allow
+`*.realtime.ably.net` and `*.fallback.ably-realtime.com` before upgrading.

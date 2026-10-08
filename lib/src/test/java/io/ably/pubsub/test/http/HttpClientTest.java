@@ -63,8 +63,7 @@ public class HttpClientTest extends ParameterizedTest {
         Helpers.RawHttpTracker httpListener = new Helpers.RawHttpTracker();
         opts.httpListener = httpListener;
         opts.addRequestIds = true;
-        opts.environment = null;
-        opts.restHost = "";
+        opts.endpoint = "invalid-host1.com";
         opts.fallbackHosts = new String[]{"ably.com"};
         PubSubHttpClient ably = HttpClientFactory.create(opts);
 
@@ -90,8 +89,7 @@ public class HttpClientTest extends ParameterizedTest {
         Helpers.RawHttpTracker httpListener = new Helpers.RawHttpTracker();
         opts.httpListener = httpListener;
         opts.addRequestIds = true;
-        opts.environment = null;
-        opts.restHost = "invalid-host1.com";
+        opts.endpoint = "invalid-host1.com";
         opts.fallbackHosts = new String[]{"invalid-host2.com", "invalid-host3.com"};
         PubSubHttpClient ably = HttpClientFactory.create(opts);
 

@@ -120,9 +120,7 @@ public class Setup {
     }
 
     public static class TestVars extends AppSpec {
-        public String restHost;
-        public String realtimeHost;
-        public String environment;
+        public String endpoint;
         public int port;
         public int tlsPort;
         public boolean tls;
@@ -156,9 +154,7 @@ public class Setup {
         public void fillInOptions(ClientOptions opts, TestParameters params) {
             if(params == null) { params = TestParameters.getDefault(); }
             opts.useBinaryProtocol = params.useBinaryProtocol;
-            opts.restHost = restHost;
-            opts.realtimeHost = realtimeHost;
-            opts.environment = environment;
+            opts.endpoint = endpoint;
             opts.port = port;
             opts.tlsPort = tlsPort;
             opts.tls = tls;
@@ -171,22 +167,15 @@ public class Setup {
 
     private static TestVars __getTestVars() {
         if(testVars == null) {
-            host = argumentLoader.getTestArgument("ABLY_REST_HOST");
-            environment = argumentLoader.getTestArgument("ABLY_ENV");
-            if(environment == null) {
-                environment = "sandbox";
-            }
-
-            if(host != null) {
-                wsHost = argumentLoader.getTestArgument("ABLY_REALTIME_HOST");
-                if(wsHost == null)
-                    wsHost = host;
+            endpoint = argumentLoader.getTestArgument("ABLY_ENDPOINT");
+            if(endpoint == null) {
+                endpoint = "nonprod:sandbox";
             }
 
             if(argumentLoader.getTestArgument("ABLY_PORT") != null) {
                 port = Integer.valueOf(argumentLoader.getTestArgument("ABLY_PORT"));
                 tlsPort = Integer.valueOf(argumentLoader.getTestArgument("ABLY_TLS_PORT"));
-            } else if((host != null && host.contains("local")) || environment.equals("local")) {
+            } else if(endpoint.contains("local")) {
                 port = 8080;
                 tlsPort = 8081;
             } else {
@@ -202,8 +191,7 @@ public class Setup {
                      * but we are only instancing the library to use the http
                      * convenience methods */
                     opts.key = "none:none";
-                    opts.restHost = host;
-                    opts.environment = environment;
+                    opts.endpoint = endpoint;
                     opts.port = port;
                     opts.tlsPort = tlsPort;
                     opts.tls = true;
@@ -229,9 +217,7 @@ public class Setup {
                         }
 
                         TestVars result = (TestVars)Serialisation.gson.fromJson(new String(response.body), TestVars.class);
-                        result.restHost = host;
-                        result.realtimeHost = wsHost;
-                        result.environment = environment;
+                        result.endpoint = endpoint;
                         result.port = port;
                         result.tlsPort = tlsPort;
                         result.tls = true;
@@ -253,8 +239,7 @@ public class Setup {
         if(testVars != null) {
             try {
                 ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-                opts.restHost = host;
-                opts.environment = environment;
+                opts.endpoint = endpoint;
                 opts.port = port;
                 opts.tlsPort = tlsPort;
                 opts.tls = true;
@@ -282,9 +267,7 @@ public class Setup {
     private static final String specFile = "local/testAppSpec.json";
 
     private static PubSubHttpClient ably;
-    private static String environment;
-    private static String host;
-    private static String wsHost;
+    private static String endpoint;
     private static int port;
     private static int tlsPort;
 
