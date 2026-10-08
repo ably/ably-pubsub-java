@@ -58,7 +58,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             String key = testVars.keys[0].keyStr;
             ClientOptions opts = new ClientOptions(key);
             opts.port = port;
-            opts.realtimeHost = "localhost";
+            opts.endpoint = "localhost";
             opts.tls = false;
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
 
@@ -98,7 +98,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             /* test echo option */
             opts = new ClientOptions(key);
             opts.port = port;
-            opts.realtimeHost = "localhost";
+            opts.endpoint = "localhost";
             opts.tls = false;
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
             opts.echoMessages = false;
@@ -121,7 +121,7 @@ public class RealtimeHttpHeaderTest extends ParameterizedTest {
             String clientId = "test client id";
             opts = new ClientOptions();
             opts.port = port;
-            opts.realtimeHost = "localhost";
+            opts.endpoint = "localhost";
             opts.tls = false;
             opts.useBinaryProtocol = testParams.useBinaryProtocol;
             opts.useTokenAuth = true;

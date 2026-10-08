@@ -98,8 +98,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     @Test
     public void connect_fail_disconnected() throws AblyException {
         ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-        opts.realtimeHost = "non.existent.host";
-        opts.environment = null;
+        opts.endpoint = "non.existent.host";
         PubSubRealtimeClient ably = RealtimeClientFactory.create(opts);
         ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -118,8 +117,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_fail_suspended() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.realtimeHost = "non.existent.host";
-            opts.environment = null;
+            opts.endpoint = "non.existent.host";
             PubSubRealtimeClient ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -170,8 +168,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
     public void connect_while_disconnected() {
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.realtimeHost = "non.existent.host";
-            opts.environment = null;
+            opts.endpoint = "non.existent.host";
             PubSubRealtimeClient ably = RealtimeClientFactory.create(opts);
             ConnectionWaiter connectionWaiter = new ConnectionWaiter(ably.connection);
 
@@ -564,8 +561,7 @@ public class RealtimeConnectFailTest extends ParameterizedTest {
         PubSubRealtimeClient ably = null;
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.realtimeHost = "non.existent.host";
-            opts.environment = null;
+            opts.endpoint = "non.existent.host";
             opts.disconnectedRetryTimeout = 5000; // Disconnected retry timeout set to 5 seconds.
             ably = RealtimeClientFactory.create(opts);
 

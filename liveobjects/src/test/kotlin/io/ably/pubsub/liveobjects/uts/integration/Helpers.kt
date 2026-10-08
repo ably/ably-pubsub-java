@@ -123,11 +123,9 @@ fun provisionObjectsViaHttp(apiKey: String, channelName: String, operations: Lis
     val rest = HttpClientFactory.create(
         ClientOptions().apply {
             key = apiKey
-            // Target the same nonprod sandbox host that SandboxApp and the realtime clients use
-            // (sandbox.realtime.ably-nonprod.net) — NOT environment="sandbox", which resolves to the
-            // legacy prod-sandbox host sandbox-rest.ably.io (Hosts.java also forbids setting both
-            // environment and restHost). Matches standard_test_pool.md (ably/specification#497).
-            restHost = SandboxApp.sandboxHost
+            // Target the same nonprod sandbox endpoint that SandboxApp and the realtime clients use.
+            // Matches standard_test_pool.md (ably/specification#497).
+            endpoint = SandboxApp.sandboxEndpoint
             useBinaryProtocol = false
         },
     )

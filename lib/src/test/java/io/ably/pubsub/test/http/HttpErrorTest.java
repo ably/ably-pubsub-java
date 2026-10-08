@@ -53,10 +53,9 @@ public class HttpErrorTest extends ParameterizedTest {
         final Vector<String> logMessages = new Vector<String>();
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.environment = null;
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             opts.logHandler = new Log.LogHandler() {
                 @Override
                 public void println(int severity, String tag, String msg, Throwable tr) {
@@ -82,10 +81,9 @@ public class HttpErrorTest extends ParameterizedTest {
         final Vector<String> logMessages = new Vector<String>();
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.environment = null;
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             opts.logHandler = new Log.LogHandler() {
                 @Override
                 public void println(int severity, String tag, String msg, Throwable tr) {
@@ -111,10 +109,9 @@ public class HttpErrorTest extends ParameterizedTest {
         final Vector<String> logMessages = new Vector<String>();
         try {
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.environment = null;
             opts.tls = false;
             opts.port = server.getListeningPort();
-            opts.restHost = "localhost";
+            opts.endpoint = "localhost";
             opts.logHandler = new Log.LogHandler() {
                 @Override
                 public void println(int severity, String tag, String msg, Throwable tr) {

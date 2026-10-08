@@ -550,13 +550,12 @@ firings. Common actions: `refuse_connection`, `suppress`, `replace`, `inject_to_
 the proxy spec prescribes:
 ```kotlin
 fun ClientOptionsBuilder.connectThroughProxy(session: ProxySession) {
-    realtimeHost = session.proxyHost   // "localhost"
-    restHost     = session.proxyHost
-    port         = session.proxyPort   // the session's assigned port
-    tls          = false               // proxy serves plain HTTP/WS; TLS is only upstream
+    endpoint = session.proxyHost   // "localhost"
+    port     = session.proxyPort   // the session's assigned port
+    tls      = false               // proxy serves plain HTTP/WS; TLS is only upstream
 }
 ```
-Explicit hosts auto-disable fallback hosts (REC2c2), so no `fallbackHosts` juggling is needed.
+A hostname endpoint has no default fallback hosts (REC2c2), so no `fallbackHosts` juggling is needed.
 
 ### 7.3 `SandboxApp` — a throwaway app on the real sandbox
 Provisioning helper for the real backend (provisioned **directly**, not through the proxy, so it's
@@ -568,16 +567,15 @@ independent of the fault rules):
   auto-expire).
 - The Ktor client retries only **idempotent GETs** (never re-POSTs `/apps`, to avoid duplicate
   apps).
-- Owns the single sandbox **host** constant `SandboxApp.sandboxHost`
-  (`sandbox.realtime.ably-nonprod.net`) — the `nonprod:sandbox` endpoint used uniformly across the
-  realtime/objects/rest integration specs, resolved to a hostname. It's the single source of truth for
-  the upstream host: `ProxySession` defaults both its `realtimeHost` and `restHost` target to it, and
-  direct-sandbox clients set `realtimeHost` / `restHost` from it (sandbox realtime and REST are the
-  same host).
+- Owns the sandbox constants: `SandboxApp.sandboxEndpoint` (`nonprod:sandbox`), the endpoint used
+  uniformly across the realtime/objects/rest integration specs, which direct-sandbox clients set as
+  their `endpoint`; and `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`), the hostname
+  it resolves to. `ProxySession.create` takes an `endpoint` (default `sandboxEndpoint`) and resolves
+  it to the host it sends as both the proxy's upstream `realtimeHost` and `restHost` target.
 
 `SandboxApp` is the shared backbone of *both* integration kinds: **proxy** tests pair it with a
 `ProxySession`, while **direct sandbox** tests (`integration/standard/<module>/`) use it alone —
-connecting straight to `SandboxApp.sandboxHost` with no proxy and no fault rules, for happy-path
+connecting straight to `SandboxApp.sandboxEndpoint` with no proxy and no fault rules, for happy-path
 interop.
 
 ---
@@ -747,7 +745,7 @@ alone reaching quiescence.
 > (`lib/src/test/kotlin/io/ably/pubsub/uts/integration/standard/realtime/`, e.g. `ChannelHistoryTest`)
 > and `:liveobjects` — see §13.
 
-It talks to the real backend but connects *straight* to `SandboxApp.sandboxHost` — no `ProxyManager`,
+It talks to the real backend but connects *straight* to `SandboxApp.sandboxEndpoint` — no `ProxyManager`,
 no `ProxySession`, no `connectThroughProxy`. It's the shape every happy-path interop spec
 (connect/publish/subscribe/history) follows.
 
@@ -760,13 +758,12 @@ no `ProxySession`, no `connectThroughProxy`. It's the shape every happy-path int
 ```
 
 ### 10.2 The clients — wired straight to the sandbox
-Two tiny helpers point the **real** transports at the sandbox host (no proxy in between). Setting
-explicit hosts auto-disables fallback hosts (REC2c2), so there's nothing else to configure:
+Two tiny helpers point the **real** transports at the sandbox endpoint (no proxy in between), so
+there's nothing else to configure:
 ```kotlin
 private fun newRealtimeClient(useBinaryProtocol: Boolean): PubSubRealtimeClient = TestRealtimeClient {
     key = app.defaultKey
-    realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
-    restHost     = SandboxApp.sandboxHost
+    endpoint     = SandboxApp.sandboxEndpoint   // nonprod:sandbox
     this.useBinaryProtocol = useBinaryProtocol
     autoConnect  = false
 }
@@ -812,7 +809,7 @@ appear in the REST `history()`. The integration-specific techniques on show:
 - **Order assertion.** History defaults to newest-first, so `items[0]` is `event3` … `items[2]` is `event1`.
 
 **What this test teaches about the infra:** `SandboxApp`-only provisioning, the direct-sandbox client
-wiring (`realtimeHost`/`restHost` from `SandboxApp.sandboxHost`, no proxy), the protocol-variant
+wiring (`endpoint` from `SandboxApp.sandboxEndpoint`, no proxy), the protocol-variant
 `@ParameterizedTest`, awaiting a publish ack via `Callback<PublishResult>`, and `pollUntil` over a real
 REST `history()` call.
 
@@ -1186,7 +1183,7 @@ implicit.
 |------|--------------------|------|
 | `proxy/ProxyManager.kt` | `object ProxyManager`: `ensureProxy(timeoutMs)`, `stopProxy()`, `CONTROL_PORT=10100`; pinned `PROXY_VERSION=v0.3.0` + per-arch checksums; `uts.proxy.localPath` override | Downloads/verifies/launches the `uts-proxy` binary; one shared process per run. *(package `…integration.proxy`)* |
 | `proxy/ProxySession.kt` | `class ProxySession` (`create(rules,port,timeoutMs,realtimeHost,restHost)`, `addRules`, `triggerAction`, `getLog(): List<Event>`, `close`, `sessionId`, `proxyPort`, `proxyHost`); `data class Event`; `typealias ProxyRule`; rule builders `wsConnectRule`/`wsFrameToClientRule`/`wsFrameToServerRule`/`httpRequestRule`; `ClientOptionsBuilder.connectThroughProxy(session)` | Typed client for the proxy control REST API + client wiring. *(package `…integration.proxy`)* |
-| `SandboxApp.kt` | `class SandboxApp` (`create()`, `delete()`, `appId`, `defaultKey`, `keys`); `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`) | Provisions/tears down a throwaway sandbox app from `ably-common`'s `test-app-setup.json`; owns the single upstream sandbox host constant. *(package `…integration`)* |
+| `SandboxApp.kt` | `class SandboxApp` (`create()`, `delete()`, `appId`, `defaultKey`, `keys`); `SandboxApp.sandboxEndpoint` (`nonprod:sandbox`), `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`) | Provisions/tears down a throwaway sandbox app from `ably-common`'s `test-app-setup.json`; owns the sandbox endpoint and upstream host constants. *(package `…integration`)* |
 
 ### B.3 Shared helpers & tests
 

@@ -7,7 +7,6 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Locale;
 
 import io.ably.pubsub.http.HttpClientFactory;
 import io.ably.pubsub.http.PubSubHttpClient;
@@ -109,7 +108,8 @@ public class HttpInitTest {
     }
 
     /**
-     * Init library with specified host
+     * Init library with specified hostname endpoint
+     * Spec: REC1b2
      */
     @Test
     public void init_host() {
@@ -118,9 +118,9 @@ public class HttpInitTest {
 
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.restHost = hostExpected;
+            opts.endpoint = hostExpected;
             PubSubHttpClient ably = HttpClientFactory.create(opts);
-            assertEquals("Unexpected host mismatch", hostExpected, ably.options.restHost);
+            assertEquals("Unexpected host mismatch", hostExpected, ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init4: Unexpected exception instantiating library");
@@ -272,17 +272,16 @@ public class HttpInitTest {
     }
 
     /**
-     * Init library with 'production' environment
-     * Spec: RSC11
+     * Init library with no endpoint
+     * Spec: REC1a
      */
     @Test
-    public void init_production_environment() {
+    public void init_default_endpoint() {
         try {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.environment = "production";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
-            assertEquals("Unexpected host mismatch", Defaults.HOST_REST, ably.httpCore.getPrimaryHost());
+            assertEquals("Unexpected host mismatch", "main.realtime.ably.net", ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init4: Unexpected exception instantiating library");
@@ -290,18 +289,17 @@ public class HttpInitTest {
     }
 
     /**
-     * Init library with given environment
-     * Spec: RSC11
+     * Init library with given routing policy endpoint
+     * Spec: REC1b4
      */
     @Test
-    public void init_given_environment() {
-        final String givenEnvironment = "staging";
+    public void init_given_endpoint() {
         try {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.environment = givenEnvironment;
+            opts.endpoint = "acme";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
-            assertEquals("Unexpected host mismatch", String.format(Locale.ROOT, "%s-%s", givenEnvironment, Defaults.HOST_REST), ably.httpCore.getPrimaryHost());
+            assertEquals("Unexpected host mismatch", "acme.realtime.ably.net", ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
             e.printStackTrace();
             fail("init4: Unexpected exception instantiating library");
@@ -309,23 +307,20 @@ public class HttpInitTest {
     }
 
     /**
-     * Init library with given environment and specified host
-     * Spec: RSC11
+     * Init library with given nonprod routing policy endpoint
+     * Spec: REC1b3
      */
     @Test
-    public void init_given_host_environment() {
-        final String givenEnvironment = "staging";
-        final String specifiedHost = "fake.ably.io";
+    public void init_given_nonprod_endpoint() {
         try {
             TestVars testVars = Setup.getTestVars();
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
-            opts.restHost = specifiedHost;
-            opts.environment = givenEnvironment;
+            opts.endpoint = "nonprod:sandbox";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
-            fail("init4: Expected exception instantiating library");
-            assertEquals("Unexpected host mismatch", specifiedHost, ably.options.restHost);
+            assertEquals("Unexpected host mismatch", "sandbox.realtime.ably-nonprod.net", ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {
-            /* pass: Got exception from setting restHost and environment */
+            e.printStackTrace();
+            fail("init4: Unexpected exception instantiating library");
         }
     }
 }

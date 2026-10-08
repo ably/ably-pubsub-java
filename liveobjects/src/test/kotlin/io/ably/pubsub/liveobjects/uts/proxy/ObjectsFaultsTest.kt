@@ -371,8 +371,7 @@ class ObjectsFaultsTest {
     /** A realtime client connected straight to the nonprod sandbox (no proxy). */
     private fun directClient(): PubSubRealtimeClient = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = SandboxApp.sandboxHost
-        restHost = SandboxApp.sandboxHost
+        endpoint = SandboxApp.sandboxEndpoint
         autoConnect = false
     }
 

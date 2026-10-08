@@ -309,13 +309,13 @@ public final class PubSubServer {
         }
 
         /**
-         * Sets {@link ClientOptions#restHost}.
+         * Sets {@link ClientOptions#endpoint}.
          *
-         * @param restHost the value to set.
+         * @param endpoint the value to set.
          * @return this builder.
          */
-        public T restHost(String restHost) {
-            options.restHost = restHost;
+        public T endpoint(String endpoint) {
+            options.endpoint = endpoint;
             return self();
         }
 
@@ -360,17 +360,6 @@ public final class PubSubServer {
          */
         public T proxy(ProxyOptions proxy) {
             options.proxy = proxy;
-            return self();
-        }
-
-        /**
-         * Sets {@link ClientOptions#environment}.
-         *
-         * @param environment the value to set.
-         * @return this builder.
-         */
-        public T environment(String environment) {
-            options.environment = environment;
             return self();
         }
 
@@ -555,17 +544,6 @@ public final class PubSubServer {
 
         RealtimeClientBuilder(ClientOptions options) {
             super(options);
-        }
-
-        /**
-         * Sets {@link ClientOptions#realtimeHost}.
-         *
-         * @param realtimeHost the value to set.
-         * @return this builder.
-         */
-        public RealtimeClientBuilder realtimeHost(String realtimeHost) {
-            options.realtimeHost = realtimeHost;
-            return this;
         }
 
         /**

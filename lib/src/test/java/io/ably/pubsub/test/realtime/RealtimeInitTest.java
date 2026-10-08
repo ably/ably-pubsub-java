@@ -76,7 +76,7 @@ public class RealtimeInitTest extends ParameterizedTest {
         try {
             ClientOptions opts = new ClientOptions(testVars.keys[0].keyStr);
             String hostExpected = "some.other.host";
-            opts.restHost = hostExpected;
+            opts.endpoint = hostExpected;
             ably = RealtimeClientFactory.create(opts);
             assertEquals("Unexpected host mismatch", hostExpected, ably.httpCore.getPrimaryHost());
         } catch (AblyException e) {

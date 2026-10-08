@@ -27,13 +27,13 @@ class MainActivity : ComponentActivity() {
               // A throwaway client that only signs a token; it never connects.
               PubSubDevice.clientBuilder()
                 .key(apiKey)
-                .environment("sandbox")
+                .endpoint("nonprod:sandbox")
                 .autoConnect(false)
                 .build()
                 .use { it.auth.requestToken(null, null) }
             }
           )
-          environment("sandbox")
+          endpoint("nonprod:sandbox")
         } else {
           key(BuildConfig.ABLY_KEY)
         }

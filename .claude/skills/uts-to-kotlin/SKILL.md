@@ -676,13 +676,12 @@ Recognise a **proxy** spec by a reference to `create_proxy_session()`, proxy `ru
 
 A **direct-sandbox** spec (no `create_proxy_session`, no rules — just happy-path interop against `nonprod:sandbox`) uses the same `SandboxApp` provisioning and the same `runTest` / `@BeforeAll`+`runBlocking` lifecycle as a proxy test, but **drops all proxy wiring**: no `ProxyManager.ensureProxy()`, no `ProxySession`, no `connectThroughProxy`. The client connects straight to the sandbox host. `ChannelHistoryTest` (realtime) and `ObjectsLifecycleTest` (liveobjects) are the reference examples — read one before translating a direct-sandbox spec.
 
-**Client wiring** — point both transports at the sandbox host (explicit hosts auto-disable fallback hosts, so no `fallbackHosts`):
+**Client wiring** — point the client at the sandbox endpoint:
 
 ```kotlin
 private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
     key = app.defaultKey
-    realtimeHost = SandboxApp.sandboxHost   // sandbox.realtime.ably-nonprod.net
-    restHost     = SandboxApp.sandboxHost
+    endpoint     = SandboxApp.sandboxEndpoint   // nonprod:sandbox
     this.useBinaryProtocol = useBinaryProtocol
     autoConnect  = false
 }
@@ -728,7 +727,7 @@ Three helpers live under `uts/src/main/kotlin/io/ably/lib/uts/infra/integration/
 
 - **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
-- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns the single upstream sandbox host constant `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the resolved `nonprod:sandbox` endpoint) — the default target of every `ProxySession` (both `realtimeHost` and `restHost`), and what direct-sandbox clients set `realtimeHost` / `restHost` from.
+- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns `SandboxApp.sandboxEndpoint` (`nonprod:sandbox`), which direct-sandbox clients set as their `endpoint`, and `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the hostname that endpoint resolves to) — the default upstream target of every `ProxySession`.
 
 Import what the tier needs: a **direct-sandbox** test imports `io.ably.lib.uts.infra.integration.SandboxApp` plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`; a **proxy** test additionally imports `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`.
 
@@ -799,11 +798,11 @@ val client = TestRealtimeClient {
 }
 ```
 
-ably-java has **no `endpoint` ClientOptions field**; `connectThroughProxy` sets the discrete host fields for you:
+`connectThroughProxy` sets the proxy-def options for you:
 
 | Proxy-def option | What `connectThroughProxy` sets |
 |---|---|
-| `endpoint: "localhost"` | `realtimeHost` **and** `restHost` = `session.proxyHost` (`"localhost"`) |
+| `endpoint: "localhost"` | `endpoint = session.proxyHost` (`"localhost"`) |
 | `port: proxy_port` | `port = session.proxyPort` |
 | `tls: false` | `tls = false` |
 | `useBinaryProtocol: false` | already the `ClientOptionsBuilder` default — left untouched |

@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ClientOptions;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,16 +17,16 @@ public class HostsTest {
     private final ClientOptions options = new ClientOptions();
 
     /**
-     * Tests for Hosts class (fallback hosts).
+     * Expect the default primary host and shuffled default fallback hosts when no endpoint is set.
      */
     @Test
-    public void hosts_fallback() throws AblyException {
+    public void hosts_fallback_no_endpoint() {
         // When
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
         List<String> fallbackHosts = collectFallbackHosts(hosts);
-        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
+        assertThat(hosts.getPrimaryHost(), is("main.realtime.ably.net"));
         // the returned fallback hosts should have the same elements as default host fallbacks
         assertThat(fallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
         // expect the fallback hosts to be shuffled
@@ -35,30 +34,18 @@ public class HostsTest {
     }
 
     /**
-     * Expect an exception when setting both realtimeHost and environment.
-     */
-    @Test(expected = AblyException.class)
-    public void hosts_host_and_environment() throws AblyException {
-        // Given
-        options.environment = "myenv";
-
-        // When
-        new Hosts("overridden.ably.io", Defaults.HOST_REALTIME, options);
-    }
-
-    /**
      * Expect a null, when we provide empty array of fallback hosts
      */
     @Test
-    public void hosts_fallback_empty_array() throws AblyException {
+    public void hosts_fallback_empty_array() {
         // Given
         options.fallbackHosts = new String[] {};
 
         // When
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
+        assertThat(hosts.getFallback(hosts.getPrimaryHost()), nullValue());
     }
 
     /**
@@ -66,17 +53,17 @@ public class HostsTest {
      * but in shuffled order and the right number of them.
      */
     @Test
-    public void hosts_fallback_custom_hosts() throws AblyException {
+    public void hosts_fallback_custom_hosts() {
         // Given
         String[] customHosts = { "F.ably-realtime.com", "G.ably-realtime.com", "H.ably-realtime.com", "I.ably-realtime.com", "J.ably-realtime.com", "K.ably-realtime.com" };
         options.fallbackHosts = customHosts;
 
         // When
-        Hosts hosts = new Hosts(Defaults.HOST_REALTIME, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
         List<String> fallbackHosts = collectFallbackHosts(hosts);
-        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
+        assertThat(hosts.getPrimaryHost(), is("main.realtime.ably.net"));
         // the returned fallback hosts should have the same elements as custom host fallbacks
         assertThat(fallbackHosts, containsInAnyOrder(customHosts));
         // expect the fallback hosts to be shuffled
@@ -84,114 +71,100 @@ public class HostsTest {
     }
 
     /**
-     * Expect that returned host is contained within default host list
+     * Expect the routing policy's primary host and fallback hosts.
+     * <p>
+     * Spec: REC1b4, REC2c4
      */
     @Test
-    public void hosts_fallback_no_custom_hosts() throws AblyException {
+    public void hosts_routing_policy_endpoint() {
+        // Given
+        options.endpoint = "acme";
+
         // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
-        List<String> fallbackHosts = collectFallbackHosts(hosts);
-        assertThat(hosts.getPrimaryHost(), is(Defaults.HOST_REALTIME));
-        // the returned fallback hosts should have the same elements as default host fallbacks
-        assertThat(fallbackHosts, containsInAnyOrder(Defaults.HOST_FALLBACKS));
-        // expect the fallback hosts to be shuffled
-        assertThat(fallbackHosts, not(contains(Defaults.HOST_FALLBACKS)));
+        assertThat(hosts.getPrimaryHost(), is("acme.realtime.ably.net"));
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.getEndpointFallbackHosts("acme")));
     }
 
     /**
-     * Expect a null, when realtimeHost is non-default
+     * Expect the nonprod routing policy's primary host and fallback hosts.
+     * <p>
+     * Spec: REC1b3, REC2c3
      */
     @Test
-    public void hosts_fallback_overridden_host() throws AblyException {
+    public void hosts_nonprod_endpoint() {
         // Given
-        String host = "overridden.ably.io";
+        options.endpoint = "nonprod:sandbox";
 
         // When
-        Hosts hosts = new Hosts(host, Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
+        assertThat(hosts.getPrimaryHost(), is("sandbox.realtime.ably-nonprod.net"));
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(
+            "sandbox.a.fallback.ably-realtime-nonprod.com",
+            "sandbox.b.fallback.ably-realtime-nonprod.com",
+            "sandbox.c.fallback.ably-realtime-nonprod.com",
+            "sandbox.d.fallback.ably-realtime-nonprod.com",
+            "sandbox.e.fallback.ably-realtime-nonprod.com"
+        ));
+    }
+
+    /**
+     * Expect a null fallback when the endpoint is a hostname.
+     * <p>
+     * Spec: REC1b2, REC2c2
+     */
+    @Test
+    public void hosts_no_fallback_for_hostname_endpoint() {
+        // Given
+        String host = "overridden.ably.io";
+        options.endpoint = host;
+
+        // When
+        Hosts hosts = new Hosts(options);
+
+        // Then
+        assertThat(hosts.getPrimaryHost(), is(host));
         assertThat(hosts.getFallback(host), nullValue());
     }
 
     /**
-     * Expect that returned fallback hosts containing the environment information.
+     * Expect custom fallback hosts to be used even when the endpoint is a hostname.
+     * <p>
+     * Spec: REC2a2
      */
     @Test
-    public void hosts_fallback_use_environment() throws AblyException {
+    public void hosts_fallback_for_hostname_endpoint_and_fallback_hosts() {
         // Given
-        options.environment = "sandbox";
-        String[] expectedEnvironmentFallbackHosts = Defaults.getEnvironmentFallbackHosts(options.environment);
-
-        // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getPrimaryHost(), is("sandbox-" + Defaults.HOST_REALTIME));
-        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(expectedEnvironmentFallbackHosts));
-    }
-
-    /**
-     * Expect no fallback hosts if the custom port is specified.
-     */
-    @Test
-    public void hosts_no_fallback_when_port_is_defined() throws AblyException {
-        // Given
-        options.port = 8080;
-
-        // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
-    }
-
-    /**
-     * Expect no fallback hosts if the custom TLS port is specified.
-     */
-    @Test
-    public void hosts_no_fallback_when_tlsport_is_defined() throws AblyException {
-        // Given
-        options.tlsPort = 8081;
-
-        // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), nullValue());
-    }
-
-    /**
-     * It should return fallback hosts when custom fallbacks and port are provided.
-     */
-    @Test
-    public void hosts_fallback_when_fallback_hosts_and_port_are_defined() throws AblyException {
-        // Given
-        options.port = 8081;
+        options.endpoint = "custom.ably.com";
         options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
 
         // When
-        Hosts hosts = new Hosts(null, Defaults.HOST_REALTIME, options);
-
-        // Then
-        assertThat(hosts.getFallback(Defaults.HOST_REALTIME), is("custom-fallback.ably.com"));
-    }
-
-    /**
-     * It should return fallback hosts when host, custom fallbacks, and port are provided.
-     */
-    @Test
-    public void hosts_fallback_when_host_and_fallback_hosts_and_port_are_defined() throws AblyException {
-        // Given
-        options.tlsPort = 8081;
-        options.fallbackHosts = new String[] { "custom-fallback.ably.com" };
-
-        // When
-        Hosts hosts = new Hosts("custom.ably.com", Defaults.HOST_REALTIME, options);
+        Hosts hosts = new Hosts(options);
 
         // Then
         assertThat(hosts.getFallback("custom.ably.com"), is("custom-fallback.ably.com"));
+    }
+
+    /**
+     * Expect default fallback hosts even when a custom port is specified.
+     * <p>
+     * Spec: REC2c1
+     */
+    @Test
+    public void hosts_fallback_when_port_is_defined() {
+        // Given
+        options.port = 8080;
+        options.tlsPort = 8081;
+
+        // When
+        Hosts hosts = new Hosts(options);
+
+        // Then
+        assertThat(collectFallbackHosts(hosts), containsInAnyOrder(Defaults.HOST_FALLBACKS));
     }
 
     private List<String> collectFallbackHosts(Hosts hosts) {

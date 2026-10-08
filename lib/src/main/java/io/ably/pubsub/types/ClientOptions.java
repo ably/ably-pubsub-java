@@ -73,20 +73,19 @@ public class ClientOptions extends AuthOptions {
     public Map<String, String> headers;
 
     /**
-     * Enables a non-default Ably host to be specified. For development environments only.
-     * The default value is rest.ably.io.
+     * Sets the endpoint that both REST requests and realtime connections use. The value can be:
+     * <ul>
+     *     <li>a routing policy name, such as {@code main}, which connects to {@code [name].realtime.ably.net};</li>
+     *     <li>a nonprod routing policy name prefixed with {@code nonprod:}, such as {@code nonprod:sandbox},
+     *     which connects to {@code [name].realtime.ably-nonprod.net};</li>
+     *     <li>a hostname (one containing {@code .} or {@code ::}, or {@code localhost}), which is used as given
+     *     with no default fallback hosts.</li>
+     * </ul>
+     * The default is {@code main}.
      * <p>
-     * Spec: RSC12, TO3k2
+     * Spec: REC1
      */
-    public String restHost;
-
-    /**
-     * Enables a non-default Ably host to be specified for realtime connections.
-     * For development environments only. The default value is realtime.ably.io.
-     * <p>
-     * Spec: RTC1d, TO3k3
-     */
-    public String realtimeHost;
+    public String endpoint;
 
     /**
      * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
@@ -158,13 +157,6 @@ public class ClientOptions extends AuthOptions {
     public ProxyOptions proxy;
 
     /**
-     * Enables a <a href="https://ably.com/docs/platform-customization">custom environment</a> to be used with the Ably service.
-     * <p>
-     * Spec: RSC15b, TO3k1
-     */
-    public String environment;
-
-    /**
      * When true, enables idempotent publishing by assigning a unique message ID client-side,
      * allowing the Ably servers to discard automatic publish retries following a failure such as a network fault.
      * The default is true.
@@ -228,8 +220,10 @@ public class ClientOptions extends AuthOptions {
     /**
      * An array of fallback hosts to be used in the case of an error necessitating the use of an alternative host.
      * If you have been provided a set of custom fallback hosts by Ably, please specify them here.
+     * When set, these replace the default fallback hosts derived from {@link #endpoint};
+     * an empty array disables fallback.
      * <p>
-     * Spec: RSC15b, RSC15a, TO3k6
+     * Spec: REC2a2, RSC15a, TO3k6
      */
     public String[] fallbackHosts;
 
@@ -326,8 +320,7 @@ public class ClientOptions extends AuthOptions {
         copied.logLevel = logLevel;
         copied.logHandler = logHandler;
         copied.tls = tls;
-        copied.restHost = restHost;
-        copied.realtimeHost = realtimeHost;
+        copied.endpoint = endpoint;
         copied.port = port;
         copied.tlsPort = tlsPort;
         copied.autoConnect = autoConnect;
@@ -336,7 +329,6 @@ public class ClientOptions extends AuthOptions {
         copied.echoMessages = echoMessages;
         copied.recover = recover;
         copied.proxy = proxy;
-        copied.environment = environment;
         copied.idempotentRestPublishing = idempotentRestPublishing;
         copied.httpOpenTimeout = httpOpenTimeout;
         copied.httpRequestTimeout = httpRequestTimeout;

@@ -222,7 +222,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
             /* create ably realtime with authUrl and params that include a ttl of 35 seconds */
             DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
-            options.environment = createOptions().environment;
+            options.endpoint = createOptions().endpoint;
             options.authUrl = echoServer;
             options.authParams = mergeParams(keys, mediumTokenTtl);
             options.protocolListener = new RawProtocolListener() {
@@ -325,7 +325,7 @@ public class RealtimeJWTTest extends ParameterizedTest {
 
             /* create ably realtime with authCallback defined above */
             DebugOptions options = new DebugOptions(testVars.keys[0].keyStr);
-            options.environment = createOptions().environment;
+            options.endpoint = createOptions().endpoint;
             options.authCallback = authCallback;
             options.protocolListener = new RawProtocolListener() {
                 @Override

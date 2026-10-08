@@ -1,8 +1,6 @@
 package io.ably.pubsub.transport;
 
-import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ClientOptions;
-import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.util.Clock;
 import io.ably.pubsub.util.SystemClock;
 
@@ -17,10 +15,7 @@ import java.util.Collections;
  */
 public class Hosts {
     private final String primaryHost;
-    private final boolean primaryHostIsDefault;
-    private final String defaultHost;
     private final String[] fallbackHosts;
-    private final boolean fallbackHostsIsDefault;
     private final long fallbackRetryTimeout;
 
     private final Preferred preferred = new Preferred();
@@ -29,43 +24,19 @@ public class Hosts {
     /**
      * Create Hosts object
      *
-     * @param primaryHost the primary hostname, null if not configured
-     * @param defaultHost the default hostname that the primary hostname must
-     *        match for fallback to occur
-     * @param options ClientOptions to get environment and fallbackHosts from
+     * @param options ClientOptions to get endpoint and fallbackHosts from
      *
-     * The fallback and environment processing here is used when the Hosts
-     * object is used by a ConnectionManager (for a realtime connection) or by
-     * an HttpCore for a rest connection. The case where the Hosts object is used
-     * by an HttpCore that is being used by a ConnectionManager goes through this
-     * code, but the results are ignored because ConnectionManager then calls
-     * setHost() and fallback is not used.
+     * REST requests and realtime connections share the same primary domain (RSC25, RTN2),
+     * so an HttpCore and a ConnectionManager built from the same options resolve the same hosts.
      */
-    public Hosts(final String primaryHost, final String defaultHost, final ClientOptions options) throws AblyException {
-        this.defaultHost = defaultHost;
-        boolean hasCustomPrimaryHost = primaryHost != null && !primaryHost.equalsIgnoreCase(defaultHost);
-        String[] tempFallbackHosts = options.fallbackHosts;
-
-        boolean isProduction = options.environment == null || options.environment.isEmpty() || "production".equalsIgnoreCase(options.environment);
-
-        if (!hasCustomPrimaryHost && tempFallbackHosts == null && options.port == 0 && options.tlsPort == 0) {
-            tempFallbackHosts = isProduction ? Defaults.HOST_FALLBACKS : Defaults.getEnvironmentFallbackHosts(options.environment);
-        }
-
-        if (hasCustomPrimaryHost) {
-            this.primaryHost = primaryHost;
-            if (options.environment != null) {
-                /* TO3k2: It is never valid to provide both a restHost and environment value
-                 * TO3k3: It is never valid to provide both a realtimeHost and environment value */
-                throw AblyException.fromErrorInfo(new ErrorInfo("cannot set both restHost/realtimeHost and environment options", 40000, 400));
-            }
-        } else {
-            this.primaryHost = isProduction ? defaultHost : options.environment + "-" + defaultHost;
-        }
-        primaryHostIsDefault = this.primaryHost.equalsIgnoreCase(defaultHost);
-
-        fallbackHostsIsDefault = Arrays.equals(Defaults.HOST_FALLBACKS, tempFallbackHosts);
-        fallbackHosts = tempFallbackHosts == null ? new String[] {} : tempFallbackHosts.clone();
+    public Hosts(final ClientOptions options) {
+        /* REC1 */
+        this.primaryHost = Defaults.getPrimaryDomain(options.endpoint);
+        /* REC2a2: explicit fallbackHosts always replace the defaults; REC2c: otherwise derive them from the endpoint */
+        String[] tempFallbackHosts = options.fallbackHosts != null
+            ? options.fallbackHosts
+            : Defaults.getEndpointFallbackHosts(options.endpoint);
+        fallbackHosts = tempFallbackHosts.clone();
         /* RSC15a: shuffle the fallback hosts. */
         Collections.shuffle(Arrays.asList(fallbackHosts));
         fallbackRetryTimeout = options.fallbackRetryTimeout;
@@ -111,14 +82,8 @@ public class Hosts {
      * null, if there is no successor fallback available.
      */
     public synchronized String getFallback(String lastHost) {
-        if (fallbackHosts == null)
-            return null;
         int idx;
         if (lastHost.equals(primaryHost)) {
-            /* RSC15b, RTN17b: only use fallback if the hostname has not been overridden
-             * or if ClientOptions#fallbackHosts was provided. */
-            if (!primaryHostIsDefault && fallbackHostsIsDefault)
-                return null;
             idx = 0;
         } else if(lastHost.equals(preferred.getHostOrClearIfExpired(clock))) {
             /* RSC15f: there was a failure on an unexpired, cached fallback; so try again using the primary */
@@ -139,9 +104,6 @@ public class Hosts {
     }
 
     public synchronized int fallbackHostsRemaining(String candidateHost) {
-        if(fallbackHosts == null) {
-            return 0;
-        }
         if(candidateHost.equals(primaryHost) || candidateHost.equals(preferred.getHost())) {
             return fallbackHosts.length;
         }

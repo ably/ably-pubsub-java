@@ -193,12 +193,12 @@ public object PubSubDevice {
         public fun headers(headers: Map<String, String>): ClientBuilder = apply { options.headers = headers }
 
         /**
-         * Sets [ClientOptions.restHost].
+         * Sets [ClientOptions.endpoint].
          *
-         * @param restHost the value to set.
+         * @param endpoint the value to set.
          * @return this builder.
          */
-        public fun restHost(restHost: String): ClientBuilder = apply { options.restHost = restHost }
+        public fun endpoint(endpoint: String): ClientBuilder = apply { options.endpoint = endpoint }
 
         /**
          * Sets [ClientOptions.port].
@@ -231,14 +231,6 @@ public object PubSubDevice {
          * @return this builder.
          */
         public fun proxy(proxy: ProxyOptions): ClientBuilder = apply { options.proxy = proxy }
-
-        /**
-         * Sets [ClientOptions.environment].
-         *
-         * @param environment the value to set.
-         * @return this builder.
-         */
-        public fun environment(environment: String): ClientBuilder = apply { options.environment = environment }
 
         /**
          * Sets [ClientOptions.idempotentRestPublishing].
@@ -343,14 +335,6 @@ public object PubSubDevice {
          * @return this builder.
          */
         public fun agents(agents: Map<String, String?>): ClientBuilder = apply { options.agents = agents }
-
-        /**
-         * Sets [ClientOptions.realtimeHost].
-         *
-         * @param realtimeHost the value to set.
-         * @return this builder.
-         */
-        public fun realtimeHost(realtimeHost: String): ClientBuilder = apply { options.realtimeHost = realtimeHost }
 
         /**
          * Sets [ClientOptions.autoConnect].

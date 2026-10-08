@@ -118,8 +118,7 @@ class ChannelHistoryTest {
     /** A realtime client wired straight to the nonprod sandbox (no proxy). */
     private fun newClient(useBinaryProtocol: Boolean): PubSubRealtimeClient = TestRealtimeClient {
         key = app.defaultKey
-        realtimeHost = SandboxApp.sandboxHost
-        restHost = SandboxApp.sandboxHost
+        endpoint = SandboxApp.sandboxEndpoint
         this.useBinaryProtocol = useBinaryProtocol
         autoConnect = false
     }

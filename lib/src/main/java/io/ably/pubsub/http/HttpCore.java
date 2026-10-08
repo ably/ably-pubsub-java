@@ -88,7 +88,7 @@ public class HttpCore {
         this.platformAgentProvider = platformAgentProvider;
         this.scheme = options.tls ? "https://" : "http://";
         this.port = Defaults.getPort(options);
-        this.hosts = new Hosts(options.restHost, Defaults.HOST_REST, options);
+        this.hosts = new Hosts(options);
         ProxyOptions proxyOptions = options.proxy;
         if (proxyOptions != null) {
             String proxyHost = proxyOptions.host;
