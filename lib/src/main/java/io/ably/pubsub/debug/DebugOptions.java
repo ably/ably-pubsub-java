@@ -50,8 +50,7 @@ public class DebugOptions extends ClientOptions {
         copied.logLevel = logLevel;
         copied.logHandler = logHandler;
         copied.tls = tls;
-        copied.restHost = restHost;
-        copied.realtimeHost = realtimeHost;
+        copied.endpoint = endpoint;
         copied.port = port;
         copied.tlsPort = tlsPort;
         copied.autoConnect = autoConnect;
@@ -60,7 +59,6 @@ public class DebugOptions extends ClientOptions {
         copied.echoMessages = echoMessages;
         copied.recover = recover;
         copied.proxy = proxy;
-        copied.environment = environment;
         copied.idempotentRestPublishing = idempotentRestPublishing;
         copied.httpOpenTimeout = httpOpenTimeout;
         copied.httpRequestTimeout = httpRequestTimeout;

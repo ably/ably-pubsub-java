@@ -187,9 +187,20 @@ public class HttpUtils {
         return builder.toString();
     }
 
+    /**
+     * Formats a host for the authority component of a URL, bracketing an IPv6 literal
+     * (RFC 3986 section 3.2.2) so that its colons are not mistaken for the port separator.
+     *
+     * @param host a hostname, IPv4 address, or IPv6 address, bracketed or not
+     * @return the host, safe to place between a scheme and a port
+     */
+    public static String hostForUrl(String host) {
+        return host.indexOf(':') >= 0 && !host.startsWith("[") ? '[' + host + ']' : host;
+    }
+
     static URL buildURL(String scheme, String host, int port, String path, Param[] params) {
         StringBuilder builder = new StringBuilder(scheme)
-            .append(host)
+            .append(hostForUrl(host))
             .append(':')
             .append(port)
             .append(HttpUtils.encodeParams(path, params));

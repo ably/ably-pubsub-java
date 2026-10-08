@@ -14,7 +14,7 @@ import io.ably.pubsub.realtime.PubSubRealtimeClient
 @Composable
 fun MainScreen(realtimeClient: PubSubRealtimeClient) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val isSandbox = realtimeClient.options.environment == "sandbox"
+    val isSandbox = realtimeClient.options.endpoint == "nonprod:sandbox"
 
     val tabs = listOf(
         TabItem("Color Voting", Icons.Default.Favorite),

@@ -677,7 +677,7 @@ public class HttpRequestTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            opts.environment = "non.existent.env";
+            opts.endpoint = "non.existent.env";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.request(HttpConstants.Methods.GET, "/", null, null, null);
@@ -698,7 +698,7 @@ public class HttpRequestTest extends ParameterizedTest {
             final Waiter waiter = new Waiter();
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            opts.environment = "non.existent.env";
+            opts.endpoint = "non.existent.env";
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             ably.requestAsync(HttpConstants.Methods.GET, "/", null, null, null, new AsyncHttpPaginatedResponse.Callback() {

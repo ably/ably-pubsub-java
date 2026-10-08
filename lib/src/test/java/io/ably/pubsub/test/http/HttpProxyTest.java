@@ -56,6 +56,8 @@ public class HttpProxyTest extends ParameterizedTest {
                 host = "sandbox-proxy.ably.io";
                 port = 6127;
             }};
+            /* each attempt waits out the connect timeout, so retrying the fallbacks would outlast the test timeout */
+            opts.fallbackHosts = new String[0];
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* attempt the call, expecting no exception */

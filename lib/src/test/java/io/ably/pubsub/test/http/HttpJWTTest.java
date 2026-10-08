@@ -25,7 +25,7 @@ import static org.junit.Assert.fail;
 public class HttpJWTTest extends ParameterizedTest {
 
     private Key key = testVars.keys[0];
-    Param[] environment = new Param[]{ new Param("environment", testVars.environment) };
+    Param[] environment = new Param[]{ new Param("environment", testVars.endpoint.replace("nonprod:", "")) };
     Param[] validKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", key.keySecret) };
     Param[] invalidKeys = new Param[]{ new Param("keyName", key.keyName), new Param("keySecret", "invalidinvalid") };
     Param[] tokenEmbedded = new Param[]{ new Param("jwtType", "embedded") };
