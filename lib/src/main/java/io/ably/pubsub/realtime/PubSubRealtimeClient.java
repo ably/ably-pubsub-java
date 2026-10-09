@@ -171,13 +171,14 @@ public class PubSubRealtimeClient extends PubSubHttpClient {
         /**
          * Releases a {@link Channel} object, deleting it, and enabling it to be garbage collected.
          * It also removes any listeners associated with the channel.
-         * A realtime channel should only be released when it is in the INITIALIZED, DETACHED, or FAILED state;
-         * releasing a realtime channel in any other state is deprecated and will throw an error in the next major version.
+         * A realtime channel can only be released when it is in the INITIALIZED, DETACHED, or FAILED state.
          * <p>
          * Spec: RSN4, RTS4
          * @param channelName The channel name.
+         * @throws AblyException If the channel is in any other state. Call {@link Channel#detach(CompletionListener)}
+         * and wait for it to complete before calling release().
          */
-        void release(String channelName);
+        void release(String channelName) throws AblyException;
     }
 
     private class InternalChannels extends InternalMap<String, Channel> implements Channels, ConnectionManager.Channels {
@@ -216,28 +217,25 @@ public class PubSubRealtimeClient extends PubSubHttpClient {
         }
 
         @Override
-        public void release(String channelName) {
+        public void release(String channelName) throws AblyException {
             Channel channel = map.get(channelName);
-            if(channel != null) {
-                ChannelState state;
-                // The channel's state transitions hold its monitor, so holding it here stops the channel
-                // from starting to attach between the state check and it being marked as released.
-                synchronized (channel) {
-                    if (!map.remove(channelName, channel)) {
-                        return;
-                    }
-                    state = channel.state;
-                    channel.markAsReleased();
-                }
+            if (channel == null) {
+                return;
+            }
+            // The channel's state transitions hold its monitor, so holding it here stops the channel
+            // from starting to attach between the state check and it being marked as released.
+            synchronized (channel) {
+                ChannelState state = channel.state;
                 if (state != ChannelState.initialized && state != ChannelState.detached && state != ChannelState.failed) {
-                    // RTS4b
-                    Log.w(TAG, "Calling `channels.release()` on a channel in the " + state + " state is deprecated, and will throw an error in the next major version. Call `channel.detach()` and wait for it to complete before calling `channels.release(channelName)`.");
+                    // RTS4e
+                    throw AblyException.fromErrorInfo(new ErrorInfo(
+                        "Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed). The current state is " + state,
+                        400, 90011));
                 }
-                try {
-                    channel.detach();
-                } catch (AblyException e) {
-                    Log.e(TAG, "Unexpected exception detaching channel; channelName = " + channelName, e);
+                if (!map.remove(channelName, channel)) {
+                    return;
                 }
+                channel.markAsReleased();
             }
             if (liveObjectsPlugin != null) {
                 liveObjectsPlugin.dispose(channelName);

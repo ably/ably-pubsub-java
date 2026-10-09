@@ -1,6 +1,7 @@
 package com.ably.pubsub
 
 import io.ably.pubsub.realtime.ChannelState
+import io.ably.pubsub.types.AblyException
 import io.ably.pubsub.types.ChannelOptions
 
 /**
@@ -39,11 +40,12 @@ public interface Channels<ChannelType> : Iterable<ChannelType> {
   /**
    * Releases a [Channel] object, deleting it, and enabling it to be garbage collected.
    * It also removes any listeners associated with the channel.
-   * A realtime channel should only be released when it is in the `INITIALIZED`, `DETACHED`, or `FAILED` state;
-   * releasing a realtime channel in any other state is deprecated and will throw an error in the next major version.
+   * A realtime channel can only be released when it is in the `INITIALIZED`, `DETACHED`, or `FAILED` state.
    * <p>
    * Spec: RSN4, RTS4
    * @param name The channel name.
+   * @throws AblyException With code 90011 if a realtime channel is in any other state. Detach the channel
+   * and wait for the detach to complete before calling release().
    */
   public fun release(name: String)
 }

@@ -400,11 +400,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
             }
 
             this.attachResume = false;
-            if (released.get()) {
-                setDetached(null);
-            } else {
-                setState(ChannelState.detaching, null);
-            }
+            setState(ChannelState.detaching, null);
             ably.connection.connectionManager.send(detachMessage, true, null);
         } catch(AblyException e) {
             throw e;
@@ -630,7 +626,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         final ChannelState originalState = state;
         AblyTimer currentDetachTimer;
         try {
-            currentDetachTimer = released.get() ? null : clock.newTimer("detach-timer");
+            currentDetachTimer = clock.newTimer("detach-timer");
         } catch(Throwable t) {
             /* an exception instancing the timer can arise because the runtime is exiting */
             callCompletionListenerError(listener, ErrorInfo.fromThrowable(t));
@@ -639,8 +635,7 @@ public abstract class ChannelBase extends EventEmitter<ChannelEvent, ChannelStat
         attachTimer = currentDetachTimer;
 
         try {
-            // If channel has been released, completionListener won't be invoked anyway
-            CompletionListener completionListener = released.get() ? null : new CompletionListener() {
+            CompletionListener completionListener = new CompletionListener() {
                 @Override
                 public void onSuccess() {
                     clearAttachTimers();
