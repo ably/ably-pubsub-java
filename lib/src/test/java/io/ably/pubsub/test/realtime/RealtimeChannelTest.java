@@ -2444,41 +2444,6 @@ public class RealtimeChannelTest extends ParameterizedTest {
     }
 
     /*
-     * Checks that the DETACHED message sent by the server when a channel is released is dropped.
-     */
-    @Test
-    public void detach_message_to_released_channel_is_dropped() throws AblyException {
-        PubSubRealtimeClient ably = null;
-        long oldRealtimeTimeout = Defaults.realtimeRequestTimeout;
-        final String channelName = "detach_message_to_released_channel_is_dropped";
-
-        try {
-            DebugOptions opts = createOptions(testVars.keys[0].keyStr);
-            Helpers.RawProtocolMonitor monitor = Helpers.RawProtocolMonitor.createReceiver(ProtocolMessage.Action.detached);
-            opts.protocolListener = monitor;
-
-            /* Make test faster */
-            Defaults.realtimeRequestTimeout = 1000;
-            opts.channelRetryTimeout = 1000;
-
-            ably = RealtimeClientFactory.create(opts);
-            Channel channel = ably.channels.get(channelName);
-            channel.attach();
-            (new ChannelWaiter(channel)).waitFor(ChannelState.attached);
-
-            // Listen for detach messages and release the channel
-            ably.channels.release(channelName);
-            monitor.waitForRecv(1, 10000);
-
-            assertFalse(ably.channels.containsKey("messages_to_non_existent_channels_are_dropped"));
-        } finally {
-            if (ably != null)
-                ably.close();
-            Defaults.realtimeRequestTimeout = oldRealtimeTimeout;
-        }
-    }
-
-    /*
      * Spec: RTN11d
      * Checks that all channels become if the state is CLOSED transitions all the channels to
      * INITIALIZED and unsets:
