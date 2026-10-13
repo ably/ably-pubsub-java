@@ -178,7 +178,8 @@ public class AblyRealtime extends AblyRest {
         /**
          * Releases a {@link Channel} object, deleting it, and enabling it to be garbage collected.
          * It also removes any listeners associated with the channel.
-         * To release a channel, the {@link ChannelState} must be INITIALIZED, DETACHED, or FAILED.
+         * A realtime channel should only be released when it is in the INITIALIZED, DETACHED, or FAILED state;
+         * releasing a realtime channel in any other state is deprecated and will throw an error in the next major version.
          * <p>
          * Spec: RSN4, RTS4
          * @param channelName The channel name.
@@ -223,9 +224,22 @@ public class AblyRealtime extends AblyRest {
 
         @Override
         public void release(String channelName) {
-            Channel channel = map.remove(channelName);
+            Channel channel = map.get(channelName);
             if(channel != null) {
-                channel.markAsReleased();
+                ChannelState state;
+                // The channel's state transitions hold its monitor, so holding it here stops the channel
+                // from starting to attach between the state check and it being marked as released.
+                synchronized (channel) {
+                    if (!map.remove(channelName, channel)) {
+                        return;
+                    }
+                    state = channel.state;
+                    channel.markAsReleased();
+                }
+                if (state != ChannelState.initialized && state != ChannelState.detached && state != ChannelState.failed) {
+                    // RTS4b
+                    Log.w(TAG, "Calling `channels.release()` on a channel in the " + state + " state is deprecated, and will throw an error in the next major version. Call `channel.detach()` and wait for it to complete before calling `channels.release(channelName)`.");
+                }
                 try {
                     channel.detach();
                 } catch (AblyException e) {
