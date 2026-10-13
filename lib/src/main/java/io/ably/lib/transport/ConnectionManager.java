@@ -72,7 +72,7 @@ public class ConnectionManager implements ConnectListener {
      * default errors
      ***********************************/
 
-    static ErrorInfo REASON_CLOSED = new ErrorInfo("Can't attach when not in an active state", 200, 10000);
+    static ErrorInfo REASON_CLOSED = new ErrorInfo("Connection closed", 400, 80017);
     static ErrorInfo REASON_DISCONNECTED = new ErrorInfo("Connection temporarily unavailable", 503, 80003);
     static ErrorInfo REASON_SUSPENDED = new ErrorInfo("Connection unavailable", 503, 80002);
     static ErrorInfo REASON_FAILED = new ErrorInfo("Connection failed", 400, 80000);
