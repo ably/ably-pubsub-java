@@ -2,13 +2,10 @@ package com.ably.pubsub
 
 import app.cash.turbine.test
 import com.ably.EmbeddedServer
-import com.ably.createAblyRest
-import com.ably.createAblyRealtime
+import com.ably.createCoreRealtimeClient
 import com.ably.json
 import com.ably.waitFor
-import io.ably.lib.BuildConfig
-import io.ably.lib.realtime.RealtimeClient
-import io.ably.lib.rest.RestClient
+import io.ably.pubsub.BuildConfig
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -27,7 +24,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -35,7 +32,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       realtimeClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -43,31 +40,31 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.request("/time")
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
   }
 
   @Test
-  fun `should use additional agents in Rest wrapper SDK client calls`() = runTest {
-    val restClient = createRealtimeClient()
+  fun `should use additional agents in HTTP wrapper SDK client calls`() = runTest {
+    val httpClient = createRealtimeClient()
 
     val wrapperSdkClient =
-      restClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
+      httpClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
 
     server.servedRequests.test {
       wrapperSdkClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
 
     server.servedRequests.test {
-      restClient.time()
+      httpClient.time()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -75,39 +72,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.request("/time")
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
-        awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
-      )
-    }
-  }
-
-  @Test
-  fun `should use additional agents in Rest wrapper SDK channel calls`() = runTest {
-    val restClient = createRestClient()
-
-    val wrapperSdkClient =
-      restClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
-
-    server.servedRequests.test {
-      wrapperSdkClient.channels.get("test").history()
-      assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
-        awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
-      )
-    }
-
-    server.servedRequests.test {
-      restClient.channels.get("test").history()
-      assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
-        awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
-      )
-    }
-
-    server.servedRequests.test {
-      wrapperSdkClient.channels.get("test").presence.history()
-      assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -123,7 +88,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -131,7 +96,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       realtimeClient.channels.get("test").history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -139,7 +104,7 @@ class SdkWrapperAgentHeaderTest {
     server.servedRequests.test {
       wrapperSdkClient.channels.get("test").presence.history()
       assertEquals(
-        setOf("ably-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
+        setOf("ably-pubsub-java/${BuildConfig.VERSION}", "jre/${System.getProperty("java.version")}", "chat-android/0.1.0"),
         awaitItem().headers["ably-agent"]?.split(" ")?.toSet(),
       )
     }
@@ -169,8 +134,7 @@ class SdkWrapperAgentHeaderTest {
       server.stop()
     }
 
-    private fun createRealtimeClient(): RealtimeClient = RealtimeClient(createAblyRealtime(PORT))
-
-    private fun createRestClient(): RestClient = RestClient(createAblyRest(PORT))
+    private fun createRealtimeClient(): RealtimeClient =
+      io.ably.pubsub.realtime.RealtimeClient(createCoreRealtimeClient(PORT))
   }
 }

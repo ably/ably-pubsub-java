@@ -8,13 +8,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import io.ably.lib.realtime.AblyRealtime
+import io.ably.pubsub.realtime.PubSubRealtimeClient
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(realtimeClient: AblyRealtime) {
+fun MainScreen(realtimeClient: PubSubRealtimeClient) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val isSandbox = realtimeClient.options.environment == "sandbox"
+    val isSandbox = realtimeClient.options.endpoint == "nonprod:sandbox"
 
     val tabs = listOf(
         TabItem("Color Voting", Icons.Default.Favorite),

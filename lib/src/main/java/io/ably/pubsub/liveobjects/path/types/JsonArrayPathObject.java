@@ -1,0 +1,30 @@
+package io.ably.pubsub.liveobjects.path.types;
+
+import com.google.gson.JsonArray;
+import io.ably.pubsub.liveobjects.path.PathObject;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * A {@link PathObject} whose underlying value is expected to be a {@link JsonArray}.
+ *
+ * <p>This is a terminal type. {@link PathObject#instance()} returns an {@code Instance}
+ * wrapping the resolved primitive value per RTPO8f; navigation
+ * via {@code at(...)} is not available here because it is only defined on
+ * {@code LiveMapPathObject}. Only {@link #value()} and the inherited read APIs are
+ * useful here.
+ *
+ * <p>Spec: RTTS6c
+ */
+public interface JsonArrayPathObject extends PathObject {
+
+    /**
+     * Returns the JSON array at this path, or {@code null} when the path does not
+     * resolve or resolves to a non-JsonArray value.
+     *
+     * <p>Spec: RTPO7 / RTTS6c
+     *
+     * @return the resolved JsonArray, or {@code null}
+     */
+    @Nullable
+    JsonArray value();
+}

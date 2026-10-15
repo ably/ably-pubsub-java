@@ -6,36 +6,41 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ably.example.screen.MainScreen
 import com.ably.example.ui.theme.AblyTheme
-import io.ably.lib.realtime.AblyRealtime
-import io.ably.lib.rest.AblyRest
-import io.ably.lib.rest.Auth
-import io.ably.lib.types.ClientOptions
-import io.ably.lib.util.Log
+import io.ably.pubsub.device.PubSubDevice
+import io.ably.pubsub.realtime.PubSubRealtimeClient
+import io.ably.pubsub.http.Auth
+import io.ably.pubsub.util.Log
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
-  private val realtimeClient: AblyRealtime by lazy {
-    AblyRealtime(
-      ClientOptions().apply {
+  private val realtimeClient: PubSubRealtimeClient by lazy {
+    // This app runs on an end-user device, so it builds its client through the device door.
+    PubSubDevice.clientBuilder()
+      .apply {
         if (BuildConfig.ABLY_KEY.isBlank()) {
-          authCallback = Auth.TokenCallback {
-            val apiKey = runBlocking {
-              val sandbox = Sandbox.getInstance()
-              sandbox.apiKey
+          authCallback(
+            Auth.TokenCallback {
+              val apiKey = runBlocking {
+                val sandbox = Sandbox.getInstance()
+                sandbox.apiKey
+              }
+              // A throwaway client that only signs a token; it never connects.
+              PubSubDevice.clientBuilder()
+                .key(apiKey)
+                .endpoint("nonprod:sandbox")
+                .autoConnect(false)
+                .build()
+                .use { it.auth.requestToken(null, null) }
             }
-            AblyRest(ClientOptions().apply {
-              key = apiKey
-              environment = "sandbox"
-            }).auth.requestToken(null, null)
-          }
-          environment = "sandbox"
+          )
+          endpoint("nonprod:sandbox")
         } else {
-          key = BuildConfig.ABLY_KEY
+          key(BuildConfig.ABLY_KEY)
         }
-        logLevel = Log.VERBOSE
-        autoConnect = false
+        logLevel(Log.VERBOSE)
+        autoConnect(false)
       }
-    )
+      .build()
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
