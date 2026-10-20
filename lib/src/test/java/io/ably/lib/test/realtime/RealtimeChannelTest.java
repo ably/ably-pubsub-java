@@ -248,8 +248,8 @@ public class RealtimeChannelTest extends ParameterizedTest {
             AblyException exception = assertThrows(AblyException.class, () ->
                 finalAbly.channels.get(channelName, options));
 
-            assertEquals("Verify error code", 400, exception.errorInfo.code);
-            assertEquals("Verify error status code", 40000, exception.errorInfo.statusCode);
+            assertEquals("Verify error code", 40000, exception.errorInfo.code);
+            assertEquals("Verify error status code", 400, exception.errorInfo.statusCode);
             assertTrue("Verify error message", exception.errorInfo.message.contains("use Channel.setOptions()"));
 
         } catch (AblyException e) {
