@@ -76,6 +76,16 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
     public Action action;
 
     /**
+     * A MessageExtras object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads.
+     * Valid payloads include {@link DeltaExtras}, {@link JsonObject}.
+     * <p>
+     * Spec: TP3i
+     */
+    public MessageExtras extras;
+
+    private static final String EXTRAS = "extras";
+
+    /**
      * Default constructor
      */
     public PresenceMessage() {}
@@ -96,9 +106,21 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
      * @param data
      */
     public PresenceMessage(Action action, String clientId, Object data) {
+        this(action, clientId, data, null);
+    }
+
+    /**
+     * Construct a PresenceMessage with extras
+     * @param action
+     * @param clientId
+     * @param data
+     * @param extras
+     */
+    public PresenceMessage(Action action, String clientId, Object data, MessageExtras extras) {
         this.action = action;
         this.clientId = clientId;
         this.data = data;
+        this.extras = extras;
     }
 
     /**
@@ -123,16 +145,22 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
         result.encoding = encoding;
         result.data = data;
         result.action = action;
+        result.extras = extras;
         return result;
     }
 
     void writeMsgpack(MessagePacker packer) throws IOException {
         int fieldCount = super.countFields();
         ++fieldCount;
+        if(extras != null) ++fieldCount;
         packer.packMapHeader(fieldCount);
         super.writeFields(packer);
         packer.packString("action");
         packer.packInt(action.getValue());
+        if(extras != null) {
+            packer.packString(EXTRAS);
+            extras.write(packer);
+        }
     }
 
     PresenceMessage readMsgpack(MessageUnpacker unpacker) throws IOException {
@@ -145,6 +173,8 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
             if(super.readField(unpacker, fieldName, fieldFormat)) { continue; }
             if(fieldName.equals("action")) {
                 action = Action.findByValue(unpacker.unpackInt());
+            } else if (fieldName.equals(EXTRAS)) {
+                extras = MessageExtras.read(unpacker);
             } else {
                 Log.v(TAG, "Unexpected field: " + fieldName);
                 unpacker.skipValue();
@@ -260,6 +290,24 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
         }
     }
 
+    @Override
+    protected void read(final JsonObject map) throws MessageDecodeException {
+        super.read(map);
+
+        final JsonElement extrasElement = map.get(EXTRAS);
+        if (extrasElement != null && !extrasElement.isJsonNull()) {
+            if (!extrasElement.isJsonObject()) {
+                throw MessageDecodeException.fromDescription("PresenceMessage extras is of type \"" + extrasElement.getClass() + "\" when expected a JSON object.");
+            }
+            extras = MessageExtras.read(extrasElement.getAsJsonObject());
+        }
+
+        Integer actionValue = readInt(map, "action");
+        if (actionValue != null) {
+            action = Action.findByValue(actionValue);
+        }
+    }
+
     public static class ActionSerializer implements JsonDeserializer<Action> {
         @Override
         public Action deserialize(JsonElement json, Type t, JsonDeserializationContext ctx)
@@ -268,12 +316,31 @@ public class PresenceMessage extends BaseMessage implements Cloneable {
         }
     }
 
-    public static class Serializer implements JsonSerializer<PresenceMessage> {
+    public static class Serializer implements JsonSerializer<PresenceMessage>, JsonDeserializer<PresenceMessage> {
         @Override
         public JsonElement serialize(PresenceMessage message, Type typeOfMessage, JsonSerializationContext ctx) {
             final JsonObject json = BaseMessage.toJsonObject(message);
             if(message.action != null) json.addProperty("action", message.action.getValue());
+            if(message.extras != null) {
+                json.add(EXTRAS, Serialisation.gson.toJsonTree(message.extras));
+            }
             return json;
+        }
+
+        @Override
+        public PresenceMessage deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            if (!(json instanceof JsonObject)) {
+                throw new JsonParseException("Expected an object but got \"" + json.getClass() + "\".");
+            }
+
+            final PresenceMessage message = new PresenceMessage();
+            try {
+                message.read((JsonObject) json);
+            } catch (MessageDecodeException e) {
+                Log.e(TAG, e.getMessage(), e);
+                throw new JsonParseException("Failed to deserialize PresenceMessage from JSON.", e);
+            }
+            return message;
         }
     }
 
