@@ -38,7 +38,6 @@ dependencies {
 buildConfig {
     useJavaOutput()
     packageName = "io.ably.pubsub"
-    buildConfigField("String", "LIBRARY_NAME", "\"java\"")
     buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
 

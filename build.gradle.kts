@@ -1,4 +1,6 @@
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
@@ -41,7 +43,12 @@ subprojects {
 val expectedReleaseArtifacts = sortedSetOf(
     "io.ably.pubsub:core:jar",
     "io.ably.pubsub:core-android:aar",
+    // `device` is Kotlin Multiplatform: `device` is the root (metadata) publication and the
+    // real artifacts are the `device-jvm` and `device-android` target publications below;
+    // the root entry is modelled as `jar` only because it has no packaging of its own.
     "io.ably.pubsub:device:jar",
+    "io.ably.pubsub:device-jvm:jar",
+    "io.ably.pubsub:device-android:aar",
     "io.ably.pubsub:server:jar",
     "io.ably.pubsub:liveobjects:jar",
     "io.ably.pubsub:pubsub-adapter:jar",
@@ -68,6 +75,20 @@ tasks.register("verifyReleaseArtifacts") {
             }
             val group = p.findProperty("GROUP")
             actual.add("$group:$artifactId:$packaging")
+            // A Kotlin Multiplatform module (`device`) does not publish as a single jar: its
+            // POM_ARTIFACT_ID names only the root metadata publication (the one a plain
+            // dependency resolves through Gradle module metadata), and the real artifacts are
+            // the per-target publications (`device-jvm`, `device-android`). Record those from the
+            // module's actual publications so a dropped target fails the check.
+            if (p.pluginManager.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+                p.extensions.getByType<PublishingExtension>().publications
+                    .withType<MavenPublication>()
+                    .filter { it.artifactId != artifactId }
+                    .forEach { pub ->
+                        val ext = if (pub.artifactId.endsWith("-android")) "aar" else "jar"
+                        actual.add("$group:${pub.artifactId}:$ext")
+                    }
+            }
         }
         if (actual != expectedReleaseArtifacts) {
             error(
