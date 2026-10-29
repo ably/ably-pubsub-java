@@ -209,10 +209,10 @@ so you do not need to release them one by one.
 The `Ably-Agent` header, and the `agent` query parameter of the realtime connection, now start with
 `ably-pubsub-java/<version>` instead of `ably-java/<version>`, and carry a bare `ably-pubsub-server`
 or `ably-pubsub-device` entry according to the door used. Update anything that matches on
-`ably-java/`, such as proxy rules or log queries. Entries you add through `agents(...)` are kept and
-sent after `ably-pubsub-java/<version>` in alphabetical order, followed by the platform entry. The door
-sets its side entry on a copy of your options after your entries, removes the opposite side's entry,
-and the side entry cannot be overridden.
+`ably-java/`, such as proxy rules or log queries. Entries you add through `agents(...)` are kept.
+The door adds its side entry to a copy of your options, removes the opposite side's entry, and the
+side entry cannot be overridden. After `ably-pubsub-java/<version>`, the additional entries
+(yours and the side entry) are sent in alphabetical order, followed by the platform entry.
 
 ### Server clients and token authentication
 
