@@ -226,9 +226,10 @@ that were already built. See the end of [section 2](#2-build-clients-through-the
 - **Re-authentication.** When Ably asks a connected client to re-authenticate, the client now emits
   `UPDATE` once `renewAuth` completes, so the event reports the outcome of the re-authentication
   instead of firing before it has finished.
-- **Android push registration token.** The stored registration token type is now persisted by name
-  rather than by ordinal. On upgrade, a stored legacy FCM token is kept (migrated); a stored legacy
-  GCM token is dropped, because GCM support was removed, so those devices register again.
+- **Android push registration token.** The push registration token type is now persisted by name
+  rather than by enum ordinal. A token stored by an earlier 1.x release as FCM is migrated and kept.
+  A stored GCM token (GCM is no longer supported), or an unrecognised stored value, is discarded, and
+  the device registers with FCM again on next activation.
 - **Log tags.** Log tags are class names, so they changed with the packages (for example
   `io.ably.lib.rest.AblyRest` became `io.ably.pubsub.http.PubSubHttpClient`). Update logcat filters
   and `LogHandler` matchers that match on tags.
