@@ -69,7 +69,7 @@ The resolver derives everything from it: `targetDir` is the path, `package` is t
 (`lib/` → `:core`, `liveobjects/` → `:liveobjects`, `uts/` → `:uts`). Use the resolver's `targetDir` /
 `package` / `module` output directly — don't recompute. The `objects` entry is **hand-maintained**: its
 tiers live in `:liveobjects`'s own test source set (its specs assert on `:liveobjects` internals only
-visible to that module's own tests) under `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,
+visible to that module's own tests) under `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/{unit,
 integration,proxy}` — a sibling layout that differs from the `--create` template below, so `--create` never
 regenerates it.
 
@@ -85,7 +85,7 @@ regenerates it.
   ```
 
   This adds full `lib/`-rooted (`:core`) paths under `packages` —
-  `lib/src/test/kotlin/io/ably/lib/uts/unit/<target>`, `.../integration/standard/<target>`, and
+  `lib/src/test/kotlin/io/ably/pubsub/uts/unit/<target>`, `.../integration/standard/<target>`, and
   `.../integration/proxy/<target>` — and re-prints the resolved output. **`--create` only scaffolds
   `:core`-hosted modules;** a module whose tiers live in another Gradle module (like `objects` →
   `:liveobjects`, a sibling `uts/{unit,integration,proxy}` layout) still needs a hand-edit afterwards.
@@ -181,7 +181,7 @@ integration tests** section; **proxy** → the proxy subsections of the **Integr
 > multi-point-per-method shape.
 
 Infrastructure lives in `:uts`'s **main** source set —
-`uts/src/main/kotlin/io/ably/lib/uts/infra/` — so other Gradle modules can consume it via
+`uts/src/main/kotlin/io/ably/pubsub/uts/infra/` — so other Gradle modules can consume it via
 `testImplementation(project(":uts"))`. Kotlin packages are `io.ably.pubsub.uts.infra.*`, so imports in
 generated tests are unaffected. It is split by tier:
 
@@ -194,7 +194,7 @@ For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` be
 **Module-local helpers.** Every module's tiers live in that module's own test source set (the resolver's
 `targetDir` / `module`), so also read any module-local helpers alongside the target — they sit in the
 tier's `targetDir`. For **objects/unit** (module `:liveobjects`) that's
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/unit/Helpers.kt` (package
 `io.ably.pubsub.liveobjects.uts.unit`) — `setupSyncedChannel`, the `build_*` message builders (typed `Wire*`
 constructions, no JSON/reflection), `STANDARD_POOL_OBJECTS` and the canonical serial constants. Access
 convention for that suite: **public-tier specs use only the public API + helpers**; only the five
@@ -557,8 +557,8 @@ fun `RTLC7c2 - LOCAL source does not write siteTimeserials`() = runTest {
 ### Deviations file
 
 Append to the deviations file that belongs to the tier's module:
-`lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers (module `:core`), or
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
+`lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` for realtime/rest tiers (module `:core`), or
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
 **Recording deviations** entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
 the spec) goes under the manual's *UTS Spec Errors* section; an **SDK deviation** (env-gated/adapted — fix
 in the SDK) goes under *Failing Tests* / *Adapted Tests*.
@@ -645,7 +645,7 @@ For each test case, verify:
 Deviations are discovered by running, so this check applies in evaluate mode. For any place where the
 generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in the tier's module deviations file (see "Deviations file" above: `lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers, `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects tiers)
+- [ ] The deviation is recorded in the tier's module deviations file (see "Deviations file" above: `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` for realtime/rest tiers, `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` for objects tiers)
 
 If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
 `orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in
@@ -679,7 +679,7 @@ A **direct-sandbox** spec (no `create_proxy_session`, no rules — just happy-pa
 **Client wiring** — point the client at the sandbox endpoint:
 
 ```kotlin
-private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+private fun newClient(useBinaryProtocol: Boolean): PubSubRealtimeClient = TestRealtimeClient {
     key = app.defaultKey
     endpoint     = SandboxApp.sandboxEndpoint   // nonprod:sandbox
     this.useBinaryProtocol = useBinaryProtocol
@@ -723,7 +723,7 @@ Use generous timeouts (10–30s) — real network is involved. Everything else i
 
 ### Infrastructure
 
-Three helpers live under `uts/src/main/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
+Three helpers live under `uts/src/main/kotlin/io/ably/pubsub/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
 - **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.pubsub.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
