@@ -38,6 +38,15 @@ tasks.withType<Test>().configureEach {
             .orElse(providers.environmentVariable("UTS_PROXY_LOCAL_PATH"))
             .getOrElse(""),
     )
+
+    // Which package's entry points the UTS specs construct clients through (`core` default, or
+    // `server`); forwarded explicitly for the same reason as uts.proxy.localPath. See :uts ClientFactories.kt.
+    systemProperty(
+        "uts.side",
+        providers.systemProperty("uts.side")
+            .orElse(providers.environmentVariable("UTS_SIDE"))
+            .getOrElse("core"),
+    )
 }
 
 tasks.register<Test>("runLiveObjectsUnitTests") {
