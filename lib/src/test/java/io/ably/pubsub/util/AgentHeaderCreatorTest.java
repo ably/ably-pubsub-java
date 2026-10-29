@@ -85,6 +85,27 @@ public class AgentHeaderCreatorTest {
         assertMatchingAgentHeaders(PREDEFINED_AGENTS + " android/25 library/1.0.1", agentHeaderValue);
     }
 
+    @Test
+    public void should_emit_additional_agents_sorted_by_name_and_keep_the_platform_agent_after_them() {
+        // given
+        Map<String, String> agents = new HashMap<>();
+        agents.put("zeta", "3");
+        agents.put("alpha", null);
+        agents.put("mid", "2.0");
+        PlatformAgentProvider platformAgentProvider = new PlatformAgentProvider() {
+            @Override
+            public String createPlatformAgent() {
+                return "android/25";
+            }
+        };
+
+        // when
+        String agentHeaderValue = AgentHeaderCreator.create(agents, platformAgentProvider);
+
+        // then
+        org.junit.Assert.assertEquals(PREDEFINED_AGENTS + " alpha mid/2.0 zeta/3 android/25", agentHeaderValue);
+    }
+
     private void assertMatchingAgentHeaders(String expectedAgentHeader, String actualAgentHeader) {
         assertPredefinedAgentsAreAtTheStart(actualAgentHeader);
         assertAllExpectedAgentsArePresentInActualAgents(expectedAgentHeader, actualAgentHeader);

@@ -3,6 +3,7 @@ package io.ably.pubsub.util;
 import io.ably.pubsub.transport.Defaults;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 public class AgentHeaderCreator {
     /**
@@ -33,8 +34,10 @@ public class AgentHeaderCreator {
 
     private static String getAdditionalAgentEntries(Map<String, String> additionalAgents) {
         StringBuilder additionalAgentsBuilder = new StringBuilder();
-        for (String additionalAgentName : additionalAgents.keySet()) {
-            String additionalAgentVersion = additionalAgents.get(additionalAgentName);
+        // Sorted by name so the header is deterministic whatever the map's own iteration order.
+        for (Map.Entry<String, String> additionalAgent : new TreeMap<>(additionalAgents).entrySet()) {
+            String additionalAgentName = additionalAgent.getKey();
+            String additionalAgentVersion = additionalAgent.getValue();
             additionalAgentsBuilder.append(additionalAgentName);
             if (additionalAgentVersion != null) {
                 additionalAgentsBuilder.append(AGENT_DIVIDER);
