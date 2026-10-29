@@ -267,7 +267,7 @@ public class HttpAnnotations {
         }
 
         // (RSAN1c4)
-        if (annotation.id == null && clientOptions.idempotentRestPublishing) {
+        if (annotation.id == null && clientOptions.idempotentHttpPublishing) {
             annotation.id = Crypto.getRandomId();
         }
 

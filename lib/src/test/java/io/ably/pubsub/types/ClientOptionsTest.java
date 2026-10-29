@@ -13,9 +13,9 @@ public class ClientOptionsTest {
     private final ClientOptions clientOptions = new ClientOptions();
 
     @Test
-    public void should_support_idempotent_rest_publishing() {
+    public void should_support_idempotent_http_publishing() {
         // Then
-        assertTrue(clientOptions.idempotentRestPublishing);
+        assertTrue(clientOptions.idempotentHttpPublishing);
     }
 
     @Test

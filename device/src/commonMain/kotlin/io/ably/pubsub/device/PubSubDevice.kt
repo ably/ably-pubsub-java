@@ -233,12 +233,12 @@ public object PubSubDevice {
         public fun proxy(proxy: ProxyOptions): ClientBuilder = apply { options.proxy = proxy }
 
         /**
-         * Sets [ClientOptions.idempotentRestPublishing].
+         * Sets [ClientOptions.idempotentHttpPublishing].
          *
-         * @param idempotentRestPublishing the value to set.
+         * @param idempotentHttpPublishing the value to set.
          * @return this builder.
          */
-        public fun idempotentRestPublishing(idempotentRestPublishing: Boolean): ClientBuilder = apply { options.idempotentRestPublishing = idempotentRestPublishing }
+        public fun idempotentHttpPublishing(idempotentHttpPublishing: Boolean): ClientBuilder = apply { options.idempotentHttpPublishing = idempotentHttpPublishing }
 
         /**
          * Sets [ClientOptions.httpOpenTimeout].

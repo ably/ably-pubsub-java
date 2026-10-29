@@ -364,13 +364,13 @@ public final class PubSubServer {
         }
 
         /**
-         * Sets {@link ClientOptions#idempotentRestPublishing}.
+         * Sets {@link ClientOptions#idempotentHttpPublishing}.
          *
-         * @param idempotentRestPublishing the value to set.
+         * @param idempotentHttpPublishing the value to set.
          * @return this builder.
          */
-        public T idempotentRestPublishing(boolean idempotentRestPublishing) {
-            options.idempotentRestPublishing = idempotentRestPublishing;
+        public T idempotentHttpPublishing(boolean idempotentHttpPublishing) {
+            options.idempotentHttpPublishing = idempotentHttpPublishing;
             return self();
         }
 

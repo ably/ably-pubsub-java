@@ -171,7 +171,7 @@ public class ChannelBase {
                     ably.auth.checkClientId(message, true, false);
                     message.encode(options);
                 }
-                if(!hasClientSuppliedId && ably.options.idempotentRestPublishing) {
+                if(!hasClientSuppliedId && ably.options.idempotentHttpPublishing) {
                     /* RSL1k1: populate the message id with a library-generated id */
                     String messageId = Crypto.getRandomId();
                     for (int i = 0; i < messages.length; i++) {

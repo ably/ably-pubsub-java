@@ -59,7 +59,7 @@ public class DebugOptions extends ClientOptions {
         copied.echoMessages = echoMessages;
         copied.recover = recover;
         copied.proxy = proxy;
-        copied.idempotentRestPublishing = idempotentRestPublishing;
+        copied.idempotentHttpPublishing = idempotentHttpPublishing;
         copied.httpOpenTimeout = httpOpenTimeout;
         copied.httpRequestTimeout = httpRequestTimeout;
         copied.httpMaxRetryDuration = httpMaxRetryDuration;
