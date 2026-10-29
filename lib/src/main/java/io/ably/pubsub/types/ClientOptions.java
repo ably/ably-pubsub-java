@@ -84,6 +84,10 @@ public class ClientOptions extends AuthOptions {
      * </ul>
      * The default is {@code main}.
      * <p>
+     * Never put a port in {@code endpoint}; set {@link #port} or {@link #tlsPort} instead. A value such as
+     * {@code localhost:8080} is not recognised as a hostname, so it is treated as a routing policy name and
+     * resolves to {@code localhost:8080.realtime.ably.net}.
+     * <p>
      * Spec: REC1
      */
     public String endpoint;
