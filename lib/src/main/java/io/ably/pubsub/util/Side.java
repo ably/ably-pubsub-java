@@ -7,13 +7,13 @@ import java.util.Map;
 
 /**
  * Internal helper shared by the {@code io.ably.pubsub:device} and {@code io.ably.pubsub:server}
- * door artifacts. It is compiled into each artifact's output from a shared source directory
- * rather than published, so that the two artifacts can share this code without a third
- * artifact existing for it to live in.
+ * door artifacts. It lives in this module's sources and ships in {@code io.ably.pubsub:core}
+ * (and the Android core) as {@code io.ably.pubsub.util.Side}, so both doors depend on it
+ * through the core artifact they already require. It is public only because the doors live in
+ * other packages; it is not part of the supported API.
  * <p>
- * The package split keeps {@code io.ably.pubsub:core} itself as the shared core, so nothing here may
- * grow into a general abstraction over the core: it exists only to stamp the side a package
- * declares.
+ * Nothing here may grow into a general abstraction over the core: it exists only to stamp the
+ * side a package declares.
  */
 public final class Side {
     private Side() {}
@@ -43,7 +43,11 @@ public final class Side {
     /**
      * Injects a side agent identifier into the provided {@code ClientOptions} instance.
      * The method adds the specified agent identifier to the {@code agents} map in the given
-     * {@code ClientOptions} object. If the {@code agents} map does not exist, a new one is created.
+     * {@code ClientOptions} object, and removes the opposite side's identifier, so a client
+     * never declares both sides. If the {@code agents} map does not exist, a new one is created.
+     * <p>
+     * This mutates {@code options} (it replaces {@code options.agents}); callers that must not
+     * alter their own object pass a {@link ClientOptions#copy()}.
      *
      * @param options the {@code ClientOptions} instance to which the agent identifier will be added.
      *                If {@code null}, the method returns {@code null}.
@@ -60,6 +64,8 @@ public final class Side {
         if (options.agents != null) {
             agents.putAll(options.agents);
         }
+        agents.remove(DEVICE_AGENT_IDENTIFIER.equals(identifier) ? SERVER_AGENT_IDENTIFIER
+            : SERVER_AGENT_IDENTIFIER.equals(identifier) ? DEVICE_AGENT_IDENTIFIER : null);
         agents.put(identifier, null);
         options.agents = agents;
         return options;
