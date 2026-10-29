@@ -8,7 +8,7 @@ See [UPGRADING.md](./UPGRADING.md) for the full 1.x to 2.0 migration guide.
 
 - The SDK is split into one artifact per side of the connection: `io.ably.pubsub:server` for backends and `io.ably.pubsub:device` for end-user devices (Android and JVM). Clients are built through `PubSubServer` or `PubSubDevice`; the `AblyRealtime` and `AblyRest` constructors are no longer public. Use exactly one door per app and never depend on `io.ably.pubsub:core` or `core-android` directly.
 - Coordinates and packages move from `io.ably:*` to `io.ably.pubsub:*` and from `io.ably.lib.*` to `io.ably.pubsub.*`. `AblyRealtime` and `AblyRest` become `PubSubRealtimeClient` and `PubSubHttpClient`.
-- REST-named types become HTTP-named (`io.ably.pubsub.http.*`, `HttpRequester`, `PubSubBase`, `HttpAnnotations`), and `ClientOptions.idempotentRestPublishing` is renamed `idempotentHttpPublishing`.
+- REST-named types become HTTP-named (`io.ably.pubsub.http.*`, `HttpRequester`, `PubSubBase`, `HttpAnnotations`).
 - Deprecated 1.x API is removed, including the `CompletionListener` publish overloads, `Auth.authorise` and `Auth.renew`, `fromCipherKey`, `Connection.recoveryKey`, `fromJSON` and `RegistrationToken.Type.GCM`.
 - `ClientOptions.environment`, `restHost`, `realtimeHost` and `fallbackHostsUseDefault` are replaced by `endpoint` (REC1, REC2c). Default hosts move to `main.realtime.ably.net`.
 - `Channels.release()` throws a checked `AblyException` (90011, status 400) unless the channel is `INITIALIZED`, `DETACHED` or `FAILED` (RTS4c-e).

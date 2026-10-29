@@ -166,11 +166,9 @@ public class ClientOptions extends AuthOptions {
      * allowing the Ably servers to discard automatic publish retries following a failure such as a network fault.
      * The default is true.
      * <p>
-     * Called {@code idempotentRestPublishing} in the specification and in 1.x.
-     * <p>
      * Spec: RSL1k1, RTL6a1, TO3n
      */
-    public boolean idempotentHttpPublishing = true;
+    public boolean idempotentRestPublishing = true;
 
     /**
      * Timeout for opening a connection to Ably to initiate an HTTP request.
@@ -351,7 +349,7 @@ public class ClientOptions extends AuthOptions {
         copied.echoMessages = echoMessages;
         copied.recover = recover;
         copied.proxy = proxy;
-        copied.idempotentHttpPublishing = idempotentHttpPublishing;
+        copied.idempotentRestPublishing = idempotentRestPublishing;
         copied.httpOpenTimeout = httpOpenTimeout;
         copied.httpRequestTimeout = httpRequestTimeout;
         copied.httpMaxRetryDuration = httpMaxRetryDuration;
