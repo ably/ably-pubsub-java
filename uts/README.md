@@ -949,7 +949,7 @@ listener-dedup divergence — see `liveobjects/.../deviations.md`.
 
 Each module registers package-filtered Gradle tasks. `:uts` registers `runUtsUnitTests` /
 `runUtsIntegrationTests` (in `uts/build.gradle.kts`) for the infra smoke tests only; `:core` registers
-the same-named tasks for the spec-derived conformance suites (realtime, and `:liveobjects` where applicable); `:liveobjects` registers `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests`.
+the same-named tasks for the realtime conformance suites; `:liveobjects` registers `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests`, and its UTS specs are under `io.ably.pubsub.liveobjects.uts.*`.
 
 | What | Command |
 |---|---|
@@ -991,7 +991,8 @@ RUN_DEVIATIONS=1 ./gradlew :core:runUtsUnitTests --tests "*ConnectionRecoveryTes
 `… runUnitTests runLiveObjectsUnitTests :core:runUtsUnitTests :uts:runUtsUnitTests` as the PR gate
 (all offline unit tiers); `integration-test.yml`'s `check-uts` job runs
 `:core:runUtsIntegrationTests :uts:runUtsIntegrationTests`, and its `check-liveobjects` job runs
-`runLiveObjectsIntegrationTests`.
+`runLiveObjectsIntegrationTests`. Both workflows run a second `-Duts.side=server` leg (see
+[Per-side package modes](#per-side-package-modes)).
 
 ### Per-side package modes
 
@@ -1015,7 +1016,14 @@ The server builders only stamp the side-declaring agent entry (a versionless fla
 ably/ably-common#361) and pass everything else through — `DebugOptions` included, whose `copy()`
 override keeps the mock hooks — so every mode must pass identically. `SideModesTest` asserts each
 mode's stamp so a broken seam cannot silently degrade the server leg into a duplicate core run.
-CI runs both modes (`check.yml` and `integration-test.yml`) with the commands above.
+CI runs both modes. The exact server legs are:
+
+```bash
+# check.yml
+./gradlew :core:runUtsUnitTests :uts:runUtsUnitTests :liveobjects:runLiveObjectsUnitTests -Duts.side=server
+# integration-test.yml (--tests narrows only the :liveobjects task)
+./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests :liveobjects:runLiveObjectsIntegrationTests --tests 'io.ably.pubsub.liveobjects.uts.*' -Duts.side=server
+```
 
 Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is not wired
 into this suite's construction seam. Its stamping contract is covered by the

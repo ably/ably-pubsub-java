@@ -22,7 +22,7 @@ Find out more:
 >
 > | Artifact | For | Entry point |
 > |----------|-----|-------------|
-> | `io.ably.pubsub:device` (aar) | Devices: Android apps and other end-user runtimes | `PubSubDevice.clientBuilder(...)` |
+> | `io.ably.pubsub:device` (Android aar and JVM jar) | Devices: Android apps and other end-user runtimes | `PubSubDevice.clientBuilder(...)` |
 > | `io.ably.pubsub:server` (jar) | Servers and other trusted backend environments | `PubSubServer.httpClientBuilder(...)` / `PubSubServer.realtimeClientBuilder(...)` |
 > | `io.ably.pubsub:core`, `io.ably.pubsub:core-android` | Internal implementation artifacts — do not depend on these directly | — |
 >

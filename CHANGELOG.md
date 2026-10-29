@@ -15,7 +15,7 @@ See [UPGRADING.md](./UPGRADING.md) for the full 1.x to 2.0 migration guide.
 - The `Ably-Agent` header and realtime `agent` parameter start with `ably-pubsub-java/` instead of `ably-java/`, with a side entry (`ably-pubsub-server` or `ably-pubsub-device`).
 - Server clients using token authentication need a token carrying the signed `x-ably-clientType=server` claim (today a JWT), otherwise the connection is rejected with 40167.
 - The device artifact requires Android API level 24 (1.x supported API level 19).
-- Door `build()` methods pass a copy of the options to the client.
+- Door `build()` methods pass a shallow copy of the options to the client (maps and arrays are copied, nested objects such as `proxy` or callbacks are shared).
 - Android push registration token types are persisted by name. A stored FCM token is migrated; a stored GCM token is discarded and the device registers with FCM again.
 - Server-initiated re-authentication emits `UPDATE` once `renewAuth` completes.
 
