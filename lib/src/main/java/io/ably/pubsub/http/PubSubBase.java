@@ -448,7 +448,7 @@ public abstract class PubSubBase implements AutoCloseable {
                 auth.checkClientId(message, true, false);
                 message.encode(channelOptions);
             }
-            if(!hasClientSuppliedId && options.idempotentRestPublishing) {
+            if(!hasClientSuppliedId && options.idempotentHttpPublishing) {
                 /* RSL1k1: populate the message id with a library-generated id */
                 String messageId = Crypto.getRandomId();
                 for (int i = 0; i < spec.messages.length; i++) {

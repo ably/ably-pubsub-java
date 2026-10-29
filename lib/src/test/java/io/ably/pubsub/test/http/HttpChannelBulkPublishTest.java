@@ -173,7 +173,7 @@ public class HttpChannelBulkPublishTest extends ParameterizedTest  {
         try {
             /* setup library instance */
             ClientOptions opts = createOptions(testVars.keys[0].keyStr);
-            opts.idempotentRestPublishing = true;
+            opts.idempotentHttpPublishing = true;
             PubSubHttpClient ably = HttpClientFactory.create(opts);
 
             /* first, publish some messages */

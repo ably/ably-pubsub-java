@@ -340,7 +340,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
         try {
             DebugOptions opts = new DebugOptions(testVars.keys[0].keyStr);
             fillInOptions(opts);
-            opts.idempotentRestPublishing = true;
+            opts.idempotentHttpPublishing = true;
             opts.useBinaryProtocol = true;
             opts.httpListener = new DebugOptions.RawHttpListener() {
                 @Override
@@ -412,7 +412,7 @@ public class HttpChannelPublishTest extends ParameterizedTest {
 
             DebugOptions opts = new DebugOptions(tokenDetails.token);
             fillInOptions(opts);
-            opts.idempotentRestPublishing = true;
+            opts.idempotentHttpPublishing = true;
             opts.useBinaryProtocol = true;
             opts.httpListener = requestListener;
             /* generate a fallback which resolves to the same address, which the library will treat as a different host */
