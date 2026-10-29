@@ -1,5 +1,24 @@
 # Change Log
 
+## [2.0.0] (unreleased)
+
+See [UPGRADING.md](./UPGRADING.md) for the full 1.x to 2.0 migration guide.
+
+### Breaking changes
+
+- The SDK is split into one artifact per side of the connection: `io.ably.pubsub:server` for backends and `io.ably.pubsub:device` for end-user devices (Android and JVM). Clients are built through `PubSubServer` or `PubSubDevice`; the `AblyRealtime` and `AblyRest` constructors are no longer public. Use exactly one door per app and never depend on `io.ably.pubsub:core` or `core-android` directly.
+- Coordinates and packages move from `io.ably:*` to `io.ably.pubsub:*` and from `io.ably.lib.*` to `io.ably.pubsub.*`. `AblyRealtime` and `AblyRest` become `PubSubRealtimeClient` and `PubSubHttpClient`.
+- REST-named types become HTTP-named (`io.ably.pubsub.http.*`, `HttpRequester`, `PubSubBase`, `HttpAnnotations`), and `ClientOptions.idempotentRestPublishing` is renamed `idempotentHttpPublishing`.
+- Deprecated 1.x API is removed, including the `CompletionListener` publish overloads, `Auth.authorise` and `Auth.renew`, `fromCipherKey`, `Connection.recoveryKey`, `fromJSON` and `RegistrationToken.Type.GCM`.
+- `ClientOptions.environment`, `restHost`, `realtimeHost` and `fallbackHostsUseDefault` are replaced by `endpoint` (REC1, REC2c). Default hosts move to `main.realtime.ably.net`.
+- `Channels.release()` throws a checked `AblyException` (90011, status 400) unless the channel is `INITIALIZED`, `DETACHED` or `FAILED` (RTS4c-e).
+- The `Ably-Agent` header and realtime `agent` parameter start with `ably-pubsub-java/` instead of `ably-java/`, with a side entry (`ably-pubsub-server` or `ably-pubsub-device`).
+- Server clients using token authentication need a token carrying the signed `x-ably-clientType=server` claim (today a JWT), otherwise the connection is rejected with 40167.
+- The device artifact requires Android API level 24 (1.x supported API level 19).
+- Door `build()` methods pass a copy of the options to the client.
+- Android push registration token types are persisted by name. A stored FCM token is migrated; a stored GCM token is discarded and the device registers with FCM again.
+- Server-initiated re-authentication emits `UPDATE` once `renewAuth` completes.
+
 ## [1.8.2](https://github.com/ably/ably-java/tree/v1.8.2)
 
 [Full Changelog](https://github.com/ably/ably-java/compare/v1.8.1...v1.8.2)
