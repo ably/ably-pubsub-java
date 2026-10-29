@@ -30,9 +30,10 @@ Pick by where the code runs, not by which client you want: both doors give you a
 and connectionless operations (history, presence queries, token requests, `request()`,
 `batchPublish()`) are available on it either way.
 
-Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app. Both bring in the
-`io.ably.pubsub.*` classes (through `core` or `core-android`), so declaring both, or declaring `core`
-or `core-android` yourself, puts duplicate classes on the classpath. If one module of your app runs on
+Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app. On Android, `server`
+brings `core` and `device` brings `core-android`, which contain the same `io.ably.pubsub` classes, so
+declaring both, or declaring `core` or `core-android` yourself, puts duplicate classes on the
+classpath; on the JVM both resolve to `core`. Either way, declaring both makes your side ambiguous. If one module of your app runs on
 a device and another on a server, give each module its own door and keep them in separate artifacts.
 
 Gradle:
@@ -138,7 +139,7 @@ it into `io.ably.pubsub.http`:
 | `io.ably.lib.http.Http` | `io.ably.pubsub.http.HttpRequester` |
 | `io.ably.lib.http.*` (the rest) | `io.ably.pubsub.http.*` |
 | `io.ably.lib.network.*` | `io.ably.pubsub.network.*` |
-| `ClientOptions.idempotentRestPublishing` (and the builder method) | `ClientOptions.idempotentHttpPublishing` |
+| `ClientOptions.idempotentRestPublishing` | `ClientOptions.idempotentHttpPublishing` (also `idempotentHttpPublishing(...)` on the door builders) |
 | `io.ably.lib.liveobjects.*` | `io.ably.pubsub.liveobjects.*` |
 | `Defaults.HOST_REST`, `Defaults.HOST_REALTIME` | Removed. Use `endpoint` (`Defaults.ENDPOINT` is the default, `main`); see [Choose the host with `endpoint`](#6-choose-the-host-with-endpoint) |
 | `Defaults.HOST_FALLBACKS` | Kept, but now holds the default endpoint's fallback domains, `main.[a-e].fallback.ably-realtime.com` |
@@ -161,6 +162,10 @@ find src \( -name '*.java' -o -name '*.kt' \) -print0 | xargs -0 perl -pi -e '
   s/\bAblyRest\b/PubSubHttpClient/g;
 '
 ```
+
+The script renames only the fully qualified `io.ably.lib.http.Http`. Usages of the simple name `Http`
+are left alone (a word-bounded rule would clobber unrelated `Http` identifiers), so rename them to
+`HttpRequester` by hand.
 
 The script rewrites names only. You still need to replace `new AblyRealtime(...)` and `new AblyRest(...)`
 with the door builders (see above), and review the [behaviour changes](#4-behaviour-changes) by hand.
@@ -193,33 +198,38 @@ channel.once(ChannelState.detached, stateChange -> {
         // 90011 if the channel is no longer in a releasable state
     }
 });
-channel.detach();
+channel.detach();   // throws AblyException: call it from a method that declares it, or catch it
 ```
 
-Closing the client disposes of its channels, so you do not need to release them first.
+Closing the client detaches its channels, and the client and its channels become collectable together,
+so you do not need to release them one by one.
 
 ### Requests identify as `ably-pubsub-java`
 
 The `Ably-Agent` header, and the `agent` query parameter of the realtime connection, now start with
 `ably-pubsub-java/<version>` instead of `ably-java/<version>`, and carry a bare `ably-pubsub-server`
 or `ably-pubsub-device` entry according to the door used. Update anything that matches on
-`ably-java/`, such as proxy rules or log queries. Entries you add through `agents(...)` are kept; the
-side entry is applied last and cannot be overridden.
+`ably-java/`, such as proxy rules or log queries. Entries you add through `agents(...)` are kept and
+sent after `ably-pubsub-java/<version>` in alphabetical order, followed by the platform entry. The door
+sets its side entry on a copy of your options after your entries, removes the opposite side's entry,
+and the side entry cannot be overridden.
 
 ### Server clients and token authentication
 
 Clients from `PubSubServer` declare themselves as servers. Authenticate them with an API key. Token
 authentication on a realtime connection works only with a token that carries the signed
 `x-ably-clientType=server` claim, which today means a JWT; otherwise Ably rejects the connection with
-error 40167. Native Ably tokens (from `authCallback`, `token` or `tokenDetails`) cannot carry the
-claim. Clients from `PubSubDevice` are not affected: on a device, authenticate with tokens issued by
+error 40167. Tokens without the signed claim (for example Ably native tokens, whether from `authCallback`,
+`token` or `tokenDetails`) are rejected. Clients from `PubSubDevice` are not affected: on a device, authenticate with tokens issued by
 your own server (`authCallback` or `authUrl`), never with an API key.
 
 ### Options are copied when a client is built
 
 `build()` on each door passes a copy of the options to the client, so a builder can be reused and
-the options handed to `clientBuilder(options)` can be changed afterwards without affecting clients
-that were already built. See the end of [section 2](#2-build-clients-through-the-door-builders).
+the options handed to `clientBuilder(options)` can be reassigned afterwards without affecting clients
+that were already built. The copy is shallow: the `headers`, `agents`, `fallbackHosts` and
+`transportParams` maps and arrays are copied, but nested objects such as `proxy`, `authParams`,
+callbacks and listeners are shared. See the end of [section 2](#2-build-clients-through-the-door-builders).
 
 ### Other changes
 
@@ -255,9 +265,8 @@ that were already built. See the end of [section 2](#2-build-clients-through-the
 
 ## 6. Choose the host with `endpoint`
 
-2.0 replaces (REC1) `ClientOptions.environment`, `restHost` and `realtimeHost` with a single
-`ClientOptions.endpoint` option, and the builder methods `environment(…)`, `restHost(…)` and
-`realtimeHost(…)` with `endpoint(…)`. REST requests and the realtime connection now always use the
+2.0 replaces (REC1) the `ClientOptions.environment`, `restHost` and `realtimeHost` fields with a single
+`ClientOptions.endpoint` field; the door builders also offer `endpoint(…)`. REST requests and the realtime connection now always use the
 same host.
 
 | 1.x | 2.0 |

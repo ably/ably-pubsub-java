@@ -30,8 +30,9 @@ jobs:
       # everything else through, so conformance must be identical on both legs; SideModesTest
       # fails a leg whose stamp does not match. The leg covers every module whose UTS specs
       # build clients through the factories: :core and :liveobjects (plus the :uts self-tests).
-      # There is no device leg on the JVM — the device door is an Android artifact, covered by
-      # the instrumentation tests in emulate.yml.
+      # There is no device leg on the JVM — the device door is not wired into the factories' seam;
+      # its stamping contract is covered by the device module's own tests (jvmTest and the
+      # instrumentation tests in emulate.yml).
       - run: ./gradlew :core:runUtsUnitTests :uts:runUtsUnitTests :liveobjects:runLiveObjectsUnitTests -Duts.side=server
 
   # Continuously proves the release pre-flight and that every published module

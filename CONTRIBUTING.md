@@ -164,7 +164,7 @@ Interactive run/debug configurations for the core project can be created as foll
 
 #### Importing into Android studio
 
-Android studio does not include the components required to support development of the core project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the core-android project as a standalone project into Android Studio by deleting the top-level settings.gradle file, which effectively decouples the core-android and core projects.
+Android studio does not include the components required to support development of the core project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the core-android project as a standalone project into Android Studio by deleting the top-level settings.gradle.kts file, which effectively decouples the core-android and core projects.
 
 This has been tested with Android Studio 3.0.1.
 
@@ -236,12 +236,12 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter), which depended on the 1.x `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
 
 - Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
-- Open the directory printed from the output of that command. Inside that folder, get the `core-android-x.y.z.aar` (artifact `io.ably.pubsub:core-android`), and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
+- Open the directory printed from the output of that command. Inside that folder, get the `core-android-release.aar` (or `core-android-debug.aar`; artifact `io.ably.pubsub:core-android`), and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
 - Add an `implementation` dependency on the `.aar`:
 ```groovy
-implementation files('libs/core-android-2.0.0.aar')
+implementation files('libs/core-android-release.aar')
 ```
-- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
+- Add the `implementation` (not `testImplementation`) dependencies declared in `gradle/libs.versions.toml` and `core-android/build.gradle.kts` to your project. This is because the `.aar` does not contain dependencies.
 - Build/run your application.
 
 ## Release Process
