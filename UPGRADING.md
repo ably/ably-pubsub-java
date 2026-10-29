@@ -13,6 +13,12 @@ runs on an end-user device or on infrastructure you control.
 | `io.ably.lib.rest.*` | `io.ably.pubsub.http.*` |
 | `AblyRealtime`, `AblyRest` | `PubSubRealtimeClient`, `PubSubHttpClient` |
 
+Remove `io.ably:ably-java` and `io.ably:ably-android` (1.x) from your build when you add the new
+artifact. Depend on exactly one door per app, and never on
+`io.ably.pubsub:core` or `io.ably.pubsub:core-android` directly: they are internal implementation
+artifacts. Read [Behaviour changes](#4-behaviour-changes) before upgrading, since several 1.x calls
+behave differently at runtime.
+
 ## 1. Choose the artifact for your side
 
 | Artifact | For | Entry point |
@@ -23,6 +29,11 @@ runs on an end-user device or on infrastructure you control.
 Pick by where the code runs, not by which client you want: both doors give you a realtime client,
 and connectionless operations (history, presence queries, token requests, `request()`,
 `batchPublish()`) are available on it either way.
+
+Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app. Both bring in the
+`io.ably.pubsub.*` classes (through `core` or `core-android`), so declaring both, or declaring `core`
+or `core-android` yourself, puts duplicate classes on the classpath. If one module of your app runs on
+a device and another on a server, give each module its own door and keep them in separate artifacts.
 
 Gradle:
 
@@ -93,14 +104,19 @@ PubSubHttpClient http = PubSubServer.httpClientBuilder()
 import io.ably.pubsub.device.PubSubDevice
 
 val client = PubSubDevice.clientBuilder()
-    .key("xVLyHw.MHOCLg:...")
+    .authUrl("https://your-server.example.com/ably-auth")
     .clientId("bob")
     .build()
 ```
 
-Note that the options object is handed to the client rather than copied, and `build()` replaces its
-`agents` map with the stamped one; pass `ClientOptions.copy()` if either matters. Your own `agents`
-entries are preserved — only the side entry is applied last and cannot be overridden.
+Never embed an API key in an application that runs on an end-user device. Authenticate devices with
+tokens issued by your own server, through `authUrl(...)` or `authCallback(...)`.
+
+The door's `build()` hands the client a copy of the options (`ClientOptions.copy()`). Reusing a builder,
+or changing the `ClientOptions` you passed to `clientBuilder(options)` after `build()`, no longer
+affects clients that were already built. Your own `agents` entries are preserved; the door's side
+entry is applied to the copy and cannot be overridden, and a caller-supplied identifier for the
+opposite side (for example `ably-pubsub-server` on a device client) is removed.
 
 `RealtimeClientFactory` and `HttpClientFactory` exist in the clients' own packages as the seam the
 doors construct through. They are not application API; use the builders.
@@ -117,22 +133,107 @@ it into `io.ably.pubsub.http`:
 | `io.ably.lib.rest.Auth` | `io.ably.pubsub.http.Auth` |
 | `io.ably.lib.rest.DeviceDetails` | `io.ably.pubsub.http.DeviceDetails` |
 | `io.ably.lib.rest.RestAnnotations` | `io.ably.pubsub.http.HttpAnnotations` |
+| `io.ably.lib.rest.AblyBase` | `io.ably.pubsub.http.PubSubBase` |
+| `io.ably.lib.rest.ChannelBase`, `io.ably.lib.rest.MessageEditsMixin` | `io.ably.pubsub.http.ChannelBase`, `io.ably.pubsub.http.MessageEditsMixin` |
+| `io.ably.lib.http.Http` | `io.ably.pubsub.http.HttpRequester` |
 | `io.ably.lib.http.*` (the rest) | `io.ably.pubsub.http.*` |
+| `io.ably.lib.network.*` | `io.ably.pubsub.network.*` |
+| `ClientOptions.idempotentRestPublishing` (and the builder method) | `ClientOptions.idempotentHttpPublishing` |
+| `io.ably.lib.liveobjects.*` | `io.ably.pubsub.liveobjects.*` |
+| `Defaults.HOST_REST`, `Defaults.HOST_REALTIME` | Removed. Use `endpoint` (`Defaults.ENDPOINT` is the default, `main`); see [Choose the host with `endpoint`](#6-choose-the-host-with-endpoint) |
+| `Defaults.HOST_FALLBACKS` | Kept, but now holds the default endpoint's fallback domains, `main.[a-e].fallback.ably-realtime.com` |
+| pubsub-adapter `com.ably.pubsub.RestClient`, `RestChannel`, `RestPresence` and `RestClient.createWrapperSdkProxy` | Removed with no HTTP counterpart. The adapter's `Client`, `Channel`, `Channels`, `Presence`, `RealtimeClient`, `RealtimeChannel` and `RealtimePresence` interfaces remain, and `RealtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions)` is kept. Use `PubSubHttpClient` directly for HTTP-only access. |
 | `io.ably.lib.types.*`, `io.ably.lib.realtime.*`, `io.ably.lib.push.*`, … | `io.ably.pubsub.types.*`, `io.ably.pubsub.realtime.*`, `io.ably.pubsub.push.*`, … |
 
-For most codebases the import rewrite is mechanical. Rewrite the REST package first, since it is
-the one that does not simply map by prefix:
+For most codebases the import rewrite is mechanical. Apply the specific renames first and the generic
+package rules last, and keep the word boundaries so that identifiers merely containing `AblyRest` or
+`AblyRealtime` are left alone. `perl` behaves the same on macOS and Linux (BSD `sed` has no `\b`):
 
 ```bash
-# GNU sed; on macOS use `sed -i ''`
-find src -name '*.java' -o -name '*.kt' | xargs sed -i \
-  -e 's/io\.ably\.lib\.rest/io.ably.pubsub.http/g' \
-  -e 's/io\.ably\.lib/io.ably.pubsub/g' \
-  -e 's/AblyRealtime/PubSubRealtimeClient/g' \
-  -e 's/AblyRest/PubSubHttpClient/g'
+find src \( -name '*.java' -o -name '*.kt' \) -print0 | xargs -0 perl -pi -e '
+  s/\bio\.ably\.lib\.http\.Http\b/io.ably.pubsub.http.HttpRequester/g;
+  s/\bAblyBase\b/PubSubBase/g;
+  s/\bRestAnnotations\b/HttpAnnotations/g;
+  s/\bidempotentRestPublishing\b/idempotentHttpPublishing/g;
+  s/\bio\.ably\.lib\.rest\b/io.ably.pubsub.http/g;
+  s/\bio\.ably\.lib\b/io.ably.pubsub/g;
+  s/\bAblyRealtime\b/PubSubRealtimeClient/g;
+  s/\bAblyRest\b/PubSubHttpClient/g;
+'
 ```
 
-## 4. Deprecated API removed
+The script rewrites names only. You still need to replace `new AblyRealtime(...)` and `new AblyRest(...)`
+with the door builders (see above), and review the [behaviour changes](#4-behaviour-changes) by hand.
+
+## 4. Behaviour changes
+
+### `Channels.release()` no longer detaches the channel (RTS4c-e)
+
+A channel can be released only when it is `INITIALIZED`, `DETACHED` or `FAILED`. In any other state
+(`ATTACHING`, `ATTACHED`, `DETACHING`, `SUSPENDED`) the realtime `Channels.release()` throws an
+`AblyException` with code 90011 (status 400) and leaves the channel unchanged. Releasing a channel
+that does not exist is a no-op. The method now declares the checked `AblyException`, so Java callers
+must handle it. Detach first and wait for the detach to complete. Releasing a channel on the HTTP
+client is unchanged.
+
+**Before (1.x):**
+
+```java
+ably.channels.release("some-channel");   // detached, then removed
+```
+
+**After (2.0):**
+
+```java
+Channel channel = realtime.channels.get("some-channel");
+channel.once(ChannelState.detached, stateChange -> {
+    try {
+        realtime.channels.release("some-channel");
+    } catch (AblyException e) {
+        // 90011 if the channel is no longer in a releasable state
+    }
+});
+channel.detach();
+```
+
+Closing the client disposes of its channels, so you do not need to release them first.
+
+### Requests identify as `ably-pubsub-java`
+
+The `Ably-Agent` header, and the `agent` query parameter of the realtime connection, now start with
+`ably-pubsub-java/<version>` instead of `ably-java/<version>`, and carry a bare `ably-pubsub-server`
+or `ably-pubsub-device` entry according to the door used. Update anything that matches on
+`ably-java/`, such as proxy rules or log queries. Entries you add through `agents(...)` are kept; the
+side entry is applied last and cannot be overridden.
+
+### Server clients and token authentication
+
+Clients from `PubSubServer` declare themselves as servers. Authenticate them with an API key. Token
+authentication on a realtime connection works only with a token that carries the signed
+`x-ably-clientType=server` claim, which today means a JWT; otherwise Ably rejects the connection with
+error 40167. Native Ably tokens (from `authCallback`, `token` or `tokenDetails`) cannot carry the
+claim. Clients from `PubSubDevice` are not affected: on a device, authenticate with tokens issued by
+your own server (`authCallback` or `authUrl`), never with an API key.
+
+### Options are copied when a client is built
+
+`build()` on each door passes a copy of the options to the client, so a builder can be reused and
+the options handed to `clientBuilder(options)` can be changed afterwards without affecting clients
+that were already built. See the end of [section 2](#2-build-clients-through-the-door-builders).
+
+### Other changes
+
+- **Re-authentication.** When Ably asks a connected client to re-authenticate, the client now emits
+  `UPDATE` once `renewAuth` completes, so the event reports the outcome of the re-authentication
+  instead of firing before it has finished.
+- **Android push registration token.** The stored registration token type is now persisted by name
+  rather than by ordinal. On upgrade, a stored legacy FCM token is kept (migrated); a stored legacy
+  GCM token is dropped, because GCM support was removed, so those devices register again.
+- **Log tags.** Log tags are class names, so they changed with the packages (for example
+  `io.ably.lib.rest.AblyRest` became `io.ably.pubsub.http.PubSubHttpClient`). Update logcat filters
+  and `LogHandler` matchers that match on tags.
+
+## 5. Deprecated API removed
 
 2.0 drops every member 1.x had marked deprecated.
 
@@ -142,17 +243,18 @@ find src -name '*.java' -o -name '*.kt' | xargs sed -i \
 | `ChannelOptions.fromCipherKey(byte[])`, `fromCipherKey(String)` | `ChannelOptions.withCipherKey(…)` |
 | `Connection.recoveryKey` | `Connection.createRecoveryKey()` |
 | `Connection.emit/on/once(ConnectionState, …)` | The `ConnectionEvent`-keyed `EventEmitter` methods, e.g. `connection.on(ConnectionEvent.connected, listener)` |
-| `Channel.publish(…, CompletionListener)`, `publishAsync(…, CompletionListener)` | The `Callback<PublishResult>` overloads, e.g. `publish(name, data, callback)` |
+| Realtime `Channel.publish(…, CompletionListener)` | The `Callback<PublishResult>` overloads, e.g. `publish(name, data, callback)` |
+| HTTP client `Channel.publishAsync(…, CompletionListener)` | `publishAsync(name, data, Callback<PublishResult>)`; the HTTP channel has no `publish(…, callback)` overload |
 | `Channel.sync()` | Nothing. It was a no-op logging stub, intended only for internal testing per RTP19. |
 | `Auth.authorise(…)` | `Auth.authorize(…)` |
 | `Auth.renew()` | `Auth.renewAuth(…)`, which reports completion instead of returning early |
 | `TokenDetails.fromJSON(…)`, `TokenRequest.fromJSON(…)` | `fromJsonElement(…)` |
-| `ClientOptions.fallbackHostsUseDefault` | Drop it. Default fallback hosts apply automatically; set `fallbackHosts` only for custom hosts. |
+| `ClientOptions.fallbackHostsUseDefault` | Drop it. Default fallback hosts apply automatically, except with a hostname endpoint, where you must pass `fallbackHosts` explicitly (see [endpoint](#6-choose-the-host-with-endpoint)). |
 | `RegistrationToken.Type.GCM` (Android) | `RegistrationToken.Type.FCM` |
 
-## 5. Choose the host with `endpoint`
+## 6. Choose the host with `endpoint`
 
-2.0 replaces `ClientOptions.environment`, `restHost` and `realtimeHost` with a single
+2.0 replaces (REC1) `ClientOptions.environment`, `restHost` and `realtimeHost` with a single
 `ClientOptions.endpoint` option, and the builder methods `environment(…)`, `restHost(…)` and
 `realtimeHost(…)` with `endpoint(…)`. REST requests and the realtime connection now always use the
 same host.
@@ -164,10 +266,16 @@ same host.
 | `environment = "acme"` (dedicated cluster) | `endpoint = "acme"` |
 | `restHost` / `realtimeHost = "localhost"` | `endpoint = "localhost"` |
 | `restHost` and `realtimeHost` set to the same custom host | `endpoint = "<that host>"` |
+| `restHost = h` with `fallbackHostsUseDefault = true` | `endpoint = h` plus an explicit `fallbackHosts` of `main.a.fallback.ably-realtime.com` to `main.e.fallback.ably-realtime.com` (the five `main.[a-e]` hosts). A hostname endpoint has no default fallback hosts (REC2c2). |
+| `restHost` with a non-default `port` or `tlsPort` | `endpoint = "<host>"` plus `port` / `tlsPort` |
 | `restHost` and `realtimeHost` set to different hosts | Not supported; use one host that serves both, or contact Ably |
 | Custom `fallbackHosts` | Unchanged |
 
-How `endpoint` resolves:
+Never put a port in `endpoint`. Set `port` or `tlsPort` instead. A value such as `localhost:8080`
+is not recognised as a hostname (it contains no `.` or `::` and is not exactly `localhost`), so it is
+treated as a routing policy name and resolves to `localhost:8080.realtime.ably.net`.
+
+How `endpoint` resolves (REC1, REC2c):
 
 | `endpoint` | Primary host | Default fallback hosts |
 |------------|--------------|------------------------|
@@ -198,4 +306,5 @@ PubSubRealtimeClient realtime = PubSubServer.realtimeClientBuilder()
 
 **Firewalls and proxies.** 1.x connected to `rest.ably.io`, `realtime.ably.io` and
 `[a-e].ably-realtime.com` by default. If your network restricts outbound traffic, allow
-`*.realtime.ably.net` and `*.fallback.ably-realtime.com` before upgrading.
+`*.realtime.ably.net` and `*.fallback.ably-realtime.com` before upgrading. If you use a `nonprod:`
+endpoint, also allow `*.realtime.ably-nonprod.net` and `*.fallback.ably-realtime-nonprod.com`.
