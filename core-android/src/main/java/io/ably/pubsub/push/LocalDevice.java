@@ -64,8 +64,7 @@ public class LocalDevice extends DeviceDetails {
         this.clientId = storage.get(SharedPrefKeys.CLIENT_ID, null);
         this.deviceIdentityToken = storage.get(SharedPrefKeys.DEVICE_TOKEN, null);
 
-        RegistrationToken.Type type = RegistrationToken.Type.fromOrdinal(
-            storage.get(SharedPrefKeys.TOKEN_TYPE, -1));
+        RegistrationToken.Type type = readPersistedTokenType(storage);
 
         Log.d(TAG, "loadPersisted(): token type = " + type);
         if(type != null) {
@@ -78,6 +77,46 @@ public class LocalDevice extends DeviceDetails {
             }
         }
     }
+
+    /**
+     * Reads the persisted registration token type. It is stored by name; releases that predate the
+     * removal of GCM stored the enum ordinal (an int) under the same key. A legacy FCM (1) is
+     * migrated to the name form, and anything else (legacy GCM (0), unknown ordinals, garbage) is
+     * dropped together with the stored token so that the device registers again.
+     */
+    static RegistrationToken.Type readPersistedTokenType(Storage storage) {
+        String name = null;
+        Integer legacyOrdinal = null;
+        try {
+            name = storage.get(SharedPrefKeys.TOKEN_TYPE, (String) null);
+        } catch (ClassCastException e) {
+            try {
+                legacyOrdinal = storage.get(SharedPrefKeys.TOKEN_TYPE, -1);
+            } catch (ClassCastException e2) {
+                /* neither a string nor an int: treated as garbage below */
+            }
+        }
+
+        if (name == null && legacyOrdinal == null) {
+            return null; /* nothing persisted */
+        }
+
+        RegistrationToken.Type type = null;
+        if (name != null) {
+            type = RegistrationToken.Type.fromName(name);
+        } else if (legacyOrdinal == LEGACY_FCM_ORDINAL) {
+            type = RegistrationToken.Type.FCM;
+            storage.put(SharedPrefKeys.TOKEN_TYPE, type.toName());
+        }
+
+        if (type == null) {
+            storage.clear(new String[]{SharedPrefKeys.TOKEN_TYPE, SharedPrefKeys.TOKEN});
+        }
+        return type;
+    }
+
+    /** Ordinal of FCM in the {GCM, FCM} enum of releases that persisted the type by ordinal. */
+    private static final int LEGACY_FCM_ORDINAL = 1;
 
     RegistrationToken getRegistrationToken() {
         JsonObject recipient = push.recipient;
@@ -107,7 +146,7 @@ public class LocalDevice extends DeviceDetails {
     void setAndPersistRegistrationToken(RegistrationToken token) {
         Log.v(TAG, "setAndPersistRegistrationToken(): token=" + token);
         setRegistrationToken(token);
-        storage.put(SharedPrefKeys.TOKEN_TYPE, token.type.ordinal());
+        storage.put(SharedPrefKeys.TOKEN_TYPE, token.type.toName());
         storage.put(SharedPrefKeys.TOKEN, token.token);
     }
 
