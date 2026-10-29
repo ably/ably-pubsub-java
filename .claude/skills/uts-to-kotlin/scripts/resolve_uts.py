@@ -34,10 +34,10 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parent.parent
 MAPPING = SKILL_DIR / "uts-package-mapping.json"
 TIERS = ("unit", "integration", "proxy")
-# Owning Gradle module, keyed by a target dir's first path segment. The `lib` -> `:java`
-# pair is the load-bearing non-obvious mapping (the `:java` module's build file wires
+# Owning Gradle module, keyed by a target dir's first path segment. The `lib` -> `:core`
+# pair is the load-bearing non-obvious mapping (the `:core` module's build file wires
 # `../lib/src/...` srcDirs).
-MODULE_BY_PREFIX = {"lib": ":java", "liveobjects": ":liveobjects", "uts": ":uts"}
+MODULE_BY_PREFIX = {"lib": ":core", "liveobjects": ":liveobjects", "uts": ":uts"}
 
 
 def fail(code, message):
@@ -95,7 +95,7 @@ def main():
         "--create",
         metavar="NAME",
         help="add a mapping for this source module using NAME as the ably-java "
-        "module base name, then resolve. Scaffolds full lib/-rooted (:java) paths "
+        "module base name, then resolve. Scaffolds full lib/-rooted (:core) paths "
         "only — a module whose tiers live in another Gradle module (like objects "
         "-> :liveobjects) still needs a hand-edit afterwards.",
     )
@@ -131,10 +131,10 @@ def main():
                  f"--create target {target!r} must be a simple module base name "
                  f"(letters/digits/underscore, e.g. 'liveobjects') so it forms a "
                  f"valid path and Kotlin package.")
-        # Full repo-root-relative paths using the realtime/`lib` (:java) template.
+        # Full repo-root-relative paths using the realtime/`lib` (:core) template.
         # A module whose tiers live in another Gradle module (like objects ->
-        # :liveobjects) still needs a hand-edit — --create only scaffolds :java-hosted modules.
-        base = "lib/src/test/kotlin/io/ably/lib/uts"
+        # :liveobjects) still needs a hand-edit — --create only scaffolds :core-hosted modules.
+        base = "lib/src/test/kotlin/io/ably/pubsub/uts"
         new_entry = {
             "unit": f"{base}/unit/{target}",
             "integration": f"{base}/integration/standard/{target}",
