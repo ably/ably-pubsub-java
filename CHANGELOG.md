@@ -1,23 +1,54 @@
 # Change Log
 
-## [2.0.0] (unreleased)
+## [2.0.0](https://github.com/ably/ably-pubsub-java/tree/v2.0.0) (2026-10-30)
 
-See [UPGRADING.md](./UPGRADING.md) for the full 1.x to 2.0 migration guide.
+The 2.0.0 release makes it clear what to use on a device and what to use on a server. The SDK is now split by where your code runs. Depend on `io.ably.pubsub:device` for code that runs on an end user's device, such as an Android app or a desktop client, or `io.ably.pubsub:server` for code that runs on your own infrastructure. Each artifact offers only the clients that make sense on its side. The artifact names are also what coding assistants see in the dependency declaration and the builder call, so they get the choice right too.
 
-### Breaking changes
+v2 also removes the APIs and client options deprecated in v1.
 
-- The SDK is split into one artifact per side of the connection: `io.ably.pubsub:server` for backends and `io.ably.pubsub:device` for end-user devices (Android and JVM). Clients are built through `PubSubServer` or `PubSubDevice`; the `AblyRealtime` and `AblyRest` constructors are no longer public. Use exactly one door per app and never depend on `io.ably.pubsub:core` or `core-android` directly.
-- Coordinates and packages move from `io.ably:*` to `io.ably.pubsub:*` and from `io.ably.lib.*` to `io.ably.pubsub.*`. `AblyRealtime` and `AblyRest` become `PubSubRealtimeClient` and `PubSubHttpClient`.
-- REST-named types become HTTP-named (`io.ably.pubsub.http.*`, `HttpRequester`, `PubSubBase`, `HttpAnnotations`).
-- Deprecated 1.x API is removed, including the `CompletionListener` publish overloads, `Auth.authorise` and `Auth.renew`, `fromCipherKey`, `Connection.recoveryKey`, `fromJSON` and `RegistrationToken.Type.GCM`.
-- `ClientOptions.environment`, `restHost`, `realtimeHost` and `fallbackHostsUseDefault` are replaced by `endpoint` (REC1, REC2c). Default hosts move to `main.realtime.ably.net`.
-- `Channels.release()` throws a checked `AblyException` (90011, status 400) unless the channel is `INITIALIZED`, `DETACHED` or `FAILED` (RTS4c-e).
-- The `Ably-Agent` header and realtime `agent` parameter start with `ably-pubsub-java/` instead of `ably-java/`, with a side entry (`ably-pubsub-server` or `ably-pubsub-device`).
-- Server clients using token authentication need a token carrying the signed `x-ably-clientType=server` claim (today a JWT), otherwise the connection is rejected with 40167.
-- The device artifact requires Android API level 24 (1.x supported API level 19).
-- Door `build()` methods pass a shallow copy of the options to the client (maps and arrays are copied, nested objects such as `proxy` or callbacks are shared).
-- Android push registration token types are persisted by name. A stored FCM token is migrated; a stored GCM token is discarded and the device registers with FCM again.
-- Server-initiated re-authentication emits `UPDATE` once `renewAuth` completes.
+Below is an overview of the major changes in this release.
+
+Please refer to the [upgrade guide](./UPGRADING.md) for the full details, including a list of all breaking changes and instructions on how to address them.
+
+### Per-side artifacts
+
+This repository no longer publishes `io.ably:ably-java` or `io.ably:ably-android`. Depend on exactly one artifact, for the side of the connection your code runs on:
+
+- `io.ably.pubsub:device` for code that runs on an end user's device: an Android app or a JVM desktop client. It is a Kotlin Multiplatform artifact; Maven consumers depend on `io.ably.pubsub:device-jvm` directly.
+- `io.ably.pubsub:server` for code that runs on infrastructure you operate. It offers both a realtime client, `PubSubRealtimeClient`, and an HTTP client, `PubSubHttpClient`.
+
+Clients are created through builders instead of constructors: `PubSubDevice.clientBuilder()` from `io.ably.pubsub:device`, and `PubSubServer.realtimeClientBuilder()` and `PubSubServer.httpClientBuilder()` from `io.ably.pubsub:server`. `build()` hands the client a shallow copy of the options, so a builder can be reused without affecting clients already built.
+
+Never depend on `io.ably.pubsub:core` or `io.ably.pubsub:core-android` directly. The remaining artifacts change group only and release in lockstep at the same version: `liveobjects`, `network-client-core`, `network-client-default`, `network-client-okhttp` and `pubsub-adapter` move from `io.ably` to `io.ably.pubsub`.
+
+### Client API naming
+
+- Packages move from `io.ably.lib.*` to `io.ably.pubsub.*`.
+- `AblyRealtime` is renamed `PubSubRealtimeClient` and `AblyRest` is renamed `PubSubHttpClient`.
+- `Rest` is renamed `Http` across the public API: `io.ably.lib.rest.*` moves to `io.ably.pubsub.http.*`, `RestAnnotations` is now `HttpAnnotations`, `AblyBase` is now `PubSubBase` and `io.ably.lib.http.Http` is now `HttpRequester`.
+- Log tags are class names, so they change with the packages.
+
+### Server clients and authentication
+
+- Requests identify as `ably-pubsub-java/<version>` instead of `ably-java/<version>` in the `Ably-Agent` header and the realtime `agent` parameter, with an `ably-pubsub-server` or `ably-pubsub-device` entry for the side.
+- Clients from `PubSubServer` declare themselves as servers. Authenticate them with an API key. A realtime connection with token authentication needs a token carrying the signed `x-ably-clientType=server` claim (today a JWT), otherwise it is rejected with error 40167.
+- When Ably asks a connected client to re-authenticate, the client emits `UPDATE` once `renewAuth` completes instead of before it has finished.
+
+### Push notifications
+
+- The Android push registration token type is persisted by name instead of by enum ordinal. A stored FCM token is migrated; a stored GCM token is discarded and the device registers with FCM again.
+
+### Removed APIs
+
+- The `environment`, `restHost`, `realtimeHost` and `fallbackHostsUseDefault` client options are removed in favour of `endpoint`. The default host moves to `main.realtime.ably.net`, so networks that restrict outbound traffic must allow `*.realtime.ably.net` and `*.fallback.ably-realtime.com`.
+- The `AblyRealtime` and `AblyRest` constructors, the `CompletionListener` publish overloads, `Connection.recoveryKey`, the `ConnectionState`-keyed `Connection` event methods, `Channel.sync()`, `Auth.authorise`, `Auth.renew`, `ChannelOptions.fromCipherKey`, `TokenDetails.fromJSON`, `TokenRequest.fromJSON` and `RegistrationToken.Type.GCM` are removed.
+- `Channels.release()` throws a checked `AblyException` (90011) unless the channel is `INITIALIZED`, `DETACHED` or `FAILED`.
+
+### Supported platforms changes
+
+- Support for Android API levels lower than 24 has been dropped.
+
+[Full Changelog](https://github.com/ably/ably-pubsub-java/compare/v1.8.2...v2.0.0)
 
 ## [1.8.2](https://github.com/ably/ably-java/tree/v1.8.2)
 
