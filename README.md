@@ -30,8 +30,7 @@ by where your code runs, and build your client through that package's entry poin
 
 ## Installation
 
-Replace `2.0.0` with the version you want to use. Use exactly one of `server` or `device` in an
-app; see [One package per app](#one-package-per-app).
+Use exactly one of `server` or `device` in an app; see [One package per app](#one-package-per-app).
 
 ### Server
 
