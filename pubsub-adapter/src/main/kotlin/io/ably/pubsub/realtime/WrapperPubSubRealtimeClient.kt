@@ -3,7 +3,7 @@ package io.ably.pubsub.realtime
 import com.ably.annotations.InternalAPI
 import com.ably.http.HttpMethod
 import com.ably.pubsub.*
-import com.ably.pubsub.RealtimeClient
+import com.ably.pubsub.PubSubRealtimeClient
 import io.ably.pubsub.realtime.PubSubRealtimeClient as CoreRealtimeClient
 import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
@@ -15,17 +15,17 @@ import io.ably.pubsub.http.*
 import io.ably.pubsub.types.*
 
 @OptIn(InternalAPI::class)
-internal class WrapperRealtimeClient(
+internal class WrapperPubSubRealtimeClient(
   override val javaClient: CoreRealtimeClient,
-  private val adapter: RealtimeClientAdapter,
+  private val adapter: PubSubRealtimeClientAdapter,
   private val httpModule: HttpRequester,
   private val agents: Map<String, String>,
-) : SdkWrapperCompatible<RealtimeClient>, RealtimeClient by adapter {
+) : SdkWrapperCompatible<PubSubRealtimeClient>, PubSubRealtimeClient by adapter {
 
   override val channels: Channels<out RealtimeChannel>
     get() = WrapperRealtimeChannels(javaClient.channels, httpModule, agents)
 
-  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RealtimeClient =
+  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): PubSubRealtimeClient =
     adapter.createWrapperSdkProxy(options.copy(agents = options.agents + agents))
 
   override fun time(): Long = javaClient.time(httpModule)

@@ -3,7 +3,7 @@ package io.ably.pubsub.http
 /*
  * Package-private access bridge for PubSubBase, not part of the HTTP client API.
  *
- * PubSubBase declares time/stats/request as package-private, so WrapperRealtimeClient — which
+ * PubSubBase declares time/stats/request as package-private, so WrapperPubSubRealtimeClient — which
  * lives in the realtime package — cannot call them directly. These extensions sit in PubSubBase's
  * own package and re-expose exactly those members, behind @InternalAPI so they are not a public
  * contract. This file is why the realtime wrapper compiles; it is unrelated to the HTTP client

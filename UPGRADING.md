@@ -142,7 +142,6 @@ it into `io.ably.pubsub.http`:
 | `io.ably.lib.liveobjects.*` | `io.ably.pubsub.liveobjects.*` |
 | `Defaults.HOST_REST`, `Defaults.HOST_REALTIME` | Removed. Use `endpoint` (`Defaults.ENDPOINT` is the default, `main`); see [Choose the host with `endpoint`](#6-choose-the-host-with-endpoint) |
 | `Defaults.HOST_FALLBACKS` | Kept, but now holds the default endpoint's fallback domains, `main.[a-e].fallback.ably-realtime.com` |
-| pubsub-adapter `com.ably.pubsub.RestClient`, `RestChannel`, `RestPresence` and `RestClient.createWrapperSdkProxy` | Removed with no HTTP counterpart. The adapter's `Client`, `Channel`, `Channels`, `Presence`, `RealtimeClient`, `RealtimeChannel` and `RealtimePresence` interfaces remain, and `RealtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions)` is kept. Use `PubSubHttpClient` directly for HTTP-only access. |
 | `io.ably.lib.types.*`, `io.ably.lib.realtime.*`, `io.ably.lib.push.*`, … | `io.ably.pubsub.types.*`, `io.ably.pubsub.realtime.*`, `io.ably.pubsub.push.*`, … |
 
 `ClientOptions.idempotentRestPublishing` deliberately keeps its name, which is the specification's (TO3n).

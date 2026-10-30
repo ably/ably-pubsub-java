@@ -1,7 +1,7 @@
 package com.ably.pubsub
 
 import com.ably.annotations.InternalAPI
-import io.ably.pubsub.realtime.PubSubRealtimeClient
+import io.ably.pubsub.realtime.PubSubRealtimeClient as JavaPubSubRealtimeClient
 import io.ably.pubsub.realtime.Connection
 
 /**
@@ -10,7 +10,7 @@ import io.ably.pubsub.realtime.Connection
  * This class implements {@link AutoCloseable} so you can use it in
  * try-with-resources constructs and have the JDK close it for you.
  */
-public interface RealtimeClient : Client {
+public interface PubSubRealtimeClient : Client {
 
   /**
    * The {@link Connection} object for this instance.
@@ -28,5 +28,5 @@ public interface RealtimeClient : Client {
    * This property will be removed once public API for new version of ably-java is stable
    */
   @InternalAPI
-  public val javaClient: PubSubRealtimeClient
+  public val javaClient: JavaPubSubRealtimeClient
 }
