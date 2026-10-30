@@ -134,7 +134,7 @@ class SdkWrapperAgentHeaderTest {
       server.stop()
     }
 
-    private fun createRealtimeClient(): RealtimeClient =
-      io.ably.pubsub.realtime.RealtimeClient(createCoreRealtimeClient(PORT))
+    private fun createRealtimeClient(): PubSubRealtimeClient =
+      io.ably.pubsub.realtime.PubSubRealtimeClient(createCoreRealtimeClient(PORT))
   }
 }

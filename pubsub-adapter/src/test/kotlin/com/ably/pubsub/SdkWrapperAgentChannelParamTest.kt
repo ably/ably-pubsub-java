@@ -2,8 +2,7 @@ package com.ably.pubsub
 
 import io.ably.pubsub.realtime.PubSubRealtimeClient
 // the adapter factory function of the same name, no longer covered by the class import above
-import io.ably.pubsub.realtime.RealtimeClient
-import io.ably.pubsub.realtime.RealtimeClientAdapter
+import io.ably.pubsub.realtime.PubSubRealtimeClientAdapter
 import io.ably.pubsub.realtime.RealtimeClientFactory
 import io.ably.pubsub.realtime.channelOptions
 import io.ably.pubsub.types.ChannelMode
@@ -20,7 +19,7 @@ class SdkWrapperAgentChannelParamTest {
   @Test
   fun `should add agent information to Realtime channels params`() = runTest {
     val javaRealtimeClient = createRealtimeClient()
-    val realtimeClient = RealtimeClientAdapter(javaRealtimeClient)
+    val realtimeClient = PubSubRealtimeClientAdapter(javaRealtimeClient)
     val wrapperSdkClient =
       realtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
 
@@ -43,7 +42,7 @@ class SdkWrapperAgentChannelParamTest {
   @Test
   fun `should add agent information to Realtime channels params when channel created with custom options`() = runTest {
     val javaRealtimeClient = createRealtimeClient()
-    val realtimeClient = RealtimeClient(javaRealtimeClient)
+    val realtimeClient = PubSubRealtimeClient(javaRealtimeClient)
     val wrapperSdkClient =
       realtimeClient.createWrapperSdkProxy(WrapperSdkProxyOptions(agents = mapOf("chat-android" to "0.1.0")))
 

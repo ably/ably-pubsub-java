@@ -12,5 +12,5 @@ public interface SdkWrapperCompatible<T> {
   public fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): T
 }
 
-public fun RealtimeClient.createWrapperSdkProxy(options: WrapperSdkProxyOptions): RealtimeClient =
-  (this as SdkWrapperCompatible<*>).createWrapperSdkProxy(options) as RealtimeClient
+public fun PubSubRealtimeClient.createWrapperSdkProxy(options: WrapperSdkProxyOptions): PubSubRealtimeClient =
+  (this as SdkWrapperCompatible<*>).createWrapperSdkProxy(options) as PubSubRealtimeClient

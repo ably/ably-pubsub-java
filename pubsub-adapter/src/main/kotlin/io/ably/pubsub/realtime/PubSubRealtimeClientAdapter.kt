@@ -3,7 +3,7 @@ package io.ably.pubsub.realtime
 import com.ably.annotations.InternalAPI
 import com.ably.http.HttpMethod
 import com.ably.pubsub.*
-import com.ably.pubsub.RealtimeClient
+import com.ably.pubsub.PubSubRealtimeClient
 import io.ably.pubsub.realtime.PubSubRealtimeClient as CoreRealtimeClient
 import com.ably.query.OrderBy
 import com.ably.query.TimeUnit
@@ -16,10 +16,10 @@ import io.ably.pubsub.types.*
 /**
  * Wrapper for Realtime client
  */
-public fun RealtimeClient(javaClient: CoreRealtimeClient): RealtimeClient = RealtimeClientAdapter(javaClient)
+public fun PubSubRealtimeClient(javaClient: CoreRealtimeClient): PubSubRealtimeClient = PubSubRealtimeClientAdapter(javaClient)
 
 @OptIn(InternalAPI::class)
-internal class RealtimeClientAdapter(override val javaClient: CoreRealtimeClient) : RealtimeClient, SdkWrapperCompatible<RealtimeClient> {
+internal class PubSubRealtimeClientAdapter(override val javaClient: CoreRealtimeClient) : PubSubRealtimeClient, SdkWrapperCompatible<PubSubRealtimeClient> {
   override val channels: Channels<out RealtimeChannel>
     get() = RealtimeChannelsAdapter(javaClient.channels)
   override val connection: Connection
@@ -71,9 +71,9 @@ internal class RealtimeClientAdapter(override val javaClient: CoreRealtimeClient
 
   override fun close() = javaClient.close()
 
-  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): RealtimeClient {
+  override fun createWrapperSdkProxy(options: WrapperSdkProxyOptions): PubSubRealtimeClient {
     val httpCoreWithAgents = javaClient.httpCore.injectDynamicAgents(options.agents)
     val httpModule = javaClient.http.exchangeHttpCore(httpCoreWithAgents)
-    return WrapperRealtimeClient(javaClient, this, httpModule, options.agents)
+    return WrapperPubSubRealtimeClient(javaClient, this, httpModule, options.agents)
   }
 }
