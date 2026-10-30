@@ -71,10 +71,11 @@ public class HttpCore {
     /**
      * This field is used for analytics purposes.
      * <p>
-     * It holds additional agents that should be added after the Realtime/HTTP client is initialized.
+     * It holds additional agents that should be added after the realtime client is initialized.
      * - **Static agents** are set in `ClientOptions`.
      * - **Dynamic agents** are added later by higher-level SDKs like Chat or Asset Tracking
-     *   and are provided in the `createWrapperSdkProxy` call.
+     *   and are provided in the pubsub-adapter's `RealtimeClient.createWrapperSdkProxy` call.
+     *   The wrapper SDK proxy is available on the realtime client only; the HTTP client has none.
      */
     private Map<String, String> dynamicAgents;
 

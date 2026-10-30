@@ -7,6 +7,7 @@ import io.ably.pubsub.transport.Defaults;
 import io.ably.pubsub.util.Log;
 import io.ably.pubsub.util.Log.LogHandler;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -82,6 +83,10 @@ public class ClientOptions extends AuthOptions {
      *     with no default fallback hosts.</li>
      * </ul>
      * The default is {@code main}.
+     * <p>
+     * Never put a port in {@code endpoint}; set {@link #port} or {@link #tlsPort} instead. A value such as
+     * {@code localhost:8080} is not recognised as a hostname, so it is treated as a routing policy name and
+     * resolves to {@code localhost:8080.realtime.ably.net}.
      * <p>
      * Spec: REC1
      */
@@ -312,10 +317,25 @@ public class ClientOptions extends AuthOptions {
     /**
      * Internal method
      *
-     * @return copy of client options
+     * @return copy of client options. The {@code headers} and {@code agents} maps and the
+     *         {@code fallbackHosts} and {@code transportParams} arrays are copied, so changing
+     *         them on the original afterwards does not reach the copy; other object-valued
+     *         options (callbacks, storage, proxy, ...) are shared.
      */
     public ClientOptions copy() {
-        ClientOptions copied = new ClientOptions();
+        return copyInto(new ClientOptions());
+    }
+
+    /**
+     * Internal method
+     * <p>
+     * Copies every option of this object onto {@code copied}, so that a subclass's
+     * {@code copy()} can reuse the field list and add its own.
+     *
+     * @param copied the instance to fill in.
+     * @return {@code copied}.
+     */
+    protected ClientOptions copyInto(ClientOptions copied) {
         copied.clientId = clientId;
         copied.logLevel = logLevel;
         copied.logHandler = logHandler;
@@ -354,10 +374,10 @@ public class ClientOptions extends AuthOptions {
         copied.authParams = authParams;
         copied.queryTime = queryTime;
         copied.useTokenAuth = useTokenAuth;
-        copied.headers = headers;
-        copied.fallbackHosts = fallbackHosts;
-        copied.transportParams = transportParams;
-        copied.agents = agents;
+        copied.headers = headers == null ? null : new HashMap<>(headers);
+        copied.fallbackHosts = fallbackHosts == null ? null : fallbackHosts.clone();
+        copied.transportParams = transportParams == null ? null : transportParams.clone();
+        copied.agents = agents == null ? null : new HashMap<>(agents);
         return copied;
     }
 

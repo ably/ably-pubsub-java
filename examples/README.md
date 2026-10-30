@@ -38,7 +38,7 @@ EXAMPLES_ABLY_KEY=xxxx:yyyyyy
 3. Configure an Emulator or Device
 
   - Set up an emulator or connect a physical Android device.
-  - Ensure the device is configured with at least Android 5.0 (API 21).
+  - Ensure the device is configured with at least Android 10 (API 29), the example app's `minSdk`. The `io.ably.pubsub:device` artifact it depends on requires API 24 or later.
 
 4. Run the App
 

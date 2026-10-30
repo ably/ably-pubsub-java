@@ -38,7 +38,6 @@ dependencies {
 buildConfig {
     useJavaOutput()
     packageName = "io.ably.pubsub"
-    buildConfigField("String", "LIBRARY_NAME", "\"java\"")
     buildConfigField("String", "VERSION", "\"${property("VERSION_NAME")}\"")
 }
 
@@ -123,11 +122,27 @@ tasks.register<Test>("runUnitTests") {
     outputs.upToDateWhen { false }
 }
 
+/*
+Which package's entry points the UTS specs construct clients through: `core` (default) or
+`server` (the io.ably.pubsub:server builders). Gradle does not forward -D system properties to
+the forked test JVM, so propagate it explicitly, accepting either `-Duts.side=server` on the
+Gradle invocation or the `UTS_SIDE` environment variable. See ClientFactories.kt in :uts.
+*/
+fun Test.forwardUtsSide() {
+    systemProperty(
+        "uts.side",
+        providers.systemProperty("uts.side")
+            .orElse(providers.environmentVariable("UTS_SIDE"))
+            .getOrElse("core"),
+    )
+}
+
 tasks.register<Test>("runUtsUnitTests") {
     useJUnitPlatform()
     filter {
         includeTestsMatching("io.ably.pubsub.uts.unit.*")
     }
+    forwardUtsSide()
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })
@@ -139,6 +154,7 @@ tasks.register<Test>("runUtsIntegrationTests") {
     filter {
         includeTestsMatching("io.ably.pubsub.uts.integration.*")
     }
+    forwardUtsSide()
     jvmArgs("--add-opens", "java.base/java.time=ALL-UNNAMED")
     jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("-> $this") })

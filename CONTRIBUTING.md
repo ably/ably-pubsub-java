@@ -21,6 +21,10 @@ but on Windows there is a batch file:
 
     gradlew.bat <task name>
 
+Applications consume the SDK through `io.ably.pubsub:server` or `io.ably.pubsub:device`; `core` and
+`core-android` are internal implementation artifacts. If you are changing public behaviour, update
+[UPGRADING.md](./UPGRADING.md) too.
+
 The JRE-specific library JAR is built with:
 
     ./gradlew core:jar
@@ -33,18 +37,18 @@ The Android-specific library AAR is built with:
 
 ## Adding a New Network Engine Implementation
 
-Currently, `ably-java` supports two different engines for network operations (HTTP calls and WebSocket connections):
+Currently, `ably-pubsub-java` supports two different engines for network operations (HTTP calls and WebSocket connections):
 
-- **Default Engine**: Utilizes the built-in `HttpUrlConnection` for HTTP calls and the TooTallNate/Java-WebSocket library for WebSocket connections.
-- **OkHttp Engine**: Utilizes the OkHttp library for both HTTP and WebSocket connections.
+- **OkHttp Engine** (`network-client-okhttp`): Utilizes the OkHttp library for both HTTP and WebSocket connections. This is what the published `core` and `core-android` artifacts pull in.
+- **Default Engine** (`network-client-default`): Utilizes the built-in `HttpUrlConnection` for HTTP calls and the TooTallNate/Java-WebSocket library for WebSocket connections. Build with `-PhttpURLConnection` to use it in this repository.
 
-These engines are designed to be swappable. By default, the library comes with the default engine, but you can easily replace it with the OkHttp engine:
+These engines are designed to be swappable. For an application, swap the engine under the door you depend on, for example on a server:
 
 ```kotlin
-implementation("io.ably:ably-java:$ABLY_VERSION") {
-    exclude(group = "io.ably", module = "network-client-default")
+implementation("io.ably.pubsub:server:$ABLY_VERSION") {
+    exclude(group = "io.ably.pubsub", module = "network-client-okhttp")
 }
-runtimeOnly("io.ably:network-client-okhttp:$ABLY_VERSION")
+runtimeOnly("io.ably.pubsub:network-client-default:$ABLY_VERSION")
 ```
 
 ### Publishing to local Maven repository for development and testing
@@ -126,7 +130,7 @@ The gradle project files can be imported to create projects in IntelliJ IDEA, Ec
 The top-level ably-java project can be imported into IntelliJ IDEA, enabling development of both the core and core-android projects. This has been tested with IntelliJ IDEA Ultimate 2017.2. To import into IDEA:
 
 - do File->New->Project from Existing Sources...
-- select ably-pubsub-java/settings.gradle
+- select ably-pubsub-java/settings.gradle.kts
 - in the import dialog, check "Use auto-import" and uncheck "Create separate module per source set"
 - select "ok"
 
@@ -160,13 +164,13 @@ Interactive run/debug configurations for the core project can be created as foll
 
 #### Importing into Android studio
 
-Android studio does not include the components required to support development of the core project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the core-android project as a standalone project into Android Studio by deleting the top-level settings.gradle file, which effectively decouples the core-android and core projects.
+Android studio does not include the components required to support development of the core project, it is not capable of importing the multi-level ably-java gradle project. It is possible to import the core-android project as a standalone project into Android Studio by deleting the top-level settings.gradle.kts file, which effectively decouples the core-android and core projects.
 
 This has been tested with Android Studio 3.0.1.
 
 To import into Android Studio:
 - do Import project (Gradle, Eclipse ADT, etc);
-- select ably-pubsub-java/core-android/build.gradle;
+- select ably-pubsub-java/core-android/build.gradle.kts;
 - select OK to Gradle Sync.
 
 This creates a single core-android project and module.
@@ -227,17 +231,17 @@ signing.secretKeyRingFile=/Users/username/.ably/ably-java-secring.gpg
 ```
 - Run `./gradlew core-android:assembleRelease` or `./gradlew core-android:assembleDebug`.
 
-## Using `ably-java` / `ably-android` locally in other projects
+## Using `core-android` locally in other projects
 
-You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter) which depends on `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
+You may wish to make changes to Ably Java or Ably Android, and test it immediately in a separate project. For example, during development for [Ably Flutter](https://github.com/ably/ably-flutter), which depended on the 1.x `ably-android`, a bug was found in `ably-android`. A small fix was done, the AAR was built and tested in [Ably Flutter](https://github.com/ably/ably-flutter).
 
 - Build the AAR: See [Building an Android Archive (AAR) file locally](#building-an-android-archive-aar-file-locally)
-- Open the directory printed from the output of that command. Inside that folder, get the `ably-android-x.y.z.aar`, and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
+- Open the directory printed from the output of that command. Inside that folder, get the `core-android-release.aar` (or `core-android-debug.aar`; artifact `io.ably.pubsub:core-android`), and place it your Android project's `libs/` directory. Create this directory if it doesn't exist.
 - Add an `implementation` dependency on the `.aar`:
 ```groovy
-implementation files('libs/ably-android-1.8.2.aar')
+implementation files('libs/core-android-release.aar')
 ```
-- Add the `implementation` (not `testImplementation`) dependencies found in `dependencies.gradle` to your project. This is because the `.aar` does not contain dependencies.
+- Add the `implementation` (not `testImplementation`) dependencies declared in `gradle/libs.versions.toml` and `core-android/build.gradle.kts` to your project. This is because the `.aar` does not contain dependencies.
 - Build/run your application.
 
 ## Release Process

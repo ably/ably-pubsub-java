@@ -41,12 +41,12 @@ different things**, and a third *internal* layer underneath. Keep them straight:
 
 | Layer | Spec name | ably-js | ably-java | Package |
 |---|---|---|---|---|
-| **Creation value type** — immutable blueprint you pass *into* `set` | `LiveMap` / `LiveCounter` (the `RTLMV*` / `RTLCV*` classes) | `LiveMap.create()` / `LiveCounter.create()` | `LiveMap` / `LiveCounter` | `io.ably.lib.liveobjects.value` |
-| **Public read/write view** — what you navigate & subscribe on | `PathObject`, `Instance` | `PathObject`, `Instance` | typed hierarchy (§4, §5) | base in `io.ably.lib.liveobjects.path` / `.instance`; **typed subtypes in `.path.types` / `.instance.types`** |
-| **Internal graph object** — the live CRDT node | `InternalLiveMap` / `InternalLiveCounter` (`RTLM*` / `RTLC*`), `ObjectsPool` | internal | `InternalLiveMap` / `InternalLiveCounter` / `ObjectsPool` — **same names as the spec** (`internal` classes, `:liveobjects` module) | `io.ably.lib.liveobjects[.value.livemap/.value.livecounter]` — not public; access rules §13, full symbol map §17 |
+| **Creation value type** — immutable blueprint you pass *into* `set` | `LiveMap` / `LiveCounter` (the `RTLMV*` / `RTLCV*` classes) | `LiveMap.create()` / `LiveCounter.create()` | `LiveMap` / `LiveCounter` | `io.ably.pubsub.liveobjects.value` |
+| **Public read/write view** — what you navigate & subscribe on | `PathObject`, `Instance` | `PathObject`, `Instance` | typed hierarchy (§4, §5) | base in `io.ably.pubsub.liveobjects.path` / `.instance`; **typed subtypes in `.path.types` / `.instance.types`** |
+| **Internal graph object** — the live CRDT node | `InternalLiveMap` / `InternalLiveCounter` (`RTLM*` / `RTLC*`), `ObjectsPool` | internal | `InternalLiveMap` / `InternalLiveCounter` / `ObjectsPool` — **same names as the spec** (`internal` classes, `:liveobjects` module) | `io.ably.pubsub.liveobjects[.value.livemap/.value.livecounter]` — not public; access rules §13, full symbol map §17 |
 
 So when a spec says `counter = LiveCounter.create(5)` and passes it to `set`, that's the **value type**
-(`io.ably.lib.liveobjects.value.LiveCounter`). When a spec says "the resolved value is an
+(`io.ably.pubsub.liveobjects.value.LiveCounter`). When a spec says "the resolved value is an
 `InternalLiveCounter` with `.data == 5`", that's the **internal graph node** (§13). When a spec navigates
 `root.get("counter").value()`, that's the **public view** (`PathObject`).
 
@@ -97,10 +97,10 @@ In the spec/ably-js a `PathObject` is polymorphic: `get`, `at`, `value`, `set`, 
 all hang off the one object. In ably-java the base `PathObject` exposes **only** the type-agnostic methods;
 everything type-specific is moved onto a sub-interface you reach via an `as*` cast.
 
-**Base `PathObject`** (`io.ably.lib.liveobjects.path.PathObject`) — always available. The typed sub-types
+**Base `PathObject`** (`io.ably.pubsub.liveobjects.path.PathObject`) — always available. The typed sub-types
 returned by the `as*` casts (`LiveMapPathObject`, `LiveCounterPathObject`, `NumberPathObject`,
 `StringPathObject`, `BooleanPathObject`, `BinaryPathObject`, `JsonObjectPathObject`, `JsonArrayPathObject`)
-live in **`io.ably.lib.liveobjects.path.types`** (not `.path`) — import them from there.
+live in **`io.ably.pubsub.liveobjects.path.types`** (not `.path`) — import them from there.
 
 | Spec / ably-js | ably-java |
 |---|---|
@@ -207,7 +207,7 @@ Same partition as `PathObject`, with two differences: the base is **abstract / n
 directly (`RTTS7e`), and the casts **throw** on mismatch instead of degrading (`RTTS9d`) — because an
 `Instance` wraps an already-resolved value of known type.
 
-**Base `Instance`** (`io.ably.lib.liveobjects.instance.Instance`):
+**Base `Instance`** (`io.ably.pubsub.liveobjects.instance.Instance`):
 
 | Spec / ably-js | ably-java |
 |---|---|
@@ -254,7 +254,7 @@ immutable creation value types.
 
 | Spec / ably-js | ably-java |
 |---|---|
-| `LiveCounter.create()` | `LiveCounter.create(): LiveCounter` (`io.ably.lib.liveobjects.value`) |
+| `LiveCounter.create()` | `LiveCounter.create(): LiveCounter` (`io.ably.pubsub.liveobjects.value`) |
 | `LiveCounter.create(5)` | `LiveCounter.create(5)` (arg is `Number`) |
 | `LiveMap.create()` | `LiveMap.create(): LiveMap` |
 | `LiveMap.create({ a: 1, b: "x" })` | `LiveMap.create(mapOf("a" to LiveMapValue.of(1), "b" to LiveMapValue.of("x")))` — entries are `Map<String, LiveMapValue>` |
@@ -370,13 +370,13 @@ depth (`RTPO19c1`).
 | remove all | `` channel.`object`.offAll() `` |
 
 Listener: `ObjectStateChange.Listener.onStateChanged(ObjectStateEvent)`. Enum `ObjectStateEvent { SYNCING,
-SYNCED }` (`io.ably.lib.liveobjects.state`).
+SYNCED }` (`io.ably.pubsub.liveobjects.state`).
 
 ---
 
 ## 10. `ValueType` & type discrimination <a id="10-valuetype"></a>
 
-ably-js uses string-literal type tags; ably-java has an enum `io.ably.lib.liveobjects.ValueType`:
+ably-js uses string-literal type tags; ably-java has an enum `io.ably.pubsub.liveobjects.ValueType`:
 
 | Spec value category | `ValueType` |
 |---|---|
@@ -394,7 +394,7 @@ non-null. Use `getType()` for "what is it" assertions and the matching `as*` cas
 
 The spec's `PublicAPI::ObjectMessage` / `PublicAPI::ObjectOperation` (the `PAOM*` / `PAOOP*` types,
 delivered to subscription listeners) map to ably-java interfaces with getters (package
-`io.ably.lib.liveobjects.message`). The `PublicAPI::` prefix is dropped — ably-java exposes them as
+`io.ably.pubsub.liveobjects.message`). The `PublicAPI::` prefix is dropped — ably-java exposes them as
 `ObjectMessage` / `ObjectOperation`.
 
 > **Getter-only, no *public* constructor — use the `buildPublicObjectMessage` helper.** In normal use you
@@ -520,10 +520,10 @@ Several **unit** specs assert on the **internal CRDT graph**, not the public API
   that is otherwise `internal`. Build the source with the op builders and assert the public getters (§11).
 
 In ably-java these are **not public**. They live in the `:liveobjects` module as `Internal*` / `Default*` / `Wire*` /
-`ResolvedValue` / `Leaf` / `MapRef` / `CounterRef` classes (package `io.ably.lib.liveobjects.*`,
+`ResolvedValue` / `Leaf` / `MapRef` / `CounterRef` classes (package `io.ably.pubsub.liveobjects.*`,
 implementation source set), visible only to that module's own tests. Because of this, **all objects tiers
 translate into `:liveobjects`'s own test source set** —
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,integration,proxy}/` — so the unit tier
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/{unit,integration,proxy}/` — so the unit tier
 sees module internals directly, and the integration/proxy tiers reach the plugin through the same module.
 Consequences when translating:
 
@@ -548,8 +548,8 @@ Consequences when translating:
 
 Every objects unit spec opens with `setup_synced_channel` and constructs protocol/object messages with the
 `build_*` helpers. These are implemented in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
-`io.ably.lib.liveobjects.uts.unit`; transport bootstrap via the shared `io.ably.lib.uts.infra.*` infra helpers,
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/unit/Helpers.kt` (package
+`io.ably.pubsub.liveobjects.uts.unit`; transport bootstrap via the shared `io.ably.pubsub.uts.infra.*` infra helpers,
 message construction via the typed `Wire*` DTOs — §17.10) — **call them; don't hand-roll the mock setup or
 message wire forms.**
 
@@ -599,8 +599,8 @@ wire `action` / `semantics` are integer enum codes — the builders emit the cod
 Some objects **integration** specs (tier `integration/standard`) seed object state over REST *before* the
 realtime client connects, via the spec's `## REST Fixture Provisioning` helper `provision_objects_via_rest`.
 Its ably-java translation lives in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/integration/Helpers.kt` (package
-`io.ably.lib.liveobjects.uts.integration`) — **call it; don't hand-roll the REST request or payload
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/integration/Helpers.kt` (package
+`io.ably.pubsub.liveobjects.uts.integration`) — **call it; don't hand-roll the REST request or payload
 JSON.** (Currently only `objects/integration/RTPO15` uses it.) It lives inside `:liveobjects`'s own tests
 now (like the whole objects suite), but still uses only the public `AblyRest` — the "public API only for
 REST provisioning" convention survives even though the module's internals are visible.
@@ -711,8 +711,8 @@ This section maps the **5 internal-graph unit specs** — `internal_live_counter
 internal CRDT state, so they cannot translate against the public API — background in
 `JAVA_LIVEOBJECTS_INTERNAL_METHODS_ACCESS_REPORT.md` at the repo root) — onto the internal engine.
 Like the rest of the objects suite, they go into
-**`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/`** (package
-`io.ably.lib.liveobjects.uts.unit`, task `:liveobjects:runLiveObjectsUnitTests`), where the test
+**`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/unit/`** (package
+`io.ably.pubsub.liveobjects.uts.unit`, task `:liveobjects:runLiveObjectsUnitTests`), where the test
 compilation is associated with `main`, so every `internal` declaration is directly visible — no
 reflection.
 
@@ -726,7 +726,7 @@ reflection.
 
 The internal classes have `private constructor`s; each pairs with an `internal` companion factory that
 needs a `DefaultRealtimeObject`. Build one from the mocked adapter (helper already exists in
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/unit/TestHelpers.kt`):
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/unit/TestHelpers.kt`):
 
 ```kotlin
 val ro = DefaultRealtimeObject("test", getMockAblyClientAdapter())

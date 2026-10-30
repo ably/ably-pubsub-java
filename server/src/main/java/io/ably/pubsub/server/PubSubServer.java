@@ -25,6 +25,13 @@ import java.util.Map;
  * on, rather than leaving it to be inferred.
  * <p>
  * If your code runs on an end-user device, use the {@code io.ably.pubsub:device} artifact instead.
+ * <p>
+ * <strong>Token authentication and realtime.</strong> Clients built here declare themselves as
+ * servers, so authenticate them with an API key. Token authentication on a realtime connection
+ * works only with a token that carries the signed {@code x-ably-clientType=server} claim, which
+ * today means a JWT; with any other token (an {@code authCallback}, {@code token} or
+ * {@code tokenDetails} yielding a native Ably token) Ably rejects the connection with error
+ * 40167. Clients from {@code PubSubDevice} are not affected.
  *
  * <pre>{@code
  * PubSubHttpClient http = PubSubServer.httpClientBuilder()
@@ -66,11 +73,10 @@ public final class PubSubServer {
      * builder over assembling options for it.
      * <p>
      * The builder's setters still apply on top of what is passed here, and {@link
-     * HttpClientBuilder#build()} stamps the side-declaring agent entry as usual. The
-     * options object is handed to the client rather than copied, so later changes to it are not
-     * isolated from the built client, and {@code build()} replaces its {@code agents} map with
-     * the stamped one; pass {@link ClientOptions#copy()} if either matters. A {@code null} is
-     * carried through to {@code build()}, which surfaces the core constructor's own
+     * HttpClientBuilder#build()} stamps the side-declaring agent entry as usual. {@code build()}
+     * snapshots the options ({@link ClientOptions#copy()}), so neither later builder calls nor
+     * later changes to the object passed here affect a client already built, and the passed
+     * object's own {@code agents} map is never modified. A {@code null} is carried through to {@code build()}, which surfaces the core constructor's own
      * "no options provided" error.
      *
      * @param options the options to start from.
@@ -104,11 +110,10 @@ public final class PubSubServer {
      * builder over assembling options for it.
      * <p>
      * The builder's setters still apply on top of what is passed here, and {@link
-     * RealtimeClientBuilder#build()} stamps the side-declaring agent entry as usual. The
-     * options object is handed to the client rather than copied, so later changes to it are not
-     * isolated from the built client, and {@code build()} replaces its {@code agents} map with
-     * the stamped one; pass {@link ClientOptions#copy()} if either matters. A {@code null} is
-     * carried through to {@code build()}, which surfaces the core constructor's own
+     * RealtimeClientBuilder#build()} stamps the side-declaring agent entry as usual. {@code build()}
+     * snapshots the options ({@link ClientOptions#copy()}), so neither later builder calls nor
+     * later changes to the object passed here affect a client already built, and the passed
+     * object's own {@code agents} map is never modified. A {@code null} is carried through to {@code build()}, which surfaces the core constructor's own
      * "no options provided" error.
      *
      * @param options the options to start from.
@@ -127,7 +132,7 @@ public final class PubSubServer {
      */
     public abstract static class ClientBuilder<T extends ClientBuilder<T>> {
 
-        /** Accumulates the calls made on this builder; handed to the client as-is by build(). */
+        /** Accumulates the calls made on this builder; build() hands the client a snapshot of it. */
         final ClientOptions options;
 
         ClientBuilder() {
@@ -136,6 +141,11 @@ public final class PubSubServer {
 
         ClientBuilder(ClientOptions options) {
             this.options = options;
+        }
+
+        /** The copy handed to the client; null stays null for the core constructor to reject. */
+        static ClientOptions snapshot(ClientOptions options) {
+            return options == null ? null : options.copy();
         }
 
         @SuppressWarnings("unchecked")
@@ -530,7 +540,7 @@ public final class PubSubServer {
          *                       parameters were supplied.
          */
         public PubSubHttpClient build() throws AblyException {
-            return HttpClientFactory.create(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+            return HttpClientFactory.create(Side.injectSideAgent(snapshot(options), Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 
@@ -654,7 +664,7 @@ public final class PubSubServer {
          *                       parameters were supplied.
          */
         public PubSubRealtimeClient build() throws AblyException {
-            return RealtimeClientFactory.create(Side.injectSideAgent(options, Side.SERVER_AGENT_IDENTIFIER));
+            return RealtimeClientFactory.create(Side.injectSideAgent(snapshot(options), Side.SERVER_AGENT_IDENTIFIER));
         }
     }
 }

@@ -55,7 +55,7 @@ UTS fixes this by separating **what to test** from **how to test it in a given l
                        ▼
         ┌──────────────────────────────┐
         │   Derived tests               │   ← concrete, runnable tests in the SDK's language
-        │   (Kotlin, in ably-java)      │     spec suites: :java / :liveobjects;
+        │   (Kotlin, in ably-java)      │     spec suites: :core / :liveobjects;
         └──────────────────────────────┘     shared infra + smoke examples: :uts
 ```
 
@@ -65,8 +65,8 @@ Three concepts you will see constantly:
 |------|---------|
 | **Spec point** | A tagged requirement in the features spec, e.g. `RTN16g`, `RTN22`, `RTL4f`. Test names embed these. |
 | **UTS spec** | A markdown file of portable pseudocode describing the setup, steps, and assertions for one feature. The *source of truth for what to test.* |
-| **Derived test** | A faithful translation of a UTS spec into a real test in a specific SDK/language. These live in the owning module's test source set (`:java` for realtime/rest, `:liveobjects` for objects); the shared infra they use lives in `:uts`. |
-| **Deviation** | A documented case where the SDK's actual behaviour diverges from the spec. Recorded in the owning module's `deviations.md` (`:java` and `:liveobjects` — see §12). |
+| **Derived test** | A faithful translation of a UTS spec into a real test in a specific SDK/language. These live in the owning module's test source set (`:core` for realtime/rest, `:liveobjects` for objects); the shared infra they use lives in `:uts`. |
+| **Deviation** | A documented case where the SDK's actual behaviour diverges from the spec. Recorded in the owning module's `deviations.md` (`:core` and `:liveobjects` — see §12). |
 
 The golden rule (from [`writing-derived-tests.md`](https://github.com/ably/specification/blob/main/uts/docs/writing-derived-tests.md)): **translate the UTS spec faithfully** — same
 structure, same assertions, same naming — don't optimise or skip steps. Every derived test carries a
@@ -88,7 +88,7 @@ three example tests this guide walks through span all three tiers.
 
 The three examples above are `:uts`'s own **tier smoke tests** (§9–§11) — the reference shapes this
 guide walks through. The real, spec-derived suites live **by module**, in the module that owns the
-code under test: realtime/rest under `:java` (`lib/src/test/kotlin/io/ably/pubsub/uts/…`), objects under
+code under test: realtime/rest under `:core` (`lib/src/test/kotlin/io/ably/pubsub/uts/…`), objects under
 `:liveobjects` (`liveobjects/.../uts/…`). `:uts`'s own test tree holds only the tier smoke examples;
 so a feature's tests always sit with the SDK code they exercise (see §4.2 "Where every module's UTS
 tests live").
@@ -160,13 +160,13 @@ A big table mapping every features-spec group (`RSC`, `RTN`, `RTL`, `RTP`, …) 
 cover it, with a per-tier summary (`unit:✓ proxy:✓`). This is the tracker for "what's done and
 what's missing". The reference tests this guide walks through correspond to these rows:
 - `RTN16` (connection recovery) → unit spec `connection_recovery_test.md` →
-  **`ConnectionRecoveryTest.kt`** (`:java`, `lib/src/test/kotlin/io/ably/pubsub/uts/unit/realtime/`).
+  **`ConnectionRecoveryTest.kt`** (`:core`, `lib/src/test/kotlin/io/ably/pubsub/uts/unit/realtime/`).
 - `RTL10d` (channel history) → direct-sandbox spec
   `realtime/integration/channel_history_test.md` → **`ChannelHistoryTest.kt`**
-  (`:java`, `.../integration/standard/realtime/`).
+  (`:core`, `.../integration/standard/realtime/`).
 - `RTN22` / `RTC8a` (server-initiated re-auth) → proxy spec
   `realtime/integration/proxy/auth_reauth.md` → **`AuthReauthTest.kt`**
-  (`:java`, `.../integration/proxy/realtime/`).
+  (`:core`, `.../integration/proxy/realtime/`).
 
 > There is also a fifth, *referenced* spec:
 > [`docs/proxy.md`](https://github.com/ably/specification/blob/main/uts/docs/proxy.md)
@@ -189,7 +189,7 @@ teaches from.
 Two things this means — and a correction to how the module used to be described. First, the infra is
 **this module's main/production code**, not a `testFixtures` variant and not test-only: `:uts`'s main
 artifact *is* the infra. Second, `:uts` does **not** host the spec-derived UTS suites — those live in
-their owning modules (`:java` for realtime/rest, `:liveobjects` for objects; see §4.2). `:uts` keeps
+their owning modules (`:core` for realtime/rest, `:liveobjects` for objects; see §4.2). `:uts` keeps
 only the infra and the tier smoke examples.
 
 ### 4.1 `uts/build.gradle.kts`
@@ -201,7 +201,7 @@ plugins {
 }
 
 java {
-    // Declare Java-8 outgoing variants so :java's 8-requesting configurations can consume
+    // Declare Java-8 outgoing variants so :core's 8-requesting configurations can consume
     // project(":uts").
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -321,7 +321,7 @@ The infra is shared, but the actual UTS suites live **in the module that owns th
 
 | Module | UTS tests | Location | Run with |
 |---|---|---|---|
-| `:java` | realtime (and future rest) — unit, integration, proxy | `lib/src/test/kotlin/io/ably/pubsub/uts/{unit, integration/standard, integration/proxy}/realtime/` | `:java:runUtsUnitTests` / `:java:runUtsIntegrationTests` |
+| `:core` | realtime (and future rest) — unit, integration, proxy | `lib/src/test/kotlin/io/ably/pubsub/uts/{unit, integration/standard, integration/proxy}/realtime/` | `:core:runUtsUnitTests` / `:core:runUtsIntegrationTests` |
 | `:liveobjects` | objects — unit, integration, proxy | `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/{unit, integration, proxy}/` | `:liveobjects:runLiveObjectsUnitTests` / `:liveobjects:runLiveObjectsIntegrationTests` |
 | `:uts` | **none** — shared infra + one smoke test per tier | `uts/src/main/.../infra/**` + `uts/src/test/.../{unit, integration/standard, integration/proxy}/` | `:uts:runUtsUnitTests` / `:uts:runUtsIntegrationTests` |
 
@@ -620,7 +620,7 @@ technique used by `liveobjects/.../TestUtils.kt`). See Appendix B.1.
 not derived from a spec) and must never trip the spec-parity tooling; it is the reference shape a
 future unit-tier UTS test should take.
 
-> The real spec-derived unit suites this pattern scales to live in `:java`
+> The real spec-derived unit suites this pattern scales to live in `:core`
 > (`lib/src/test/kotlin/io/ably/pubsub/uts/unit/realtime/`, e.g. `ConnectionRecoveryTest`) and
 > `:liveobjects` — see §13.
 
@@ -681,7 +681,7 @@ One long **await-style** test that walks the SDK through the whole transport lif
 
 *Why await-style throughout?* The initial connect, the FakeClock reconnect, and the refuse branch each
 need a **different** answer per attempt — a single `onConnectionAttempt` callback answers every attempt
-uniformly, and the two styles cannot be mixed on one mock. (This is the same reason `:java`'s
+uniformly, and the two styles cannot be mixed on one mock. (This is the same reason `:core`'s
 `ConnectionRecoveryTest` is await-style.) *Technique on show: await-style `awaitConnectionAttempt` /
 `awaitNextMessageFromClient`, `sendToClient` for server frames, `events` for assertions, `FakeClock`
 for deterministic backoff, and a Unicode channel-name round-trip.*
@@ -741,7 +741,7 @@ alone reaching quiescence.
 **Purpose:** the permanent acceptance test for the middle-tier infra — `SandboxApp` +
 `TestRealtimeClient`/`TestHttpClient` wired straight to the sandbox. No `@UTS` marker.
 
-> The real spec-derived direct-sandbox suites this pattern scales to live in `:java`
+> The real spec-derived direct-sandbox suites this pattern scales to live in `:core`
 > (`lib/src/test/kotlin/io/ably/pubsub/uts/integration/standard/realtime/`, e.g. `ChannelHistoryTest`)
 > and `:liveobjects` — see §13.
 
@@ -823,7 +823,7 @@ REST `history()` call.
 `SandboxApp` + client wiring through the proxy, exercising **both** fault-injection styles. No `@UTS`
 marker.
 
-> The real spec-derived proxy suites this pattern scales to live in `:java`
+> The real spec-derived proxy suites this pattern scales to live in `:core`
 > (`lib/src/test/kotlin/io/ably/pubsub/uts/integration/proxy/realtime/`, e.g. `AuthReauthTest`) and
 > `:liveobjects` — see §13.
 
@@ -907,7 +907,7 @@ assertions** as the primary verification (`getLog()` → filter by `type`/`direc
 Deviations live **with their tests**, not in `:uts` (whose smoke tests carry none by design). There are
 two catalogues:
 
-- `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` — the **realtime/rest** tiers, hosted in `:java`.
+- `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` — the **realtime/rest** tiers, hosted in `:core`.
 - `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` — **all three objects tiers**
   (unit, integration, proxy), hosted in `:liveobjects`.
 
@@ -918,7 +918,7 @@ The mechanism (from [`writing-derived-tests.md`](https://github.com/ably/specifi
 gates it behind the `RUN_DEVIATIONS` env var, with a regression-guard assertion for the SDK's actual
 behaviour running by default. Normal runs stay green; `RUN_DEVIATIONS=1` turns the failing assertions
 on so the gap is reproducible and the test flips automatically once the SDK is fixed. In code (from
-`:java`'s `ConnectionRecoveryTest`, RTN16f):
+`:core`'s `ConnectionRecoveryTest`, RTN16f):
 ```kotlin
 if (System.getenv("RUN_DEVIATIONS") != null) {
     assertEquals(42L, currentRecoveryKey.msgSerial)   // spec-correct: recover preserves msgSerial
@@ -926,14 +926,14 @@ if (System.getenv("RUN_DEVIATIONS") != null) {
     assertEquals(0L, currentRecoveryKey.msgSerial)    // regression guard: the SDK's actual behaviour
 }
 ```
-Run it with `RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTest*"` (§13).
+Run it with `RUN_DEVIATIONS=1 ./gradlew :core:runUtsUnitTests --tests "*ConnectionRecoveryTest*"` (§13).
 
 Representative entries from the realtime catalogue (`lib/.../deviations.md`):
 
 | Spec point | Gist | Touches |
 |------------|------|---------|
-| **RTN16f** | SDK resets `msgSerial` to 0 on connect even with `recover`; spec says preserve it (42). | `ConnectionRecoveryTest` (`:java`) — `assertEquals(42L,…)` gated, `assertEquals(0L,…)` default guard. |
-| **RTN16g2** | Spec's fatal error 50000/500 isn't fatal to the SDK (`isFatalError()` needs code 40000–49999 or status < 500); also `send_to_client_and_close` races the FAILED transition. | `ConnectionRecoveryTest` (`:java`) — uses 40000/400 + plain `sendToClient`. |
+| **RTN16f** | SDK resets `msgSerial` to 0 on connect even with `recover`; spec says preserve it (42). | `ConnectionRecoveryTest` (`:core`) — `assertEquals(42L,…)` gated, `assertEquals(0L,…)` default guard. |
+| **RTN16g2** | Spec's fatal error 50000/500 isn't fatal to the SDK (`isFatalError()` needs code 40000–49999 or status < 500); also `send_to_client_and_close` races the FAILED transition. | `ConnectionRecoveryTest` (`:core`) — uses 40000/400 + plain `sendToClient`. |
 | **RTL13b / RTL13c** | Channel-state reattach / `channelRetryTimeout` gaps. Retained as confirmed SDK gaps; the citing channel tests aren't in the suite yet (only `ConnectionRecoveryTest` is translated). | pending the channels-module translation. |
 
 The objects catalogue additionally records the typed-SDK / language adaptations (RTTS API
@@ -948,20 +948,20 @@ listener-dedup divergence — see `liveobjects/.../deviations.md`.
 ## 13. How to Run the Tests
 
 Each module registers package-filtered Gradle tasks. `:uts` registers `runUtsUnitTests` /
-`runUtsIntegrationTests` (in `uts/build.gradle.kts`); `:java` registers the same-named tasks for its
-realtime suites; `:liveobjects` registers `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests`.
+`runUtsIntegrationTests` (in `uts/build.gradle.kts`) for the infra smoke tests only; `:core` registers
+the same-named tasks for the realtime conformance suites; `:liveobjects` registers `runLiveObjectsUnitTests` / `runLiveObjectsIntegrationTests`, and its UTS specs are under `io.ably.pubsub.liveobjects.uts.*`.
 
 | What | Command |
 |---|---|
 | `:uts` smoke (unit, offline) | `./gradlew :uts:runUtsUnitTests` |
 | `:uts` smoke (integration + proxy) | `./gradlew :uts:runUtsIntegrationTests` |
-| realtime UTS unit | `./gradlew :java:runUtsUnitTests` |
-| realtime UTS integration + proxy | `./gradlew :java:runUtsIntegrationTests` |
+| realtime UTS unit | `./gradlew :core:runUtsUnitTests` |
+| realtime UTS integration + proxy | `./gradlew :core:runUtsIntegrationTests` |
 | objects UTS unit | `./gradlew :liveobjects:runLiveObjectsUnitTests` |
 | objects UTS integration + proxy | `./gradlew :liveobjects:runLiveObjectsIntegrationTests` |
 
 Each `runUts*` / `runLiveObjects*` task is package-filtered (`io.ably.pubsub.uts.unit.*` /
-`io.ably.pubsub.uts.integration.*` for `:uts` and `:java`; `io.ably.pubsub.liveobjects.uts.*` for
+`io.ably.pubsub.uts.integration.*` for `:uts` and `:core`; `io.ably.pubsub.liveobjects.uts.*` for
 `:liveobjects`). The `…IntegrationTests` tasks cover **both** the direct-sandbox
 (`integration/standard/`) and proxy (`integration/proxy/`) tiers — proxy tests additionally
 download/launch the uts-proxy.
@@ -970,10 +970,10 @@ download/launch the uts-proxy.
 # All :uts smoke tests (every tier), or one class:
 ./gradlew :uts:test
 ./gradlew :uts:runUtsUnitTests --tests "io.ably.pubsub.uts.unit.UnitInfraSmokeTest"
-./gradlew :java:runUtsIntegrationTests --tests "io.ably.pubsub.uts.integration.proxy.realtime.AuthReauthTest"
+./gradlew :core:runUtsIntegrationTests --tests "io.ably.pubsub.uts.integration.proxy.realtime.AuthReauthTest"
 
 # Turn on the spec-correct (currently failing) deviation assertions (§12):
-RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTest*"
+RUN_DEVIATIONS=1 ./gradlew :core:runUtsUnitTests --tests "*ConnectionRecoveryTest*"
 
 # Run proxy tests against a locally built proxy instead of a GitHub release:
 ./gradlew :uts:runUtsIntegrationTests -Duts.proxy.localPath=/path/to/uts-proxy   # or .tar.gz
@@ -981,17 +981,18 @@ RUN_DEVIATIONS=1 ./gradlew :java:runUtsUnitTests --tests "*ConnectionRecoveryTes
 ```
 
 > **Unqualified task names collide — intentionally.** `./gradlew runUtsUnitTests` (no module prefix)
-> runs the task in **both** `:uts` and `:java` (Gradle matches the task name across every project that
+> runs the task in **both** `:uts` and `:core` (Gradle matches the task name across every project that
 > declares it). That's intended and harmless — both unit tiers are offline — and mirrors the existing
-> `runUnitTests` precedent (registered in both `:java` and `:pubsub-adapter`). Qualify with `:uts:` /
-> `:java:` to target one. The `RUN_DEVIATIONS`, `-Duts.proxy.localPath` and `UTS_PROXY_LOCAL_PATH`
+> `runUnitTests` precedent (registered in both `:core` and `:pubsub-adapter`). Qualify with `:uts:` /
+> `:core:` to target one. The `RUN_DEVIATIONS`, `-Duts.proxy.localPath` and `UTS_PROXY_LOCAL_PATH`
 > knobs are valid for **all three** modules.
 
 **Where CI runs them:** `check.yml` runs
-`… runUnitTests runLiveObjectsUnitTests :java:runUtsUnitTests :uts:runUtsUnitTests` as the PR gate
+`… runUnitTests runLiveObjectsUnitTests :core:runUtsUnitTests :uts:runUtsUnitTests` as the PR gate
 (all offline unit tiers); `integration-test.yml`'s `check-uts` job runs
-`:java:runUtsIntegrationTests :uts:runUtsIntegrationTests`, and its `check-liveobjects` job runs
-`runLiveObjectsIntegrationTests`.
+`:core:runUtsIntegrationTests :uts:runUtsIntegrationTests`, and its `check-liveobjects` job runs
+`runLiveObjectsIntegrationTests`. Both workflows run a second `-Duts.side=server` leg (see
+[Per-side package modes](#per-side-package-modes)).
 
 ### Per-side package modes
 
@@ -1000,18 +1001,32 @@ in `infra/unit/ClientFactories.kt`), selected by the `uts.side` system property 
 `UTS_SIDE` environment variable):
 
 ```bash
-./gradlew :uts:runUtsUnitTests                    # core (default): the core construction seam, no side declared
-./gradlew :uts:runUtsUnitTests -Duts.side=server  # io.ably.pubsub:server — the PubSubServer builders
+./gradlew :core:runUtsUnitTests :uts:runUtsUnitTests                    # core (default): the core construction seam, no side declared
+./gradlew :core:runUtsUnitTests :uts:runUtsUnitTests -Duts.side=server  # io.ably.pubsub:server — the PubSubServer builders
+./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests -Duts.side=server  # the same, against the sandbox and proxy
 ```
+
+The conformance specs live in `:core` (and in `:liveobjects` where applicable), not in `:uts`, which
+holds only `SideModesTest` and the infra smoke tests. `:core`'s `runUts*` tasks forward `uts.side` /
+`UTS_SIDE` to the forked test JVM, so running `:uts:runUtsUnitTests -Duts.side=server` alone would
+exercise only the smoke tests and prove nothing about conformance. Always run the `:core` task
+alongside it for a side leg.
 
 The server builders only stamp the side-declaring agent entry (a versionless flag, per
 ably/ably-common#361) and pass everything else through — `DebugOptions` included, whose `copy()`
 override keeps the mock hooks — so every mode must pass identically. `SideModesTest` asserts each
 mode's stamp so a broken seam cannot silently degrade the server leg into a duplicate core run.
-CI runs both modes (`check.yml` and `integration-test.yml`).
+CI runs both modes. The exact server legs are:
 
-Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is an Android artifact,
-so its door cannot run on the JVM this suite uses. Its stamping contract is covered by the
+```bash
+# check.yml
+./gradlew :core:runUtsUnitTests :uts:runUtsUnitTests :liveobjects:runLiveObjectsUnitTests -Duts.side=server
+# integration-test.yml (--tests narrows only the :liveobjects task)
+./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests :liveobjects:runLiveObjectsIntegrationTests --tests 'io.ably.pubsub.liveobjects.uts.*' -Duts.side=server
+```
+
+Unlike ably-js's UTS there is no `device` mode: `io.ably.pubsub:device` is not wired
+into this suite's construction seam. Its stamping contract is covered by the
 instrumentation tests in the `device` module (`emulate.yml`).
 
 **Token auth on the server leg.** Realtime rejects a token-authenticated connection that
@@ -1093,7 +1108,7 @@ is talking to a real socket; in fact every byte is intercepted by the mock and s
    │        │  client.connect()                                  ▲   awaitState(client, connected)     │
    │        ▼                                                     │                                     │
    │  ┌───────────┐   webSocketEngineFactory   ┌──────────────────────────┐                            │
-   │  │  PubSubRealtimeClient (SDK :java)  │──────────▶ │ MockWebSocketEngineFactory │ (implements SDK SPI)     │
+   │  │  PubSubRealtimeClient (SDK :core)  │──────────▶ │ MockWebSocketEngineFactory │ (implements SDK SPI)     │
    │  │  ConnectionManager, etc.   │            └─────────────┬────────────┘                            │
    │  └───────────┬────────────────┘                         │ create()                                │
    │              │ send(frame) ───────────────────────────▶ │                                         │
@@ -1200,7 +1215,7 @@ implicit.
 > from. The infra under `infra/unit/` and `infra/integration/` is built out beyond what the smokes
 > exercise (full HTTP mock, all four rule builders, REST proxy wiring, etc.), anticipating the broader
 > UTS coverage catalogued in [`completion-status.md`](https://github.com/ably/specification/blob/main/uts/docs/completion-status.md). The real spec-derived suites that consume this
-> infra live in `:java` (`lib/src/test/kotlin/io/ably/pubsub/uts/…`) and `:liveobjects`
+> infra live in `:core` (`lib/src/test/kotlin/io/ably/pubsub/uts/…`) and `:liveobjects`
 > (`liveobjects/.../uts/…`) — see §13.
 
 ---
@@ -1220,4 +1235,4 @@ implicit.
 | Integration helpers | `uts/src/main/.../uts/infra/integration/*` (+ `…/integration/proxy/*`) |
 | Async helpers | `uts/src/main/.../uts/infra/Utils.kt` (awaits), `…/infra/unit/Utils.kt` (ConnectionDetails builder) |
 | The three tier smoke tests | `uts/src/test/.../uts/unit/UnitInfraSmokeTest.kt`, `…/uts/integration/standard/IntegrationInfraSmokeTest.kt`, `…/uts/integration/proxy/ProxyInfraSmokeTest.kt` |
-| Deviations | `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` (realtime/rest, `:java`), `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` (objects, `:liveobjects`) |
+| Deviations | `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` (realtime/rest, `:core`), `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` (objects, `:liveobjects`) |

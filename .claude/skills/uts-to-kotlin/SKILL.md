@@ -1,10 +1,10 @@
 ---
-description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the owning ably-java module (:java for realtime/rest, :liveobjects for objects; :uts hosts the shared infra + smoke examples). Takes a UTS module directory (e.g. <cloned-ably-specification-repo-path>/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
+description: "Translate the UTS pseudocode test specs in a whole module directory into runnable Kotlin tests in the owning ably-java module (:core for realtime/rest, :liveobjects for objects; :uts hosts the shared infra + smoke examples). Takes a UTS module directory (e.g. <cloned-ably-specification-repo-path>/uts/objects), validates its structure, resolves the target ably-java module, lets you pick a tier (unit/integration/proxy) and which specs, then derives a Kotlin test per spec. Usage: /uts-to-kotlin <path-to-uts-module-directory>"
 allowed-tools: Bash, Read, Edit, Write, WebFetch
 ---
 
 Translate the UTS pseudocode test specs under the **module directory** `$ARGUMENTS` into runnable Kotlin
-tests in the owning ably-java module (`:java` for realtime/rest, `:liveobjects` for objects; `:uts` hosts
+tests in the owning ably-java module (`:core` for realtime/rest, `:liveobjects` for objects; `:uts` hosts
 the shared infra + smoke examples).
 
 `$ARGUMENTS` is a UTS *module* directory — a directory sitting directly under the spec repo's `uts/`,
@@ -49,7 +49,7 @@ It prints one JSON object. **If `ok` is `false`, relay `message` to the user and
 `NOT_A_UTS_MODULE_PATH` (not a `.../uts/<module>` directory), `DIR_NOT_FOUND`, `NO_TIER_DIRS` (no `unit/`
 or `integration/`). On success it gives `sourceModule`, `mapped`, `translationNotes`, and a
 `tiers` object with one entry per tier (`unit` / `integration` / `proxy`), each carrying `present`,
-`sourceDir`, `targetDir`, `package`, `module` (the owning Gradle module — `:java` / `:liveobjects` /
+`sourceDir`, `targetDir`, `package`, `module` (the owning Gradle module — `:core` / `:liveobjects` /
 `:uts`), and `specs` (a list of `{file, className}`). Everything downstream
 reads from this output — treat it as the single source of truth and don't recompute paths or names by hand.
 
@@ -66,10 +66,10 @@ don't always match (e.g. `objects` → `liveobjects`), which is why it's explici
 Each tier's mapping value is **one repo-root-relative path** (never a machine-absolute `/Users/...` path).
 The resolver derives everything from it: `targetDir` is the path, `package` is the path after
 `src/test/kotlin/` with `/` → `.`, and `module` is the owning Gradle module from the path's first segment
-(`lib/` → `:java`, `liveobjects/` → `:liveobjects`, `uts/` → `:uts`). Use the resolver's `targetDir` /
+(`lib/` → `:core`, `liveobjects/` → `:liveobjects`, `uts/` → `:uts`). Use the resolver's `targetDir` /
 `package` / `module` output directly — don't recompute. The `objects` entry is **hand-maintained**: its
 tiers live in `:liveobjects`'s own test source set (its specs assert on `:liveobjects` internals only
-visible to that module's own tests) under `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/{unit,
+visible to that module's own tests) under `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/{unit,
 integration,proxy}` — a sibling layout that differs from the `--create` template below, so `--create` never
 regenerates it.
 
@@ -84,10 +84,10 @@ regenerates it.
   python3 .claude/skills/uts-to-kotlin/scripts/resolve_uts.py "<module-dir>" --create <target>
   ```
 
-  This adds full `lib/`-rooted (`:java`) paths under `packages` —
-  `lib/src/test/kotlin/io/ably/lib/uts/unit/<target>`, `.../integration/standard/<target>`, and
+  This adds full `lib/`-rooted (`:core`) paths under `packages` —
+  `lib/src/test/kotlin/io/ably/pubsub/uts/unit/<target>`, `.../integration/standard/<target>`, and
   `.../integration/proxy/<target>` — and re-prints the resolved output. **`--create` only scaffolds
-  `:java`-hosted modules;** a module whose tiers live in another Gradle module (like `objects` →
+  `:core`-hosted modules;** a module whose tiers live in another Gradle module (like `objects` →
   `:liveobjects`, a sibling `uts/{unit,integration,proxy}` layout) still needs a hand-edit afterwards.
   (`<target>` must be a simple module base name — letters, digits, underscore; the script returns
   `BAD_TARGET_NAME` otherwise, so just ask again.)
@@ -181,12 +181,12 @@ integration tests** section; **proxy** → the proxy subsections of the **Integr
 > multi-point-per-method shape.
 
 Infrastructure lives in `:uts`'s **main** source set —
-`uts/src/main/kotlin/io/ably/lib/uts/infra/` — so other Gradle modules can consume it via
-`testImplementation(project(":uts"))`. Kotlin packages are `io.ably.lib.uts.infra.*`, so imports in
+`uts/src/main/kotlin/io/ably/pubsub/uts/infra/` — so other Gradle modules can consume it via
+`testImplementation(project(":uts"))`. Kotlin packages are `io.ably.pubsub.uts.infra.*`, so imports in
 generated tests are unaffected. It is split by tier:
 
-- `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.lib.uts.infra`.
-- `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.lib.uts.infra.unit`.
+- `infra/Utils.kt` — shared async helpers (`awaitState`, `awaitChannelState`, `pollUntil`), package `io.ably.pubsub.uts.infra`.
+- `infra/unit/` — unit-test mocks/factories (`ClientFactories.kt`, `MockWebSocket.kt`, `MockHttpClient.kt`, `FakeClock.kt`, `MockEvent.kt`, the `PendingConnection`/`PendingRequest` pairs, and `Utils.kt` with the `ConnectionDetails { }` builder), package `io.ably.pubsub.uts.infra.unit`.
 - `infra/integration/` + `infra/integration/proxy/` — direct-sandbox + proxy helpers (`SandboxApp.kt`, `ProxyManager.kt`, `ProxySession.kt`) — see the **Integration tests** section.
 
 For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` before generating any code (you need exact method signatures).
@@ -194,12 +194,12 @@ For a **unit** test, read all files under `infra/unit/` plus `infra/Utils.kt` be
 **Module-local helpers.** Every module's tiers live in that module's own test source set (the resolver's
 `targetDir` / `module`), so also read any module-local helpers alongside the target — they sit in the
 tier's `targetDir`. For **objects/unit** (module `:liveobjects`) that's
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/unit/Helpers.kt` (package
-`io.ably.lib.liveobjects.uts.unit`) — `setupSyncedChannel`, the `build_*` message builders (typed `Wire*`
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/unit/Helpers.kt` (package
+`io.ably.pubsub.liveobjects.uts.unit`) — `setupSyncedChannel`, the `build_*` message builders (typed `Wire*`
 constructions, no JSON/reflection), `STANDARD_POOL_OBJECTS` and the canonical serial constants. Access
 convention for that suite: **public-tier specs use only the public API + helpers**; only the five
 internal-graph specs (`internal_live_counter`, `internal_live_map`, `object_id`, `objects_pool`,
-`parent_references`) and documented deviations may reference `io.ably.lib.liveobjects` `internal` members —
+`parent_references`) and documented deviations may reference `io.ably.pubsub.liveobjects` `internal` members —
 their symbol map is `references/objects-mapping.md` §17.
 
 ## Step 4 — Generate the Kotlin test file
@@ -208,11 +208,11 @@ Apply the translation rules below, then write the file.
 
 ### Client construction
 
-Use `TestRealtimeClient { }` and `TestRestClient { }` from `io.ably.lib`. These are DSL builders that extend `DebugOptions` — all `ClientOptions` fields (`autoConnect`, `recover`, `disconnectedRetryTimeout`, etc.) are settable directly inside the block. The default API key is `"appId.keyId:keySecret"`.
+Use `TestRealtimeClient { }` and `TestHttpClient { }` from `io.ably.pubsub.uts.infra.unit`. These are DSL builders that extend `DebugOptions` — all `ClientOptions` fields (`autoConnect`, `recover`, `disconnectedRetryTimeout`, etc.) are settable directly inside the block. The default API key is `"appId.keyId:keySecret"`.
 
 | Pseudocode | Kotlin |
 |---|---|
-| `Rest(options: ClientOptions(key: "..."))` | `TestRestClient { key = "..." }` |
+| `Rest(options: ClientOptions(key: "..."))` (the HTTP client) | `TestHttpClient { key = "..." }` |
 | `Realtime(options: ClientOptions(key: "...", autoConnect: false))` | `TestRealtimeClient { key = "..."; autoConnect = false }` |
 | `Realtime(options: ClientOptions(autoConnect: false))` | `TestRealtimeClient { autoConnect = false }` |
 | Installing mocks | `install(mock)` inside the builder block |
@@ -270,7 +270,7 @@ val refuseJob = launch {
 For HTTP:
 ```kotlin
 val mockHttp = MockHttpClient { onRequest = { req -> req.respondWith(200, body) } }
-val client = TestRestClient { install(mockHttp) }
+val client = TestHttpClient { install(mockHttp) }
 ```
 
 ### Inspecting outgoing frames
@@ -393,22 +393,22 @@ This scaffold is for the **unit** tier — it wires the mocked transport (`infra
 **Proxy integration tests** section instead (`SandboxApp` / `ProxySession` wiring), not from this template.
 
 The `package` is always the resolver's `package` for the chosen tier (Step 2), and the
-`io.ably.lib.uts.infra.*` imports stay valid whatever module the tier lands in. For **objects/unit** the
-same scaffold applies with the resolver's `io.ably.lib.liveobjects.uts.unit` package, and channel/objects
+`io.ably.pubsub.uts.infra.*` imports stay valid whatever module the tier lands in. For **objects/unit** the
+same scaffold applies with the resolver's `io.ably.pubsub.liveobjects.uts.unit` package, and channel/objects
 setup goes through the module-local helpers (`setupSyncedChannel` etc. from the same package — see Step 3)
 rather than raw `MockWebSocket` wiring.
 
 ```kotlin
 package <package>                              // the resolver's package for the chosen tier (Step 2)
 
-import io.ably.lib.uts.infra.unit.*            // TestRealtimeClient/TestRestClient, MockWebSocket, MockHttpClient, FakeClock, CONNECTED_MESSAGE, ConnectionDetails { } builder
-import io.ably.lib.uts.infra.awaitState
-import io.ably.lib.uts.infra.awaitChannelState  // if testing channels
-import io.ably.lib.uts.infra.pollUntil          // if polling on a predicate
-import io.ably.lib.realtime.ChannelState        // if testing channels
-import io.ably.lib.realtime.ConnectionState
-import io.ably.lib.types.ErrorInfo
-import io.ably.lib.types.ProtocolMessage
+import io.ably.pubsub.uts.infra.unit.*            // TestRealtimeClient/TestHttpClient, MockWebSocket, MockHttpClient, FakeClock, CONNECTED_MESSAGE, ConnectionDetails { } builder
+import io.ably.pubsub.uts.infra.awaitState
+import io.ably.pubsub.uts.infra.awaitChannelState  // if testing channels
+import io.ably.pubsub.uts.infra.pollUntil          // if polling on a predicate
+import io.ably.pubsub.realtime.ChannelState        // if testing channels
+import io.ably.pubsub.realtime.ConnectionState
+import io.ably.pubsub.types.ErrorInfo
+import io.ably.pubsub.types.ProtocolMessage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
@@ -455,7 +455,7 @@ class <className> {
 Compile the module the resolver reports for the chosen tier (its `module` field — Step A):
 
 ```bash
-./gradlew :java:compileTestKotlin          # realtime / rest tiers (module :java)
+./gradlew :core:compileTestKotlin          # realtime / rest tiers (module :core)
 ./gradlew :liveobjects:compileTestKotlin   # objects tiers (module :liveobjects)
 ```
 
@@ -482,16 +482,16 @@ Use the per-tier task of the module the resolver reports for the tier (its `modu
 resolver's `package` + the spec's `className` for the `--tests` filter:
 
 ```bash
-# realtime / rest unit (module :java)               → io.ably.lib.uts.unit.*
-./gradlew :java:runUtsUnitTests --tests "<package>.<className>"
+# realtime / rest unit (module :core)               → io.ably.pubsub.uts.unit.*
+./gradlew :core:runUtsUnitTests --tests "<package>.<className>"
 
-# realtime / rest integration + proxy (module :java) → io.ably.lib.uts.integration.*
-./gradlew :java:runUtsIntegrationTests --tests "<package>.<className>"
+# realtime / rest integration + proxy (module :core) → io.ably.pubsub.uts.integration.*
+./gradlew :core:runUtsIntegrationTests --tests "<package>.<className>"
 
-# objects unit (module :liveobjects)                → io.ably.lib.liveobjects.uts.unit.*
+# objects unit (module :liveobjects)                → io.ably.pubsub.liveobjects.uts.unit.*
 ./gradlew :liveobjects:runLiveObjectsUnitTests --tests "<package>.<className>"
 
-# objects integration + proxy (module :liveobjects) → io.ably.lib.liveobjects.uts.{integration,proxy}.*
+# objects integration + proxy (module :liveobjects) → io.ably.pubsub.liveobjects.uts.{integration,proxy}.*
 ./gradlew :liveobjects:runLiveObjectsIntegrationTests --tests "<package>.<className>"
 ```
 
@@ -557,8 +557,8 @@ fun `RTLC7c2 - LOCAL source does not write siteTimeserials`() = runTest {
 ### Deviations file
 
 Append to the deviations file that belongs to the tier's module:
-`lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers (module `:java`), or
-`liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
+`lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` for realtime/rest tiers (module `:core`), or
+`liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` for objects/unit. Use the manual's
 **Recording deviations** entry format and sections. The ably-java-specific mapping: a **UTS Spec Error** (test fails fast — fix in
 the spec) goes under the manual's *UTS Spec Errors* section; an **SDK deviation** (env-gated/adapted — fix
 in the SDK) goes under *Failing Tests* / *Adapted Tests*.
@@ -645,7 +645,7 @@ For each test case, verify:
 Deviations are discovered by running, so this check applies in evaluate mode. For any place where the
 generated test diverges from the spec pseudocode (adapted assertion, env-gated skip, or omitted step):
 - [ ] A `// DEVIATION:` comment explains why
-- [ ] The deviation is recorded in the tier's module deviations file (see "Deviations file" above: `lib/src/test/kotlin/io/ably/lib/uts/deviations.md` for realtime/rest tiers, `liveobjects/src/test/kotlin/io/ably/lib/liveobjects/uts/deviations.md` for objects tiers)
+- [ ] The deviation is recorded in the tier's module deviations file (see "Deviations file" above: `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md` for realtime/rest tiers, `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md` for objects tiers)
 
 If you find gaps during this review, fix them, then **re-run the audit script** until `missingInKotlin` /
 `orphanInKotlin` are empty and every `perTest` entry reconciles, and re-run Step 5 (compile) — and, in
@@ -679,7 +679,7 @@ A **direct-sandbox** spec (no `create_proxy_session`, no rules — just happy-pa
 **Client wiring** — point the client at the sandbox endpoint:
 
 ```kotlin
-private fun newClient(useBinaryProtocol: Boolean): AblyRealtime = TestRealtimeClient {
+private fun newClient(useBinaryProtocol: Boolean): PubSubRealtimeClient = TestRealtimeClient {
     key = app.defaultKey
     endpoint     = SandboxApp.sandboxEndpoint   // nonprod:sandbox
     this.useBinaryProtocol = useBinaryProtocol
@@ -723,13 +723,13 @@ Use generous timeouts (10–30s) — real network is involved. Everything else i
 
 ### Infrastructure
 
-Three helpers live under `uts/src/main/kotlin/io/ably/lib/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
+Three helpers live under `uts/src/main/kotlin/io/ably/pubsub/uts/infra/integration/`. **Read the ones your tier uses before translating an integration spec** — they hold the exact method signatures. `SandboxApp` serves **both** tiers; `ProxyManager` and `ProxySession` are **proxy-only**.
 
-- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.lib.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
+- **`ProxyManager`** (`infra/integration/proxy/ProxyManager.kt`, package `io.ably.pubsub.uts.infra.integration.proxy`) — downloads/starts the shared `uts-proxy` process. Call `ProxyManager.ensureProxy()` once per suite in setup.
 - **`ProxySession`** (`infra/integration/proxy/ProxySession.kt`, same package) — one programmable session wrapping the proxy control API; also defines the `connectThroughProxy` extension and the rule-builder helpers.
-- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.lib.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns `SandboxApp.sandboxEndpoint` (`nonprod:sandbox`), which direct-sandbox clients set as their `endpoint`, and `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the hostname that endpoint resolves to) — the default upstream target of every `ProxySession`.
+- **`SandboxApp`** (`infra/integration/SandboxApp.kt`, package `io.ably.pubsub.uts.infra.integration`) — provisions/deletes a sandbox test app from the shared `test-app-setup.json` in ably-common. `SandboxApp.create()` returns a `SandboxApp` with `appId`, `defaultKey`, and `keys` (`defaultKey` is a full-capability `appId.keyId:keySecret`); `app.delete()` tears it down. Provision in suite setup, delete in teardown. Also owns `SandboxApp.sandboxEndpoint` (`nonprod:sandbox`), which direct-sandbox clients set as their `endpoint`, and `SandboxApp.sandboxHost` (`sandbox.realtime.ably-nonprod.net`, the hostname that endpoint resolves to) — the default upstream target of every `ProxySession`.
 
-Import what the tier needs: a **direct-sandbox** test imports `io.ably.lib.uts.infra.integration.SandboxApp` plus `io.ably.lib.uts.infra.unit.TestRealtimeClient` and `io.ably.lib.uts.infra.{awaitState, pollUntil}`; a **proxy** test additionally imports `io.ably.lib.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`.
+Import what the tier needs: a **direct-sandbox** test imports `io.ably.pubsub.uts.infra.integration.SandboxApp` plus `io.ably.pubsub.uts.infra.unit.TestRealtimeClient` and `io.ably.pubsub.uts.infra.{awaitState, pollUntil}`; a **proxy** test additionally imports `io.ably.pubsub.uts.infra.integration.proxy.{ProxyManager, ProxySession, connectThroughProxy}`.
 
 `ensureProxy()`, the `ProxySession` methods, and the `SandboxApp` methods are all **`suspend`** functions. Per-test bodies use `runTest { }`; JUnit5 `@BeforeAll`/`@AfterAll` (with `@TestInstance(Lifecycle.PER_CLASS)`) wrap their suspend calls in `runBlocking { }`.
 
@@ -807,14 +807,14 @@ val client = TestRealtimeClient {
 | `tls: false` | `tls = false` |
 | `useBinaryProtocol: false` | already the `ClientOptionsBuilder` default — left untouched |
 
-It does **not** touch `autoConnect`, so set that yourself. Setting explicit hosts disables fallback hosts automatically, so don't add `fallbackHosts`.
+It does **not** touch `autoConnect`, so set that yourself. A hostname endpoint has no default fallback hosts (REC2c2), so don't add `fallbackHosts`.
 
 ### Auth in proxy tests
 
 A spec that needs to observe (re-)authentication uses an `authCallback`. Where the pseudocode "generates a JWT from the key parts", the idiomatic ably-java equivalent is a **locally-signed `TokenRequest`** from the same sandbox key — no JWT library required. The realtime client exchanges it for a token through the proxy:
 
 ```kotlin
-val tokenSigner = AblyRest(app.defaultKey)          // local signing only; no network
+val tokenSigner = TestHttpClient { key = app.defaultKey }   // local signing only; no network
 val authCallbackCount = AtomicInteger(0)
 val authCallback = Auth.TokenCallback { params ->
     authCallbackCount.incrementAndGet()
@@ -827,7 +827,7 @@ val client = TestRealtimeClient {
 }
 ```
 
-`TokenParams`/`TokenRequest` are nested in `io.ably.lib.rest.Auth`; `AuthDetails` is nested in `io.ably.lib.types.ProtocolMessage`.
+`TokenParams`/`TokenRequest` are nested in `io.ably.pubsub.http.Auth`; `AuthDetails` is nested in `io.ably.pubsub.types.ProtocolMessage`.
 
 ### Rule factory helpers
 
@@ -873,6 +873,6 @@ assertNotNull(queryParams["resume"])
 3. Each test creates its own `ProxySession` and closes it (and the client) in `finally`.
 4. Use `awaitState` / `awaitChannelState` for state assertions; verify via SDK state **and** the proxy log where useful.
 5. Use generous timeouts (10–30s) — real network is involved: `awaitState(client, ConnectionState.connected, 15.seconds)`.
-6. Don't set `fallbackHosts`; explicit hosts already disable fallbacks.
+6. Don't set `fallbackHosts`; a hostname endpoint already has no fallbacks (REC2c2).
 
 Step 5 (compile) still applies; Step 6 (run) applies only in evaluate mode (Step E). Note that proxy tests hit the live sandbox and download the proxy binary on first run, so they are slower and require network access.

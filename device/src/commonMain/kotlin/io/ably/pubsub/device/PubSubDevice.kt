@@ -25,9 +25,12 @@ import io.ably.pubsub.util.Side
  * history, presence queries, token requests, `request()` and `batchPublish()` — are all available on
  * the client this returns.
  *
+ * Authenticate with an auth endpoint you host (or an `authCallback`) rather than an API key: never
+ * embed an API key in an application that runs on an end-user device.
+ *
  * ```
  * val client = PubSubDevice.clientBuilder()
- *     .key("xVLyHw.MHOCLg:...")
+ *     .authUrl("https://example.com/ably-auth")
  *     .clientId("bob")
  *     .build()
  * ```
@@ -53,10 +56,10 @@ public object PubSubDevice {
      * options for it.
      *
      * The builder's setters still apply on top of what is passed here, and [ClientBuilder.build]
-     * stamps the side-declaring agent entry as usual. The options object is handed to the
-     * client rather than copied, so later changes to it are not isolated from the built client,
-     * and [ClientBuilder.build] replaces its `agents` map with the stamped one; pass
-     * [ClientOptions.copy] if either matters.
+     * stamps the side-declaring agent entry as usual. [ClientBuilder.build] snapshots the
+     * options ([ClientOptions.copy]), so neither later builder calls nor later changes to the
+     * object passed here affect a client already built, and the passed object's own `agents`
+     * map is never modified.
      *
      * @param options the options to start from.
      * @return a new builder over [options].
@@ -68,7 +71,7 @@ public object PubSubDevice {
      * Builds a device client. Obtain one from [PubSubDevice.clientBuilder].
      */
     public class ClientBuilder internal constructor(
-        /** Accumulates the calls made on this builder; handed to the client as-is by [build]. */
+        /** Accumulates the calls made on this builder; [build] hands the client a snapshot of it. */
         private val options: ClientOptions = ClientOptions(),
     ) {
 
@@ -416,6 +419,6 @@ public object PubSubDevice {
          *         authentication parameters were supplied.
          */
         public fun build(): PubSubRealtimeClient =
-            RealtimeClientFactory.create(Side.injectSideAgent(options, Side.DEVICE_AGENT_IDENTIFIER))
+            RealtimeClientFactory.create(Side.injectSideAgent(options.copy(), Side.DEVICE_AGENT_IDENTIFIER))
     }
 }

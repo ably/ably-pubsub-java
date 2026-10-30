@@ -146,5 +146,6 @@ jobs:
       - run: ./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests
 
       # A second leg through the server door's builders — see the uts.side handling in
-      # uts/.../ClientFactories.kt and the matching leg in check.yml.
-      - run: ./gradlew :uts:runUtsIntegrationTests -Duts.side=server
+      # uts/.../ClientFactories.kt and the matching leg in check.yml. The :liveobjects run is
+      # narrowed to its UTS specs (the module's own integration tests do not use the factories).
+      - run: ./gradlew :core:runUtsIntegrationTests :uts:runUtsIntegrationTests :liveobjects:runLiveObjectsIntegrationTests --tests 'io.ably.pubsub.liveobjects.uts.*' -Duts.side=server

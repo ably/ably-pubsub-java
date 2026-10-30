@@ -22,19 +22,19 @@ class ClientOptionsBuilder : DebugOptions("appId.keyId:keySecret") {
 
 /**
  * Which package's entry points the suite constructs clients through, selected by the
- * `uts.side` system property (uts/build.gradle.kts forwards it to the test JVM):
+ * `uts.side` system property (the :uts, :core and :liveobjects test tasks forward it to the test JVM):
  *
  * - `core` (default): the core construction seam ([RealtimeClientFactory] / [HttpClientFactory]),
  *   which declares no side.
  * - `server`: `io.ably.pubsub:server` — both client kinds via its side-stamping builders.
  *
- * There is no `device` mode, unlike ably-js's UTS: `io.ably.pubsub:device` is an Android
- * artifact, so its door cannot run on the JVM this suite uses; its stamping contract is
- * covered by the instrumentation tests in the device module instead.
+ * There is no `device` mode, unlike ably-js's UTS: `io.ably.pubsub:device` is not wired into
+ * this suite's construction seam. Its stamping contract is covered by the device module's own
+ * tests (`jvmTest` and the instrumentation tests in emulate.yml).
  *
  * The builders only stamp the side-declaring agent entry and pass every other option
- * through — [DebugOptions] included: its `copy()` override keeps the mock hooks the suite
- * installs — so conformance must be identical whichever door constructed the client.
+ * through (`build()` snapshots the options via `copy()`, and [DebugOptions]'s `copy()`
+ * override keeps the mock hooks the suite installs), so conformance must be identical whichever door constructed the client.
  * `SideModesTest` asserts each mode's stamp, so a broken seam cannot silently degrade the
  * server CI leg into a duplicate of the core leg.
  */
