@@ -26,8 +26,7 @@ Java 8 or later (the JVM, plus Android 7.0 / API level 24 or later for `io.ably.
 
 ## Installation
 
-Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app. Never depend on
-`io.ably.pubsub:core` or `io.ably.pubsub:core-android` directly.
+Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app.
 
 ### Server
 
@@ -113,11 +112,7 @@ public class ServerPublish {
 ```
 
 > [!IMPORTANT]
-> Clients from `PubSubServer` declare themselves as servers. Authenticate them with an API key. A
-> server client that must use a token needs an Ably JWT signed with your API key. The JWT must carry
-> the `x-ably-clientType` claim set to `server`. Ably rejects any other token, such as an Ably Token
-> or a JWT without the claim, with error 40167. See
-> [Server clients and token authentication](https://github.com/ably/ably-pubsub-java/blob/main/UPGRADING.md#server-clients-and-token-authentication).
+> Server clients must authenticate with an API key. To use a token instead, see [Server clients and token authentication](https://ably.com/docs/auth/token#server-token-auth).
 
 Your server also issues the tokens that devices authenticate with. Return a token request from
 the endpoint your devices use as their `authUrl`:
@@ -297,7 +292,6 @@ the [Java quickstart](https://ably.com/docs/liveobjects/quickstart/java) and the
 ## Further reading
 
 - [Getting started with Pub/Sub using Java](https://ably.com/docs/getting-started/java)
-- [SDK setup for Java](https://ably.com/docs/getting-started/setup?lang=java)
 - [Ably Pub/Sub documentation](https://ably.com/docs/basics) and [examples](https://ably.com/examples?product=pubsub)
 - [Token authentication](https://ably.com/docs/auth/token)
 - [UPGRADING.md](https://github.com/ably/ably-pubsub-java/blob/main/UPGRADING.md): migrating from 1.x
