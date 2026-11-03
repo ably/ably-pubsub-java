@@ -114,32 +114,48 @@ public class ServerPublish {
 > [!IMPORTANT]
 > Server clients must authenticate with an API key. To use a token instead, see [Server clients and token authentication](https://ably.com/docs/auth/token#server-token-auth).
 
-Your server also issues the tokens that devices authenticate with. Return a token request from
-the endpoint your devices use as their `authUrl`:
+The following endpoint issues token requests. Devices set `authUrl` to its URL, for example
+`https://your-server.example.com/ably-auth`:
 
 ```java
+package com.example;
+
 import io.ably.pubsub.http.Auth;
 import io.ably.pubsub.http.PubSubHttpClient;
 import io.ably.pubsub.server.PubSubServer;
 import io.ably.pubsub.types.AblyException;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-public class ServerTokenRequest {
-    public static void main(String[] args) throws AblyException {
+@SpringBootApplication
+@RestController
+public class AblyAuthServer {
+    private final PubSubHttpClient http;
+
+    public AblyAuthServer() throws AblyException {
         String ablyApiKey = System.getenv("ABLY_API_KEY");
-        PubSubHttpClient http = PubSubServer.httpClientBuilder()
+        http = PubSubServer.httpClientBuilder()
             .key(ablyApiKey)
             .build();
+    }
 
+    @GetMapping(value = "/ably-auth", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String ablyAuth() throws AblyException {
         // Authenticate the caller first. Grant only the operations this user needs.
+        String userId = "me"; // the signed-in user's ID, from your session
         Auth.TokenParams params = new Auth.TokenParams();
-        params.clientId = "me"; // the authenticated user's ID
+        params.clientId = userId;
         // Without a capability, the token gets all of the API key's capabilities.
         params.capability = "{\"test-channel\":[\"publish\",\"subscribe\",\"history\"]}";
 
-        Auth.TokenRequest tokenRequest = http.auth.createTokenRequest(params, null);
+        return http.auth.createTokenRequest(params, null).asJson();
+    }
 
-        // Return this JSON unchanged, with the content type application/json.
-        System.out.println(tokenRequest.asJson());
+    public static void main(String[] args) {
+        SpringApplication.run(AblyAuthServer.class, args);
     }
 }
 ```
@@ -148,7 +164,8 @@ See [token authentication](https://ably.com/docs/auth/token) for how devices use
 
 ### Device
 
-Authenticate a device with tokens issued by your own server, through `authUrl` or `authCallback`.
+Authenticate a device with tokens issued by your own server, such as the endpoint above, through
+`authUrl` or `authCallback`.
 Never embed an API key in an app that runs on an end-user device.
 
 ```java
