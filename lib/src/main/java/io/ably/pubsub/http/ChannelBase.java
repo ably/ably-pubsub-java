@@ -1,6 +1,8 @@
 package io.ably.pubsub.http;
 
 import io.ably.pubsub.http.BasePaginatedQuery;
+import io.ably.pubsub.liveobjects.HttpObject;
+import io.ably.pubsub.liveobjects.http.DefaultHttpObject;
 import io.ably.pubsub.http.HttpRequester;
 import io.ably.pubsub.http.HttpScheduler;
 import io.ably.pubsub.http.HttpCore;
@@ -47,6 +49,14 @@ public class ChannelBase {
      * This field provides functionality for managing annotations.
      */
     public final HttpAnnotations annotations;
+
+    /**
+     * The LiveObjects entry point for this channel. It is built into the HTTP client and needs no
+     * plugin.
+     * <p>
+     * Spec: RSL16
+     */
+    public final HttpObject object;
 
 
     private final MessageEditsMixin messageEditsMixin;
@@ -607,6 +617,7 @@ public class ChannelBase {
         this.presence = new Presence();
         this.annotations = new HttpAnnotations(name, ably.http, ably.options, options);
         this.messageEditsMixin = new MessageEditsMixin(basePath, ably.options, options, ably.auth);
+        this.object = new DefaultHttpObject(ably, basePath, ably.objectsServerTime);
     }
 
     private final PubSubBase ably;
