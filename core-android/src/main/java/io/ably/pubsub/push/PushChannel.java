@@ -249,16 +249,6 @@ public class PushChannel {
     }
 
     protected DeviceDetails getDevice() throws AblyException {
-        LocalDevice localDevice = rest.push.getActivationContext().getLocalDevice();
-        if (localDevice == null || localDevice.deviceIdentityToken == null) {
-            // Alternatively, we could store a queue of pending subscriptions in the
-            // device storage. But then, in order to know if this subscription operation
-            // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
-            // Arguably that encourages just ignoring any errors, and forcing you to listen
-            // to the broadcast after push.activate has finished before subscribing is
-            // more robust.
-            throw AblyException.fromThrowable(new Exception("cannot use device before PubSubHttpClient.push.activate has finished"));
-        }
-        return localDevice;
+        return rest.push.requireActivatedDevice();
     }
 }
