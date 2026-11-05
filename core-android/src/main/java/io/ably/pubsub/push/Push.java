@@ -3,6 +3,7 @@ package io.ably.pubsub.push;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import io.ably.pubsub.http.HttpRequester;
 import io.ably.pubsub.http.HttpUtils;
 import io.ably.pubsub.http.PubSubBase;
 import io.ably.pubsub.http.PubSubHttpClient;
@@ -18,8 +19,14 @@ import java.util.Arrays;
  */
 public class Push extends PushBase {
 
+    /**
+     * An {@link FcmTopics} object, for managing this device's FCM topic subscriptions.
+     */
+    public final FcmTopics fcmTopics;
+
     public Push(PubSubBase rest) {
         super(rest);
+        this.fcmTopics = new FcmTopics(rest, this);
     }
 
     /**
@@ -120,6 +127,47 @@ public class Push extends PushBase {
      */
     public LocalDevice getLocalDevice() throws AblyException {
         return getActivationContext().getLocalDevice();
+    }
+
+    /**
+     * Returns the local device, failing if push activation has not completed, since the device has
+     * no ID or identity token to authenticate push requests with until then.
+     */
+    LocalDevice requireActivatedDevice() throws AblyException {
+        LocalDevice localDevice = getLocalDevice();
+        if (localDevice == null || localDevice.deviceIdentityToken == null) {
+            // Alternatively, we could store a queue of pending subscriptions in the
+            // device storage. But then, in order to know if this subscription operation
+            // succeeded, you would have to add a BroadcastReceiver in AndroidManifest.xml.
+            // Arguably that encourages just ignoring any errors, and forcing you to listen
+            // to the broadcast after push.activate has finished before subscribing is
+            // more robust.
+            throw AblyException.fromThrowable(new Exception("cannot use device before PubSubHttpClient.push.activate has finished"));
+        }
+        return localDevice;
+    }
+
+    /**
+     * Builds a request for the local device, authenticated as it.
+     */
+    interface LocalDeviceRequest<T> {
+        HttpRequester.Request<T> build(String deviceId, Param[] headers);
+    }
+
+    /**
+     * Builds a request authenticated as the local device, or a failed request if push activation has
+     * not completed. The device ID and identity headers come from the same device read, so they
+     * cannot disagree if the device is reset concurrently.
+     */
+    <T> HttpRequester.Request<T> localDeviceRequest(LocalDeviceRequest<T> request) {
+        LocalDevice device;
+        try {
+            device = requireActivatedDevice();
+        } catch (AblyException e) {
+            return rest.http.failedRequest(e);
+        }
+        Param[] headers = HttpUtils.mergeHeaders(super.pushRequestHeaders(false), device.deviceIdentityHeaders());
+        return request.build(device.id, headers);
     }
 
     @Override

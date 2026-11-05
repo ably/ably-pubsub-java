@@ -372,7 +372,7 @@ public class HttpCore {
         }
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
-            return (responseHandler != null) ? responseHandler.handleResponse(response, null) : null;
+            return callResponseHandler(responseHandler, response, null);
         }
 
         /* get any in-body error details */
@@ -449,9 +449,33 @@ public class HttpCore {
         }
         Log.e(TAG, "Error response from server: err = " + error);
         if (responseHandler != null) {
-            return responseHandler.handleResponse(response, error);
+            return callResponseHandler(responseHandler, response, error);
         }
         throw AblyException.fromErrorInfo(error);
+    }
+
+    /**
+     * Runs a response handler, so that however it fails, the request fails with an AblyException.
+     * <p>
+     * An unchecked exception, such as a parse error, is wrapped: left alone it would skip the
+     * caller's error handling, and an async request's callback would never be called. And because
+     * the host has answered, a failure handling a successful response is never one that a fallback
+     * host can fix, so a server error the handler raises for it is not retried on another host.
+     */
+    private static <T> T callResponseHandler(ResponseHandler<T> responseHandler, Response response, ErrorInfo error) throws AblyException {
+        if (responseHandler == null) {
+            return null;
+        }
+        try {
+            return responseHandler.handleResponse(response, error);
+        } catch (AblyException.HostFailedException e) {
+            if (error == null) {
+                throw new ResponseHandlingException(e, e.errorInfo);
+            }
+            throw e;
+        } catch (RuntimeException e) {
+            throw new ResponseHandlingException(e, ErrorInfo.fromThrowable(e));
+        }
     }
 
     /**
@@ -569,6 +593,18 @@ public class HttpCore {
             }
 
             return values.get(0);
+        }
+    }
+
+    /**
+     * Exception signifying that a response could not be handled. The host answered, so unlike
+     * {@link AblyException.HostFailedException} it does not cause a retry on a fallback host.
+     */
+    private static class ResponseHandlingException extends AblyException {
+        private static final long serialVersionUID = 1L;
+
+        ResponseHandlingException(Throwable throwable, ErrorInfo reason) {
+            super(throwable, reason);
         }
     }
 

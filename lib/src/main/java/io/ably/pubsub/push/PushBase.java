@@ -29,7 +29,7 @@ import java.util.Map;
 public class PushBase {
     public PushBase(PubSubBase rest) {
         this.rest = rest;
-        this.admin = new Admin(rest);
+        this.admin = new Admin(rest, this);
     }
 
     public static class Admin {
@@ -47,11 +47,16 @@ public class PushBase {
          * Spec: RSH1c
          */
         public final ChannelSubscriptions channelSubscriptions;
+        /**
+         * An {@link AdminFcmTopics} object, for managing and publishing to FCM topics.
+         */
+        public final AdminFcmTopics fcmTopics;
 
-        Admin(PubSubBase rest) {
+        Admin(PubSubBase rest, PushBase push) {
             this.rest = rest;
             this.deviceRegistrations = new DeviceRegistrations(rest);
             this.channelSubscriptions = new ChannelSubscriptions(rest);
+            this.fcmTopics = new AdminFcmTopics(rest, push);
         }
 
         /**
