@@ -184,10 +184,10 @@ public interface HttpObject {
      * validate targeting or the number of operations; the server rejects invalid batches (RSO3g, RSO3h).
      * Invalid input (for example a non-finite number or a null value) fails before any request is sent.
      *
-     * <p>The request goes to the current host only and is not retried on a fallback host, because
-     * without operation ids a batch the first host applied before failing would be applied twice.
-     * If the request fails with a server or connection error, it may or may not have been applied;
-     * set operation ids if you need to retry safely.
+     * <p>A request that fails with a server or connection error is retried on fallback hosts, like
+     * other REST requests. The server de-duplicates operations by id, so set ids if a batch must
+     * not be applied twice: without them, a batch the first host applied before failing is applied
+     * again by the retry.
      *
      * <p>Spec: RSO3
      *

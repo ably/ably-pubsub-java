@@ -160,24 +160,32 @@ class HttpObjectEdgeCasesTest {
     //region Fallback hosts
 
     @Test
-    fun `publish is not retried on a fallback host after a server error`() {
+    fun `publish is retried on a fallback host after a server error, with or without ids`() {
         val serverError = mapOf("error" to mapOf("code" to 50000, "statusCode" to 500, "message" to "boom"))
-        val setup = setupRestObject("edge-no-fallback") { it.respondWith(500, serverError) }
+        var posts = 0
+        val setup = setupRestObject("edge-fallback") { req ->
+            // the first attempt of each publish fails; the retry on a fallback host succeeds
+            if (++posts % 2 == 1) req.respondWith(500, serverError)
+            else req.respondWithBody(201, mapOf("messageId" to "m", "channel" to "c", "objectIds" to listOf("root")), false)
+        }
+        val batches = listOf(
+            listOf(HttpObjectOperation.counterInc(5).withPath("c")),
+            listOf(HttpObjectOperation.counterInc(5).withPath("c").withId("op-1"), HttpObjectOperation.counterInc(1).withPath("d")),
+            listOf(HttpObjectOperation.counterInc(5).withPath("c").withId("op-1"), HttpObjectOperation.counterInc(1).withPath("d").withId("op-2")),
+        )
 
-        // Control: a GET to the same failing mock is retried on fallback hosts.
-        assertFailsWith<AblyException> { setup.channel.`object`.getCompact() }
-        val getRequests = setup.capturedRequests.size
-        assertTrue(getRequests > 1, "expected the GET to be retried on fallback hosts, saw $getRequests request(s)")
+        for (operations in batches) {
+            setup.capturedRequests.clear()
+            assertEquals("m", setup.channel.`object`.publish(operations).messageId)
+            assertEquals(2, setup.capturedRequests.size)
+            assertTrue(setup.capturedRequests[0].url.host != setup.capturedRequests[1].url.host, "expected the retry to go to a fallback host")
+            // the retry sends the same body, so any ids are the same and the server can de-duplicate
+            assertEquals(String(setup.capturedRequests[0].body), String(setup.capturedRequests[1].body))
 
-        setup.capturedRequests.clear()
-        val error = assertFailsWith<AblyException> { setup.channel.`object`.publish(HttpObjectOperation.counterInc(5).withPath("c")) }
-        assertEquals(500, error.errorInfo.statusCode)
-        assertEquals(1, setup.capturedRequests.size)
-
-        setup.capturedRequests.clear()
-        val asyncError = awaitCallback<HttpObjectPublishResult> { setup.channel.`object`.publishAsync(HttpObjectOperation.counterInc(5).withPath("c"), it) }
-        assertEquals(500, asyncError.errorInfo().statusCode)
-        assertEquals(1, setup.capturedRequests.size)
+            setup.capturedRequests.clear()
+            assertEquals("m", awaitCallback<HttpObjectPublishResult> { setup.channel.`object`.publishAsync(operations, it) }.result!!.messageId)
+            assertEquals(2, setup.capturedRequests.size)
+        }
     }
 
     //endregion

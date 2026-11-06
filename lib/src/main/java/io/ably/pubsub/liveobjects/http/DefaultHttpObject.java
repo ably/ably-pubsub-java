@@ -1,7 +1,6 @@
 package io.ably.pubsub.liveobjects.http;
 
 import com.google.gson.JsonElement;
-import io.ably.pubsub.http.HttpConstants;
 import io.ably.pubsub.http.HttpCore;
 import io.ably.pubsub.http.HttpRequester;
 import io.ably.pubsub.http.HttpUtils;
@@ -171,12 +170,10 @@ public final class DefaultHttpObject implements HttpObject {
                 http.execute(() -> callback.onError(e.errorInfo));
                 return;
             }
-            // RSO3c, RSO3e - one POST carrying all operations as an array.
-            // Sent to the current host only, never retried on a fallback host: operations don't
-            // carry generated ids (RSO3f), so a batch the first host applied before failing would
-            // be applied twice.
-            http.ablyHttpExecuteWithRetry(client.httpCore.getPreferredHost(), basePath, HttpConstants.Methods.POST,
-                HttpUtils.defaultAcceptHeaders(binary()), query, body,
+            // RSO3c, RSO3e - one POST carrying all operations as an array, retried on fallback hosts
+            // like other REST requests and as ably-js does. No ids are generated (RSO3f), so a batch
+            // without ids that the first host applied before failing can be applied twice.
+            http.post(basePath, HttpUtils.defaultAcceptHeaders(binary()), query, body,
                 responseHandler(HttpObjectCodec::decodePublishResult), true, callback);
         });
     }
