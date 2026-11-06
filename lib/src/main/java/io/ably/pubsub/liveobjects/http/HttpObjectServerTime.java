@@ -5,7 +5,6 @@ import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.Callback;
 import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.util.Log;
-import io.ably.pubsub.util.SystemClock;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -15,9 +14,11 @@ import java.util.concurrent.CountDownLatch;
 /**
  * [Internal] Server time for one HTTP client, used by
  * {@link io.ably.pubsub.liveobjects.HttpObject#generateObjectId}: fetched from {@code /time} on
- * first use, then derived from the stored offset to the local clock.
+ * first use, then derived from the offset to the local clock.
  *
- * <p>The offset is kept per client, so each client queries its own endpoint, and concurrent first
+ * <p>The offset is the one {@link io.ably.pubsub.http.Auth} keeps for {@code queryTime} token
+ * requests, so the client fetches {@code /time} once for both, and the offset is discarded when
+ * the device clock jumps. This class only coordinates the fetch: concurrent first
  * callers share one {@code /time} request. A blocking caller fetches on its own thread, and other
  * callers wait for it. An async caller fetches on the HTTP scheduler; later async callers wait for
  * it, but a blocking caller then fetches separately instead of blocking on the scheduler (which
@@ -30,7 +31,6 @@ public final class HttpObjectServerTime {
     private static final String TAG = HttpObjectServerTime.class.getName();
 
     private final PubSubBase client;
-    private volatile Long offset;
 
     private enum Fetch { NONE, BLOCKING, ASYNC }
 
@@ -158,12 +158,11 @@ public final class HttpObjectServerTime {
     }
 
     private void storeOffset(long serverTime) {
-        offset = serverTime - SystemClock.clockFrom(client.options).currentTimeMillis();
+        client.auth.setServerTime(serverTime);
     }
 
     private Long knownTime() {
-        Long known = offset;
-        return known != null ? SystemClock.clockFrom(client.options).currentTimeMillis() + known : null;
+        return client.auth.serverTimestampIfKnown();
     }
 
     /**

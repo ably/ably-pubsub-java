@@ -481,6 +481,27 @@ class HttpObjectEdgeCasesTest {
     }
 
     @Test
+    fun `generateObjectId and queryTime token requests share one server time offset`() {
+        val setup = setupRestObject("edge-time-shared", clientOptions = { queryTime = true }) { req ->
+            if (req.path == "/time") req.respondWith(200, listOf(1700000000000L))
+        }
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        // a token request fetches the time; generateObjectId (blocking and async) reuses its offset
+        val tokenRequest = setup.client.auth.createTokenRequest(null, null)
+        assertTrue(tokenRequest.timestamp >= 1700000000000L)
+        assertTrue(setup.channel.`object`.generateObjectId(body).objectId.contains("@17000000"))
+        assertNotNull(awaitCallback<HttpObjectGenerateIdResult> { setup.channel.`object`.generateObjectIdAsync(body, it) }.result)
+        assertEquals(1, setup.capturedRequests.count { it.path == "/time" })
+
+        // and the other way round: generateObjectId fetches, the token request reuses it
+        setup.client.auth.clearCachedServerTime()
+        setup.channel.`object`.generateObjectId(body)
+        setup.client.auth.createTokenRequest(null, null)
+        assertEquals(2, setup.capturedRequests.count { it.path == "/time" })
+    }
+
+    @Test
     fun `a malformed time response fails waiting generateObjectIdAsync calls and the next call retries`() {
         // 200 responses whose body can't be read as [time] make the /time response handler throw
         val malformed = ArrayDeque(listOf("[]", "[null]", "<html>captive portal</html>", ""))
