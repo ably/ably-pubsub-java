@@ -1,5 +1,6 @@
 package io.ably.pubsub.http;
 
+import io.ably.pubsub.liveobjects.http.HttpObjectServerTime;
 import io.ably.pubsub.annotation.Experimental;
 import io.ably.pubsub.platform.Platform;
 import io.ably.pubsub.push.Push;
@@ -69,6 +70,11 @@ public abstract class PubSubBase implements AutoCloseable {
      */
     public final Push push;
     protected final PlatformAgentProvider platformAgentProvider;
+
+    /**
+     * Server time shared by the {@code object} entry points of this client's HTTP channels (RTO16).
+     */
+    final HttpObjectServerTime objectsServerTime = new HttpObjectServerTime(this);
 
     /**
      * Constructs a client object using an Ably API key or token string.

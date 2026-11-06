@@ -2,18 +2,21 @@
 
 > **Scope:** this file lives alongside the realtime/rest UTS suites in the `:java` module
 > (`lib/src/test/kotlin/io/ably/pubsub/uts/`) and holds deviations for the **realtime/rest tiers** it
-> hosts. All **objects** tiers (unit, integration and proxy) moved to `:liveobjects`'s own test source
-> set alongside the tests they document; their deviations (the typed-SDK / language adaptations, the
+> hosts, plus the REST `HttpObject` specs of the objects module (`objects/*/rest_object_*.md`, in
+> `uts/unit/objects` and `uts/integration/standard/objects`), whose entries are under
+> *Adapted Tests*. The other **objects** tiers (unit, integration and proxy) moved to `:liveobjects`'s
+> own test source set alongside the tests they document; their deviations (the typed-SDK / language adaptations, the
 > intentional RTO18d entry, and any objects integration/proxy entries) are in
 > `liveobjects/src/test/kotlin/io/ably/pubsub/liveobjects/uts/deviations.md`. For the shared UTS infra these
 > suites consume, the tier smoke examples, and the `RUN_DEVIATIONS` mechanism, see `uts/README.md`.
 >
 > Records every place a generated test deviates from its UTS spec, using the manual's **Recording
 > deviations** entry format: each entry records the spec point, what the spec requires, what the SDK
-> actually does, and which test carries the deviation gate. Every deviation recorded here is a
-> **genuine SDK bug** (open; ably-js is compliant — fix the SDK), stated per entry under **Status**; the
-> other actionability groups of the shared taxonomy (shared cross-SDK gap, typed-SDK / language
-> adaptations, intentional design divergence) only have entries in the objects file.
+> actually does, and which test carries the deviation gate. Every realtime/rest deviation recorded here
+> is a **genuine SDK bug** (open; ably-js is compliant — fix the SDK), stated per entry under **Status**.
+> The REST `HttpObject` entries (RSL16b, RSO2a1c, RSO2e, T-4) are the exception: they are typed-SDK
+> adaptations or intentional design divergences, as their **Status** lines say. Other entries of those
+> kinds are in the objects file.
 
 > **Recently fixed and removed from this file:** RTO23e (`get()` now re-attaches a DETACHED channel —
 > mode-only check + ensure-active-channel) and RTO20e/RTO20e1 (event-driven `once(SYNCED)` waiters +
@@ -94,6 +97,42 @@
 - `RTN16g2 - createRecoveryKey returns null in inactive states and before first connect` (RTN16g2/recovery-key-null-inactive-0) — error code and send method changed.
 
 **Status:** Open SDK bug — ably-js is compliant; fix the SDK.
+
+### RSL16b — not applicable: `HttpObject` needs no plugin (`objects.RestObjectGetTest`)
+
+1. **Spec point:** RSL16b (`objects/unit/RSL16b/missing-plugin-error-0`).
+2. **What the spec says:** accessing `channel.object` on a client without the Objects plugin fails with `ErrorInfo` 400 / 40019. The test applies only to SDKs that handle this by throwing, and says SDKs that make the error impossible to express should note it as not applicable.
+3. **What the SDK does:** `HttpObject` is implemented directly in the core HTTP client (`DefaultHttpObject`), so every HTTP channel has a working `channel.object` and there is no plugin to omit.
+4. **Root cause:** design choice — the REST objects API is plain HTTP and has no dependency on the realtime LiveObjects engine.
+5. **Test impact:** the test asserts that a client built without any plugin has a working `channel.object` (it issues the GET); passes.
+6. **Status:** intentional.
+
+### RSO2a1c — compact and full formats are separate methods (`getCompact`, `get`); compact is JSON (`objects.RestObjectGetTest`)
+
+1. **Spec point:** RSO2a1c, RSO2f (`objects/unit/RSO2d/path-compact-query-params-0`, `objects/unit/RSO2f/compact-returned-verbatim-0`, `objects/unit/RSO2e/compact-msgpack-decoded-0`).
+2. **What the spec says:** `get` takes a `compact` param; `compact: true` is sent as `compact=true`, and the compact result is the decoded body as is, so msgpack binary values are raw bytes.
+3. **What the SDK does:** `getCompact` returns the compact result as a Gson `JsonElement`, like realtime `PathObject#compactJson()`, and `get` returns the full result as `HttpObjectGetFullResult`; the get params are a `Param[]` (built with `HttpObjectGetParams`), and a caller's `compact` param is dropped. `getCompact` never sends `compact` (the server default), `get` sends `compact=false`, and binary values in a compact result are Base64 strings for both protocols.
+4. **Root cause:** a typed API: one method can't return both a JSON value and a typed full result without returning `Object`.
+5. **Test impact:** the `compact: true` case asserts no `compact` param; the explicit-`compact: true` call is `getCompact()`; the msgpack avatar is asserted as the Base64 string `"AQID"`; compact results are compared through `fromJson`. All pass.
+6. **Status:** intentional API design.
+
+### RSO2e — binary `Accept` header also lists JSON (`objects.RestObjectGetTest`)
+
+1. **Spec point:** RSO2e (`objects/unit/RSO2e/compact-msgpack-decoded-0`).
+2. **What the spec says:** the msgpack request's `Accept` header is `application/x-msgpack`.
+3. **What the SDK does:** sends `application/x-msgpack,application/json`, as every binary-protocol request in ably-java does.
+4. **Root cause:** `HttpUtils.defaultAcceptHeaders(true)`, shared by all REST requests.
+5. **Test impact:** adapted assertion on the actual header; passes.
+6. **Status:** intentional, SDK-wide.
+
+### T-4 (objects) — operation and generate-ID bodies are unrepresentable without exactly one body (`objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
+
+1. **Spec point:** RSO5b1 (`objects/unit/RSO5b1/no-body-field-error-0`, `objects/unit/RSO5b1/multiple-body-fields-error-1`), RSO4c (`objects/unit/RSO4c/missing-create-body-error-0`).
+2. **What the spec says:** an operation with zero or several body fields, or a generate-ID body with neither `mapCreate` nor `counterCreate`, fails with 400 / 40003 before any request. Each test notes it is not applicable where the SDK makes these inputs unrepresentable.
+3. **What the SDK does:** `HttpObjectOperation` and `HttpObjectGenerateIdBody` can only be built through factories that set exactly one body, and the `with*` methods only change the common fields.
+4. **Root cause:** typed-SDK construction (the same T-4 pattern as the objects suite, `liveobjects/.../uts/deviations.md`).
+5. **Test impact:** the tests exist under their `@UTS` ids with a `// DEVIATION T-4` comment and assert only that no request was sent. The runtime-reachable 40003 case — an unrecognised semantics, `ObjectsMapSemantics.UNKNOWN` — is asserted for real in `RSO3d1/unrecognized-semantics-error-1` and `RSO4e1a/unrecognized-semantics-error-0`.
+6. **Status:** intentional — a typed-SDK adaptation, sanctioned by each spec test's own not-applicable note.
 
 ## Mock Infrastructure Limitations
 

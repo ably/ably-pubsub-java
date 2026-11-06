@@ -876,21 +876,12 @@ public class Auth {
         /* timestamp */
         if(request.timestamp == 0) {
             if(options.queryTime) {
-                long oldNanoTimeDelta = nanoTimeDelta;
-                long currentNanoTimeDelta = clock.currentTimeMillis() - clock.nanoTime()/(1000*1000);
-
-                if (timeDelta != Long.MAX_VALUE) {
-                    /* system time changed by more than 500ms since last time? */
-                    if(Math.abs(oldNanoTimeDelta - currentNanoTimeDelta) > 500)
-                        timeDelta = Long.MAX_VALUE;
-                }
-
-                if (timeDelta != Long.MAX_VALUE) {
-                    request.timestamp = timestamp() + timeDelta;
-                    nanoTimeDelta = currentNanoTimeDelta;
+                Long known = serverTimestampIfKnown();
+                if (known != null) {
+                    request.timestamp = known;
                 } else {
                     request.timestamp = ably.time();
-                    timeDelta = request.timestamp - timestamp();
+                    setServerTime(request.timestamp);
                 }
             }
             else {
@@ -1256,6 +1247,35 @@ public class Auth {
         return delta != Long.MAX_VALUE ? clientTime + timeDelta : clientTime;
     }
 
+    /**
+     * [Internal] The current server time derived from the stored offset, or {@code null} if the
+     * offset is unknown or the device clock has jumped by more than 500 ms since it was last used
+     * (in which case the offset is discarded). Shared by {@code queryTime} token requests and
+     * {@code generateObjectId}, so a client fetches {@code /time} once for both.
+     */
+    public synchronized Long serverTimestampIfKnown() {
+        if (timeDelta == Long.MAX_VALUE) return null;
+        long now = timestamp();
+        long currentNanoTimeDelta = now - clock.nanoTime()/(1000*1000);
+        /* system time changed by more than 500ms since last time? */
+        if (Math.abs(nanoTimeDelta - currentNanoTimeDelta) > 500) {
+            timeDelta = Long.MAX_VALUE;
+            return null;
+        }
+        nanoTimeDelta = currentNanoTimeDelta;
+        return now + timeDelta;
+    }
+
+    /**
+     * [Internal] Stores the offset to the local clock from a server time just fetched from
+     * {@code /time}.
+     */
+    public synchronized void setServerTime(long serverTime) {
+        long now = timestamp();
+        timeDelta = serverTime - now;
+        nanoTimeDelta = now - clock.nanoTime()/(1000*1000);
+    }
+
     private static final String TAG = Auth.class.getName();
     private final PubSubBase ably;
     private final Clock clock;
@@ -1270,7 +1290,7 @@ public class Auth {
     /**
      * Time delta is server time minus client time, in milliseconds, MAX_VALUE if not obtained yet
      */
-    private long timeDelta = Long.MAX_VALUE;
+    private volatile long timeDelta = Long.MAX_VALUE;
     /**
      * Time delta between System.nanoTime() and System.currentTimeMillis. If it changes significantly it
      * suggests device time/date has changed

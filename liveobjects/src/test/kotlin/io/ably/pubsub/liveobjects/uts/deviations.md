@@ -4,6 +4,8 @@
 > objects **unit** (`io.ably.pubsub.liveobjects.uts.unit`), **integration**
 > (`io.ably.pubsub.liveobjects.uts.integration`) and **proxy** (`io.ably.pubsub.liveobjects.uts.proxy`).
 > The integration/proxy tiers moved here from `:uts` in Phase 3 alongside the tests they document.
+> Exception: the REST `HttpObject` specs (`rest_object_*.md`) run in `:core`, so their deviations are in
+> `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md`.
 >
 > Records every place a generated test deviates from its UTS spec, using the manual's
 > **Recording deviations** entry format. Structural deviation vocabulary for these suites:
