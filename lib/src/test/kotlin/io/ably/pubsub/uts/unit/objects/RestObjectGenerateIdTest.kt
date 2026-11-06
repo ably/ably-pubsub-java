@@ -179,10 +179,20 @@ class RestObjectGenerateIdTest {
      */
     @Test
     fun `RSO4c - missing create body rejected`() = runTest {
-        // DEVIATION T-4 (not applicable, per the spec's own note): HttpObjectGenerateIdBody can only
-        // be built through the mapCreate / counterCreate factories, so an empty body is
-        // unrepresentable and the runtime 40003 check can't be reached. See deviations.md.
+        // Adapted (T-4): HttpObjectGenerateIdBody's factories always set a body, so an empty body is
+        // unrepresentable; the reachable equivalent is a null body, which Java callers can pass.
+        // Kotlin can't pass that null, so call through reflection. See deviations.md.
         val setup = setup("test-RSO4c-" + randomId())
+        val generateObjectId = setup.channel.`object`.javaClass
+            .getMethod("generateObjectId", HttpObjectGenerateIdBody::class.java)
+
+        val error = assertFailsWith<java.lang.reflect.InvocationTargetException> {
+            generateObjectId.invoke(setup.channel.`object`, *arrayOf<Any?>(null))
+        }.targetException
+
+        assertIs<AblyException>(error)
+        assertEquals(400, error.errorInfo.statusCode)
+        assertEquals(40003, error.errorInfo.code)
         assertEquals(0, setup.capturedRequests.size)
     }
 

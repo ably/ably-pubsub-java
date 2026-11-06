@@ -14,7 +14,7 @@
 > deviations** entry format: each entry records the spec point, what the spec requires, what the SDK
 > actually does, and which test carries the deviation gate. Every realtime/rest deviation recorded here
 > is a **genuine SDK bug** (open; ably-js is compliant — fix the SDK), stated per entry under **Status**.
-> The REST `HttpObject` entries (RSL16b, RSO2a1c, RSO2e, T-4) are the exception: they are typed-SDK
+> The REST `HttpObject` entries (RSL16b, RSO2a1c, RSO2e, T-4, RSO9/RSO14/RSO15 result shapes) are the exception: they are typed-SDK
 > adaptations or intentional design divergences, as their **Status** lines say. Other entries of those
 > kinds are in the objects file.
 
@@ -125,14 +125,23 @@
 5. **Test impact:** adapted assertion on the actual header; passes.
 6. **Status:** intentional, SDK-wide.
 
-### T-4 (objects) — operation and generate-ID bodies are unrepresentable without exactly one body (`objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
+### T-4 (objects) — operation and generate-ID bodies can't be built with the wrong number of bodies (`objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
 
 1. **Spec point:** RSO5b1 (`objects/unit/RSO5b1/no-body-field-error-0`, `objects/unit/RSO5b1/multiple-body-fields-error-1`), RSO4c (`objects/unit/RSO4c/missing-create-body-error-0`).
 2. **What the spec says:** an operation with zero or several body fields, or a generate-ID body with neither `mapCreate` nor `counterCreate`, fails with 400 / 40003 before any request. Each test notes it is not applicable where the SDK makes these inputs unrepresentable.
-3. **What the SDK does:** `HttpObjectOperation` and `HttpObjectGenerateIdBody` can only be built through factories that set exactly one body, and the `with*` methods only change the common fields.
+3. **What the SDK does:** `HttpObjectOperation` and `HttpObjectGenerateIdBody` can only be built through factories that set one body, and the `with*` methods only change the common fields, so several bodies are unrepresentable. No body at all is reachable only through a `null` passed to a factory from Java (`HttpObjectOperation.mapCreate((MapCreate) null)`, `generateObjectId(null)`), and that fails with 400 / 40003 before any request, as the spec requires.
 4. **Root cause:** typed-SDK construction (the same T-4 pattern as the objects suite, `liveobjects/.../uts/deviations.md`).
-5. **Test impact:** the tests exist under their `@UTS` ids with a `// DEVIATION T-4` comment and assert only that no request was sent. The runtime-reachable 40003 case — an unrecognised semantics, `ObjectsMapSemantics.UNKNOWN` — is asserted for real in `RSO3d1/unrecognized-semantics-error-1` and `RSO4e1a/unrecognized-semantics-error-0`.
+5. **Test impact:** `RSO5b1/multiple-body-fields-error-1` exists under its `@UTS` id with a `// DEVIATION T-4` comment and asserts only that no request was sent. `RSO5b1/no-body-field-error-0` and `RSO4c/missing-create-body-error-0` assert the 400 / 40003 for real, passing the `null` through reflection because Kotlin can't. The other runtime-reachable 40003 case — an unrecognised semantics, `ObjectsMapSemantics.UNKNOWN` — is asserted in `RSO3d1/unrecognized-semantics-error-1` and `RSO4e1a/unrecognized-semantics-error-0`.
 6. **Status:** intentional — a typed-SDK adaptation, sanctioned by each spec test's own not-applicable note.
+
+### RSO9, RSO14, RSO15 — typed result shapes, and a closed semantics enum (`objects.RestObjectGetTest`, `objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
+
+1. **Spec point:** RSO9c1 (`objects/unit/RSO2g3/...` leaf tests), RSO14 (`objects/unit/RSO2g1/...`), RSO15 (`objects/unit/RSO2g2/...`), RSO3d1 / RSO4e1a (`objects/unit/RSO3d1/unrecognized-semantics-error-1`, `objects/unit/RSO4e1a/unrecognized-semantics-error-0`).
+2. **What the spec says:** a full-format leaf has `objectId` and `encoding` unset (RSO9c1); a map exposes `map.semantics` (as `"LWW"` in the mocked responses) and `map.entries`; a counter exposes `counter.data.number`; an unrecognised semantics such as `"not-a-semantics"` fails with 400 / 40003.
+3. **What the SDK does:** `HttpObjectData` has no `encoding` accessor at all, so RSO9c1's `encoding` half holds by construction and isn't asserted. `HttpLiveMap` flattens `map.*` into `getSemantics()` (an `ObjectsMapSemantics` enum) and `getEntries()`, and `HttpLiveCounter` exposes `counter.data.number` as `getCount()`. `ObjectsMapSemantics` is a closed enum, so the only unrecognised value a caller can pass is `UNKNOWN`.
+4. **Root cause:** typed-SDK result types and enums.
+5. **Test impact:** the leaf tests note the unasserted `encoding` check in a comment; the map and counter tests read `entries` / `semantics == LWW` / `count`; the unrecognised-semantics tests pass `ObjectsMapSemantics.UNKNOWN` and assert 400 / 40003. All pass.
+6. **Status:** intentional — typed-SDK adaptations.
 
 ## Mock Infrastructure Limitations
 

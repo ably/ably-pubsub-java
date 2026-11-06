@@ -12,6 +12,7 @@ import io.ably.pubsub.liveobjects.message.ObjectsMapSemantics;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.util.Base64Coder;
+import io.ably.pubsub.util.Log;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -40,6 +41,7 @@ import java.util.Map;
  */
 final class HttpObjectCodec {
 
+    private static final String TAG = HttpObjectCodec.class.getName();
     private static final String MSGPACK_CONTENT_TYPE = "application/x-msgpack";
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final List<String> LEAF_VALUE_FIELDS = Arrays.asList("string", "number", "boolean", "bytes", "json");
@@ -54,6 +56,12 @@ final class HttpObjectCodec {
      * field (RSO3d4).
      */
     static Map<String, Object> encodeOperation(HttpObjectOperation op, boolean binary) throws AblyException {
+        // RSO5b1 - the factories set exactly one body, but a null passed to one leaves none
+        int bodies = count(op.getMapCreate(), op.getMapCreateWithObjectId(), op.getMapSet(), op.getMapRemove(),
+            op.getCounterCreate(), op.getCounterCreateWithObjectId(), op.getCounterInc());
+        if (bodies != 1) {
+            throw invalidInput("An operation must have exactly one operation body, but it has " + bodies);
+        }
         Map<String, Object> wire = new LinkedHashMap<>();
         putIfNotNull(wire, "id", op.getId());
         putIfNotNull(wire, "objectId", op.getObjectId());
@@ -66,12 +74,12 @@ final class HttpObjectCodec {
         }
         if (op.getMapSet() != null) {
             Map<String, Object> mapSet = new LinkedHashMap<>();
-            mapSet.put("key", op.getMapSet().getKey());
+            mapSet.put("key", notNull(op.getMapSet().getKey(), "mapSet.key"));
             mapSet.put("value", encodeData(op.getMapSet().getValue(), binary));
             wire.put("mapSet", mapSet);
         }
         if (op.getMapRemove() != null) {
-            wire.put("mapRemove", singleton("key", op.getMapRemove().getKey()));
+            wire.put("mapRemove", singleton("key", notNull(op.getMapRemove().getKey(), "mapRemove.key")));
         }
         if (op.getCounterCreate() != null) {
             wire.put("counterCreate", encodeCounterCreate(op.getCounterCreate()));
@@ -89,7 +97,7 @@ final class HttpObjectCodec {
     static Map<String, Object> encodeMapCreate(HttpObjectOperation.MapCreate body, boolean binary) throws AblyException {
         Map<String, Object> entries = new LinkedHashMap<>();
         for (Map.Entry<String, PublishObjectData> entry : body.getEntries().entrySet()) {
-            entries.put(entry.getKey(), singleton("data", encodeData(entry.getValue(), binary)));
+            entries.put(notNull(entry.getKey(), "mapCreate.entries key"), singleton("data", encodeData(entry.getValue(), binary)));
         }
         Map<String, Object> mapCreate = new LinkedHashMap<>();
         mapCreate.put("semantics", encodeSemantics(body.getSemantics()));
@@ -101,7 +109,10 @@ final class HttpObjectCodec {
         return singleton("count", finite(body.getCount(), "counterCreate.count"));
     }
 
-    private static Map<String, Object> encodeCreateWithObjectId(HttpObjectOperation.CreateWithObjectId body) {
+    private static Map<String, Object> encodeCreateWithObjectId(HttpObjectOperation.CreateWithObjectId body) throws AblyException {
+        if (body.getInitialValue() == null || body.getNonce() == null) {
+            throw invalidInput("initialValue and nonce must not be null; use the values from generateObjectId");
+        }
         Map<String, Object> wire = new LinkedHashMap<>();
         wire.put("initialValue", body.getInitialValue());
         wire.put("nonce", body.getNonce());
@@ -208,7 +219,8 @@ final class HttpObjectCodec {
      * OMP2 code ({@code 0}); accept both. Anything else is preserved as UNKNOWN.
      */
     private static ObjectsMapSemantics decodeSemantics(Object value) {
-        if (value instanceof Number && ((Number) value).longValue() == 0L) return ObjectsMapSemantics.LWW;
+        // integral zero only: longValue() would also truncate 0.5 or a BigInteger of 2^64 to 0
+        if (value instanceof Long && (Long) value == 0L) return ObjectsMapSemantics.LWW;
         if (value instanceof String && "lww".equalsIgnoreCase((String) value)) return ObjectsMapSemantics.LWW;
         return ObjectsMapSemantics.UNKNOWN;
     }
@@ -217,13 +229,22 @@ final class HttpObjectCodec {
      * Decodes a leaf per OD5 (RSO2g3): Base64 {@code bytes} become binary (OD5b2), and the
      * JSON-encoded string in {@code json} is parsed (OD5a2, OD5b3). The result carries no
      * {@code objectId} or {@code encoding} (RSO9c1).
+     *
+     * <p>A {@code json} or {@code bytes} value that can't be decoded is logged and left out, so the
+     * leaf decodes as {@link io.ably.pubsub.liveobjects.ValueType#UNKNOWN} rather than failing the
+     * whole response. Like ably-js, which returns that leaf's raw fields, only the bad leaf is
+     * affected; the raw value isn't exposed, as {@link HttpObjectData} has no accessor for it.
      */
     private static HttpObjectData decodeLeaf(Map<?, ?> fields) {
         final String string = asString(fields.get("string"));
         JsonElement json = null;
         Object rawJson = fields.get("json");
         if (rawJson instanceof String) {
-            json = JsonParser.parseString((String) rawJson);
+            try {
+                json = JsonParser.parseString((String) rawJson);
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Leaf json value is not valid JSON; leaving it out", e);
+            }
         } else if (rawJson != null) {
             json = toJson(rawJson);
         }
@@ -232,7 +253,11 @@ final class HttpObjectCodec {
         if (rawBytes instanceof byte[]) {
             bytes = (byte[]) rawBytes;
         } else if (rawBytes instanceof String) {
-            bytes = Base64Coder.decode((String) rawBytes);
+            try {
+                bytes = Base64Coder.decode((String) rawBytes);
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Leaf bytes value is not valid Base64; leaving it out", e);
+            }
         }
         Object number = fields.get("number");
         Object bool = fields.get("boolean");
@@ -373,7 +398,10 @@ final class HttpObjectCodec {
             packer.packString((String) value);
         } else if (value instanceof Boolean) {
             packer.packBoolean((Boolean) value);
-        } else if (value instanceof Double || value instanceof Float || value instanceof BigDecimal) {
+        } else if (value instanceof Float) {
+            // via the decimal string, as JSON writes it: widening 0.1f directly gives 0.10000000149011612
+            packer.packDouble(Double.parseDouble(value.toString()));
+        } else if (value instanceof Double || value instanceof BigDecimal) {
             packer.packDouble(((Number) value).doubleValue());
         } else if (value instanceof BigInteger) {
             packer.packBigInteger((BigInteger) value);
@@ -462,6 +490,24 @@ final class HttpObjectCodec {
             throw invalidInput("Invalid " + field + ": " + number + " is not a finite number");
         }
         return number;
+    }
+
+    private static <V> V notNull(V value, String field) throws AblyException {
+        if (value == null) throw invalidInput("Invalid " + field + ": must not be null");
+        return value;
+    }
+
+    /** A short description of an unexpected exception for an invalid-input message. */
+    static String describe(RuntimeException e) {
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+    }
+
+    private static int count(Object... values) {
+        int count = 0;
+        for (Object value : values) {
+            if (value != null) count++;
+        }
+        return count;
     }
 
     private static String asString(Object value) {

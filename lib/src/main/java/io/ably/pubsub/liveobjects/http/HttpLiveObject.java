@@ -22,7 +22,7 @@ public interface HttpLiveObject extends HttpObjectGetFullResult {
      * For an unrecognised object type this holds its type-specific data. Values are JSON, as in a
      * {@code getCompact} result: binary values are Base64 strings for both protocols.
      *
-     * @return an unmodifiable map of field name to value; empty if there are none.
+     * @return a copy of the fields, by name; changes to it are not reflected. Empty if there are none.
      */
     @NotNull JsonObject getUnrecognizedFields();
 }

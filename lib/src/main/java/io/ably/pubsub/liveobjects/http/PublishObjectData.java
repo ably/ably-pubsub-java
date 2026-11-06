@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A leaf value in an {@link HttpObjectOperation}: the value of a {@code mapSet}, or the data of a
  * {@code mapCreate} entry. Exactly one field is set; create instances with the static factories.
+ * Instances are immutable: binary and JSON values are copied in and out.
  *
  * <p>Spec: RSO7
  */
@@ -48,17 +49,17 @@ public final class PublishObjectData {
 
     /** Spec: RSO7d */
     public static @NotNull PublishObjectData bytes(byte @NotNull [] value) {
-        return new PublishObjectData(null, null, null, value, null, null);
+        return new PublishObjectData(null, null, null, value.clone(), null, null);
     }
 
     /** Spec: RSO7e */
     public static @NotNull PublishObjectData json(@NotNull JsonObject value) {
-        return new PublishObjectData(null, null, null, null, value, null);
+        return new PublishObjectData(null, null, null, null, value.deepCopy(), null);
     }
 
     /** Spec: RSO7e */
     public static @NotNull PublishObjectData json(@NotNull JsonArray value) {
-        return new PublishObjectData(null, null, null, null, value, null);
+        return new PublishObjectData(null, null, null, null, value.deepCopy(), null);
     }
 
     /**
@@ -69,29 +70,34 @@ public final class PublishObjectData {
         return new PublishObjectData(null, null, null, null, null, objectId);
     }
 
+    /** @return the string value, or {@code null} if this holds another kind of value. */
     public @Nullable String getString() {
         return string;
     }
 
+    /** @return the number value, or {@code null} if this holds another kind of value. */
     public @Nullable Number getNumber() {
         return number;
     }
 
+    /** @return the boolean value, or {@code null} if this holds another kind of value. */
     public @Nullable Boolean getBoolean() {
         return bool;
     }
 
+    /** @return a copy of the binary value, or {@code null} if this holds another kind of value. */
     public byte @Nullable [] getBytes() {
-        return bytes;
+        return bytes != null ? bytes.clone() : null;
     }
 
     /**
-     * @return the JSON value, a {@link JsonObject} or {@link JsonArray}, or {@code null}.
+     * @return a copy of the JSON value, a {@link JsonObject} or {@link JsonArray}, or {@code null}.
      */
     public @Nullable JsonElement getJson() {
-        return json;
+        return json != null ? json.deepCopy() : null;
     }
 
+    /** @return the ID of the referenced object, or {@code null} if this holds another kind of value. */
     public @Nullable String getObjectId() {
         return objectId;
     }
