@@ -398,7 +398,10 @@ final class HttpObjectCodec {
             packer.packString((String) value);
         } else if (value instanceof Boolean) {
             packer.packBoolean((Boolean) value);
-        } else if (value instanceof Double || value instanceof Float || value instanceof BigDecimal) {
+        } else if (value instanceof Float) {
+            // via the decimal string, as JSON writes it: widening 0.1f directly gives 0.10000000149011612
+            packer.packDouble(Double.parseDouble(value.toString()));
+        } else if (value instanceof Double || value instanceof BigDecimal) {
             packer.packDouble(((Number) value).doubleValue());
         } else if (value instanceof BigInteger) {
             packer.packBigInteger((BigInteger) value);

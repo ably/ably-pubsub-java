@@ -3,6 +3,7 @@ package io.ably.pubsub.liveobjects.http
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.ably.pubsub.http.HttpUtils
 import io.ably.pubsub.liveobjects.ValueType
 import io.ably.pubsub.liveobjects.message.ObjectsMapSemantics
@@ -10,6 +11,8 @@ import io.ably.pubsub.types.AblyException
 import io.ably.pubsub.types.Callback
 import io.ably.pubsub.types.ErrorInfo
 import io.ably.pubsub.types.Param
+import io.ably.pubsub.uts.unit.objects.msgpackDecode
+import io.ably.pubsub.uts.unit.objects.parseJson
 import io.ably.pubsub.uts.unit.objects.path
 import io.ably.pubsub.uts.unit.objects.queryParams
 import io.ably.pubsub.uts.unit.objects.respondWithBody
@@ -19,6 +22,7 @@ import java.math.BigInteger
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
@@ -403,6 +407,23 @@ class HttpObjectEdgeCasesTest {
     }
 
     @Test
+    fun `a Float value is sent as the same number with both protocols`() {
+        for (binary in listOf(false, true)) {
+            val setup = setupRestObject("edge-float", useBinaryProtocol = binary) {
+                it.respondWithBody(201, mapOf("messageId" to "m", "channel" to "c", "objectIds" to emptyList<String>()), binary)
+            }
+
+            setup.channel.`object`.publish(HttpObjectOperation.counterInc(0.1f).withPath("c"))
+
+            val request = setup.capturedRequests.single()
+            val sent = if (binary) msgpackDecode(request.body) else parseJson(request.body)
+            @Suppress("UNCHECKED_CAST")
+            val counterInc = ((sent as List<Map<String, Any?>>)[0]["counterInc"] as Map<String, Any?>)
+            assertEquals(0.1, (counterInc["number"] as Number).toDouble(), "binary $binary")
+        }
+    }
+
+    @Test
     fun `integers beyond the long range keep their exact value for both protocols`() {
         val big = BigInteger.ONE.shiftLeft(63) // just beyond Long.MAX_VALUE; still fits msgpack uint64
         for (binary in listOf(false, true)) {
@@ -467,6 +488,36 @@ class HttpObjectEdgeCasesTest {
         assertEquals(7.0, entry("visits").asLiveCounter().count)
         assertEquals(ValueType.UNKNOWN, entry("future").type)
         assertEquals("future:f@1", entry("future").asLiveObject().objectId)
+    }
+
+    @Test
+    fun `binary and JSON values are copied, so inputs and results stay immutable`() {
+        val bytes = byteArrayOf(1, 2, 3)
+        val json = JsonObject().apply { addProperty("a", 1) }
+        val bytesData = PublishObjectData.bytes(bytes)
+        val jsonData = PublishObjectData.json(json)
+        bytes[0] = 9
+        json.addProperty("b", 2)
+        bytesData.bytes!![1] = 9
+        (jsonData.json as JsonObject).addProperty("c", 3)
+
+        assertContentEquals(byteArrayOf(1, 2, 3), bytesData.bytes)
+        assertEquals(JsonParser.parseString("{\"a\":1}"), jsonData.json)
+
+        val setup = setupRestObject("edge-immutable") {
+            it.respondWithBody(200, mapOf("objectId" to "root", "map" to mapOf("semantics" to "LWW", "entries" to mapOf(
+                "bin" to mapOf("data" to mapOf("bytes" to "AQID")),
+                "obj" to mapOf("data" to mapOf("json" to "{\"a\":1}")),
+            ))), false)
+        }
+        val entries = setup.channel.`object`.get()!!.asLiveMap().entries
+        val bin = entries.getValue("bin").data.asObjectData()
+        val obj = entries.getValue("obj").data.asObjectData()
+        bin.bytes!![0] = 9
+        (obj.json as JsonObject).addProperty("b", 2)
+
+        assertContentEquals(byteArrayOf(1, 2, 3), bin.bytes)
+        assertEquals(JsonParser.parseString("{\"a\":1}"), obj.json)
     }
 
     @Test

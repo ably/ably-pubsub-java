@@ -230,12 +230,12 @@ final class HttpObjectResults {
 
         @Override
         public byte @Nullable [] getBytes() {
-            return bytes;
+            return bytes != null ? bytes.clone() : null; // byte[] is mutable; keep the result immutable
         }
 
         @Override
         public @Nullable JsonElement getJson() {
-            return json;
+            return json != null ? json.deepCopy() : null; // JsonElement is mutable; keep the result immutable
         }
 
         @Override
