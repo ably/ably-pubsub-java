@@ -11,6 +11,8 @@ import io.ably.pubsub.types.AblyException
 import io.ably.pubsub.types.Callback
 import io.ably.pubsub.types.ErrorInfo
 import io.ably.pubsub.types.Param
+import io.ably.pubsub.uts.unit.objects.encodeUriComponent
+import io.ably.pubsub.uts.unit.objects.jsonEncode
 import io.ably.pubsub.uts.unit.objects.msgpackDecode
 import io.ably.pubsub.uts.unit.objects.parseJson
 import io.ably.pubsub.uts.unit.objects.path
@@ -22,6 +24,7 @@ import java.math.BigInteger
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -45,22 +48,27 @@ class HttpObjectEdgeCasesTest {
     /** The outcome of an `...Async` call. */
     private class Outcome<T>(val result: T?, val error: ErrorInfo?)
 
-    /** Runs an `...Async` call and waits for its callback. */
+    /** Runs an `...Async` call, waits for its callback and checks it isn't invoked a second time. */
     private fun <T> awaitCallback(call: (Callback<T>) -> Unit): Outcome<T> {
         val latch = CountDownLatch(1)
+        val invocations = AtomicInteger()
         var outcome: Outcome<T>? = null
         call(object : Callback<T> {
             override fun onSuccess(result: T) {
+                invocations.incrementAndGet()
                 outcome = Outcome(result, null)
                 latch.countDown()
             }
 
             override fun onError(reason: ErrorInfo?) {
+                invocations.incrementAndGet()
                 outcome = Outcome(null, reason)
                 latch.countDown()
             }
         })
         assertTrue(latch.await(5, TimeUnit.SECONDS), "callback not invoked")
+        Thread.sleep(50) // give a second invocation, if any, the chance to happen
+        assertEquals(1, invocations.get(), "callback invoked more than once")
         return outcome!!
     }
 
@@ -540,6 +548,84 @@ class HttpObjectEdgeCasesTest {
 
     //endregion
 
+    //region Wire details
+
+    @Test
+    fun `a msgpack publish response is decoded`() {
+        val setup = setupRestObject("edge-publish-msgpack", useBinaryProtocol = true) {
+            it.respondWithBody(201, mapOf("messageId" to "msg-1", "channel" to "edge-publish-msgpack", "objectIds" to listOf("counter:a@1", "map:b@2")), true)
+        }
+
+        val result = setup.channel.`object`.publish(HttpObjectOperation.counterInc(1).withPath("c"))
+
+        assertEquals("msg-1", result.messageId)
+        assertEquals("edge-publish-msgpack", result.channel)
+        assertEquals(listOf("counter:a@1", "map:b@2"), result.objectIds)
+    }
+
+    @Test
+    fun `map entries without a data object are skipped`() {
+        val setup = setupRestObject("edge-skipped-entries") {
+            it.respondWithBody(200, mapOf("objectId" to "root", "map" to mapOf("semantics" to "LWW", "entries" to mapOf(
+                "noData" to mapOf("tombstone" to true),
+                "notAMap" to "x",
+                "kept" to mapOf("data" to mapOf("number" to 1L)),
+            ))), false)
+        }
+
+        assertEquals(setOf("kept"), setup.channel.`object`.get()!!.asLiveMap().entries.keys)
+    }
+
+    @Test
+    fun `compact values are returned verbatim, including json leaves and empty maps`() {
+        val bodies = listOf<Any>("{\"foo\":\"bar\"}", "[\"foo\",\"bar\"]", emptyMap<String, Any>())
+        for (body in bodies) {
+            val setup = setupRestObject("edge-compact-verbatim") { it.respondWithBody(200, body, false) }
+
+            val compact = setup.channel.`object`.getCompact(HttpObjectGetParams.ofPath("x"))
+
+            // a json leaf stays its JSON-encoded string; an empty map is {}
+            assertEquals(JsonParser.parseString(jsonEncode(body)), compact)
+        }
+    }
+
+    @Test
+    fun `request ids are added to get and publish when addRequestIds is set`() {
+        val setup = setupRestObject("edge-request-ids", clientOptions = { addRequestIds = true }) { req ->
+            if (req.method == "POST") {
+                req.respondWithBody(201, mapOf("messageId" to "m", "channel" to "c", "objectIds" to emptyList<String>()), false)
+            } else {
+                req.respondWithBody(200, mapOf("objectId" to "root"), false)
+            }
+        }
+
+        setup.channel.`object`.getCompact()
+        setup.channel.`object`.publish(HttpObjectOperation.counterInc(1).withPath("c"))
+
+        assertEquals(2, setup.capturedRequests.size)
+        assertTrue(setup.capturedRequests.all { !it.queryParams["request_id"].isNullOrEmpty() })
+    }
+
+    @Test
+    fun `channel names are percent-encoded in the object path`() {
+        val name = "a/b c?d#e:f"
+        val setup = setupRestObject(name) { req ->
+            if (req.method == "POST") {
+                req.respondWithBody(201, mapOf("messageId" to "m", "channel" to name, "objectIds" to emptyList<String>()), false)
+            } else {
+                req.respondWithBody(200, mapOf("objectId" to "root"), false)
+            }
+        }
+
+        setup.channel.`object`.getCompact()
+        setup.channel.`object`.publish(HttpObjectOperation.counterInc(1).withPath("c"))
+
+        val expected = "/channels/" + encodeUriComponent(name) + "/object"
+        assertEquals(listOf(expected, expected), setup.capturedRequests.map { it.path })
+    }
+
+    //endregion
+
     //region Server time
 
     @Test
@@ -573,9 +659,12 @@ class HttpObjectEdgeCasesTest {
         }
         val body = HttpObjectGenerateIdBody.counterCreate(1)
 
-        val threads = (1..5).map { Thread { setup.channel.`object`.generateObjectId(body) }.apply { start() } }
+        val failures = Collections.synchronizedList(mutableListOf<Throwable>())
+        val threads = (1..5).map { Thread { runCatching { setup.channel.`object`.generateObjectId(body) }.onFailure { failures.add(it) } }.apply { start() } }
         threads.forEach { it.join(5000) }
 
+        assertTrue(threads.none { it.isAlive }, "a blocking call didn't finish")
+        assertEquals(emptyList(), failures)
         assertEquals(1, setup.capturedRequests.count { it.path == "/time" })
     }
 
@@ -602,18 +691,54 @@ class HttpObjectEdgeCasesTest {
 
     @Test
     fun `a blocking and an async first call share one time request`() {
+        val timeRequested = CountDownLatch(1)
         val setup = setupRestObject("edge-time-mixed") { req ->
-            if (req.path == "/time") req.respondWithDelay(300.milliseconds, 200, listOf(1700000000000L))
+            if (req.path == "/time") {
+                timeRequested.countDown()
+                req.respondWithDelay(300.milliseconds, 200, listOf(1700000000000L))
+            }
         }
         val body = HttpObjectGenerateIdBody.counterCreate(1)
 
-        val blocking = Thread { setup.channel.`object`.generateObjectId(body) }.apply { start() }
-        Thread.sleep(100) // let the blocking call start its request
+        var blockingFailure: Throwable? = null
+        val blocking = Thread { runCatching { setup.channel.`object`.generateObjectId(body) }.onFailure { blockingFailure = it } }.apply { start() }
+        // the blocking call has claimed the fetch once its request reaches the mock
+        assertTrue(timeRequested.await(5, TimeUnit.SECONDS))
         val async = awaitCallback<HttpObjectGenerateIdResult> { setup.channel.`object`.generateObjectIdAsync(body, it) }
         blocking.join(5000)
 
+        assertTrue(!blocking.isAlive && blockingFailure == null, "blocking call failed or didn't finish: $blockingFailure")
         assertNotNull(async.result)
         assertEquals(1, setup.capturedRequests.count { it.path == "/time" })
+    }
+
+    @Test
+    fun `a blocking call while an async fetch is in flight fetches independently, and the time is then reused`() {
+        val timeRequested = CountDownLatch(1)
+        val setup = setupRestObject("edge-time-async-then-blocking") { req ->
+            if (req.path == "/time") {
+                timeRequested.countDown()
+                req.respondWithDelay(300.milliseconds, 200, listOf(1700000000000L))
+            }
+        }
+        val obj = setup.channel.`object`
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        val async = CountDownLatch(1)
+        obj.generateObjectIdAsync(body, object : Callback<HttpObjectGenerateIdResult> {
+            override fun onSuccess(result: HttpObjectGenerateIdResult) = async.countDown()
+            override fun onError(reason: ErrorInfo?) = fail("unexpected error $reason")
+        })
+        assertTrue(timeRequested.await(5, TimeUnit.SECONDS))
+        // the blocking call doesn't wait on the scheduler's fetch; it makes its own request
+        assertTrue(obj.generateObjectId(body).objectId.endsWith("@1700000000000"))
+        assertTrue(async.await(5, TimeUnit.SECONDS))
+        assertEquals(2, setup.capturedRequests.count { it.path == "/time" })
+
+        // once known, the time comes from the stored offset
+        obj.generateObjectId(body)
+        awaitCallback<HttpObjectGenerateIdResult> { obj.generateObjectIdAsync(body, it) }
+        assertEquals(2, setup.capturedRequests.count { it.path == "/time" })
     }
 
     @Test
