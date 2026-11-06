@@ -1,9 +1,11 @@
 package io.ably.pubsub.liveobjects.http
 
 import com.google.gson.JsonElement
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import io.ably.pubsub.http.HttpUtils
 import io.ably.pubsub.liveobjects.ValueType
+import io.ably.pubsub.liveobjects.message.ObjectsMapSemantics
 import io.ably.pubsub.types.AblyException
 import io.ably.pubsub.types.Callback
 import io.ably.pubsub.types.ErrorInfo
@@ -184,6 +186,15 @@ class HttpObjectEdgeCasesTest {
     }
 
     @Test
+    fun `get params - an empty objectId targets the channel object`() {
+        val setup = setupRestObject("edge-empty-objectid") { it.respondWithBody(200, mapOf("objectId" to "root"), false) }
+
+        setup.channel.`object`.getCompact(HttpObjectGetParams.ofObjectId(""))
+
+        assertEquals("/channels/edge-empty-objectid/object", setup.capturedRequests.single().path)
+    }
+
+    @Test
     fun `get params - factories build the objectId and path params`() {
         assertEquals(listOf(Param("objectId", "map:abc@1")), HttpObjectGetParams.ofObjectId("map:abc@1").toList())
         assertEquals(listOf(Param("path", "a.b")), HttpObjectGetParams.ofPath("a.b").toList())
@@ -287,21 +298,53 @@ class HttpObjectEdgeCasesTest {
 
 
     @Test
-    fun `malformed leaf in a full response fails without a fallback retry`() {
+    fun `a malformed leaf in a full response decodes as an unknown leaf without failing its siblings`() {
         val cases = listOf(
             mapOf("json" to "{not json"),
             mapOf("bytes" to "not*base64!"),
         )
         for (leaf in cases) {
-            val setup = setupRestObject("edge-malformed") { it.respondWithBody(200, leaf, false) }
+            val setup = setupRestObject("edge-malformed") { req ->
+                if (req.queryParams["path"] == "leaf") {
+                    req.respondWithBody(200, leaf, false)
+                } else {
+                    req.respondWithBody(200, mapOf(
+                        "objectId" to "root",
+                        "map" to mapOf("semantics" to "LWW", "entries" to mapOf(
+                            "bad" to mapOf("data" to leaf),
+                            "good" to mapOf("data" to mapOf("string" to "ok")),
+                        )),
+                    ), false)
+                }
+            }
             val params = HttpObjectGetParams.ofPath("leaf")
 
-            val error = assertFailsWith<AblyException> { setup.channel.`object`.get(params) }
-            assertEquals(50000, error.errorInfo.code)
-            assertEquals(500, error.errorInfo.statusCode)
-            assertEquals(50000, awaitCallback<HttpObjectGetFullResult> { setup.channel.`object`.getAsync(params, it) }.errorInfo().code)
-            // one request per call: a decode error is not taken for a host failure and retried
-            assertEquals(2, setup.capturedRequests.size)
+            assertEquals(ValueType.UNKNOWN, setup.channel.`object`.get(params)!!.type)
+            assertEquals(ValueType.UNKNOWN, awaitCallback<HttpObjectGetFullResult> { setup.channel.`object`.getAsync(params, it) }.result!!.type)
+            val entries = setup.channel.`object`.get()!!.asLiveMap().entries
+            assertEquals(ValueType.UNKNOWN, entries.getValue("bad").data.type)
+            assertEquals("ok", entries.getValue("good").data.asString())
+        }
+    }
+
+    @Test
+    fun `map semantics decode from the name or the integer code, anything else is unknown`() {
+        val cases = listOf<Pair<Any?, ObjectsMapSemantics>>(
+            "LWW" to ObjectsMapSemantics.LWW,
+            0L to ObjectsMapSemantics.LWW,
+            0.5 to ObjectsMapSemantics.UNKNOWN,
+            1L to ObjectsMapSemantics.UNKNOWN,
+            "future" to ObjectsMapSemantics.UNKNOWN,
+        )
+        // 2^64, whose longValue() is 0, only fits in JSON
+        val jsonOnly = BigInteger.ONE.shiftLeft(64) to ObjectsMapSemantics.UNKNOWN
+        for (binary in listOf(false, true)) {
+            for ((semantics, expected) in if (binary) cases else cases + jsonOnly) {
+                val setup = setupRestObject("edge-semantics", useBinaryProtocol = binary) {
+                    it.respondWithBody(200, mapOf("objectId" to "root", "map" to mapOf("semantics" to semantics, "entries" to emptyMap<String, Any>())), binary)
+                }
+                assertEquals(expected, setup.channel.`object`.get()!!.asLiveMap().semantics, "semantics $semantics, binary $binary")
+            }
         }
     }
 
@@ -321,6 +364,16 @@ class HttpObjectEdgeCasesTest {
 
         assertNull(setup.channel.`object`.get())
         assertNull(setup.channel.`object`.getCompact())
+    }
+
+    @Test
+    fun `a JSON null compact body is JsonNull, distinct from no body`() {
+        for (binary in listOf(false, true)) {
+            val setup = setupRestObject("edge-null-body", useBinaryProtocol = binary) { it.respondWithBody(200, null, binary) }
+
+            assertEquals(JsonNull.INSTANCE, setup.channel.`object`.getCompact())
+            assertEquals(JsonNull.INSTANCE, awaitCallback<JsonElement> { setup.channel.`object`.getCompactAsync(it) }.result)
+        }
     }
 
     @Test

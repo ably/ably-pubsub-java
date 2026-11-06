@@ -12,6 +12,7 @@ import io.ably.pubsub.liveobjects.message.ObjectsMapSemantics;
 import io.ably.pubsub.types.AblyException;
 import io.ably.pubsub.types.ErrorInfo;
 import io.ably.pubsub.util.Base64Coder;
+import io.ably.pubsub.util.Log;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -40,6 +41,7 @@ import java.util.Map;
  */
 final class HttpObjectCodec {
 
+    private static final String TAG = HttpObjectCodec.class.getName();
     private static final String MSGPACK_CONTENT_TYPE = "application/x-msgpack";
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final List<String> LEAF_VALUE_FIELDS = Arrays.asList("string", "number", "boolean", "bytes", "json");
@@ -217,7 +219,8 @@ final class HttpObjectCodec {
      * OMP2 code ({@code 0}); accept both. Anything else is preserved as UNKNOWN.
      */
     private static ObjectsMapSemantics decodeSemantics(Object value) {
-        if (value instanceof Number && ((Number) value).longValue() == 0L) return ObjectsMapSemantics.LWW;
+        // integral zero only: longValue() would also truncate 0.5 or a BigInteger of 2^64 to 0
+        if (value instanceof Long && (Long) value == 0L) return ObjectsMapSemantics.LWW;
         if (value instanceof String && "lww".equalsIgnoreCase((String) value)) return ObjectsMapSemantics.LWW;
         return ObjectsMapSemantics.UNKNOWN;
     }
@@ -226,13 +229,22 @@ final class HttpObjectCodec {
      * Decodes a leaf per OD5 (RSO2g3): Base64 {@code bytes} become binary (OD5b2), and the
      * JSON-encoded string in {@code json} is parsed (OD5a2, OD5b3). The result carries no
      * {@code objectId} or {@code encoding} (RSO9c1).
+     *
+     * <p>A {@code json} or {@code bytes} value that can't be decoded is logged and left out, so the
+     * leaf decodes as {@link io.ably.pubsub.liveobjects.ValueType#UNKNOWN} rather than failing the
+     * whole response. Like ably-js, which returns that leaf's raw fields, only the bad leaf is
+     * affected; the raw value isn't exposed, as {@link HttpObjectData} has no accessor for it.
      */
     private static HttpObjectData decodeLeaf(Map<?, ?> fields) {
         final String string = asString(fields.get("string"));
         JsonElement json = null;
         Object rawJson = fields.get("json");
         if (rawJson instanceof String) {
-            json = JsonParser.parseString((String) rawJson);
+            try {
+                json = JsonParser.parseString((String) rawJson);
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Leaf json value is not valid JSON; leaving it out", e);
+            }
         } else if (rawJson != null) {
             json = toJson(rawJson);
         }
@@ -241,7 +253,11 @@ final class HttpObjectCodec {
         if (rawBytes instanceof byte[]) {
             bytes = (byte[]) rawBytes;
         } else if (rawBytes instanceof String) {
-            bytes = Base64Coder.decode((String) rawBytes);
+            try {
+                bytes = Base64Coder.decode((String) rawBytes);
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Leaf bytes value is not valid Base64; leaving it out", e);
+            }
         }
         Object number = fields.get("number");
         Object bool = fields.get("boolean");

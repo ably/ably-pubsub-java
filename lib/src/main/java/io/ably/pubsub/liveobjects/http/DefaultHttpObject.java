@@ -102,7 +102,8 @@ public final class DefaultHttpObject implements HttpObject {
     /** RSO2f - the compact body as JSON, otherwise unchanged; binary values become Base64 strings. */
     private HttpRequester.Request<JsonElement> compactImpl(@Nullable Param[] params) {
         // compact is the server default, so it isn't sent (RSO2d)
-        return getImpl(params, null, body -> body == null ? null : HttpObjectCodec.toJson(body));
+        // a JSON null body is JsonNull, distinct from no body (null)
+        return getImpl(params, null, HttpObjectCodec::toJson);
     }
 
     /** RSO2g - the full body decoded into typed results. */
@@ -113,9 +114,11 @@ public final class DefaultHttpObject implements HttpObject {
 
     private <T> HttpRequester.Request<T> getImpl(@Nullable Param[] params, @Nullable Param format,
                                                  BodyDecoder<T> decoder) {
-        // RSO2c - the objectId, if any, is a percent-encoded path segment
+        // RSO2c - the objectId, if any, is a percent-encoded path segment; an empty one is treated
+        // as absent, as in ably-js, rather than producing a trailing slash
         String objectId = Param.getFirst(params, HttpObjectGetParams.OBJECT_ID);
-        final String path = objectId != null ? basePath + "/" + HttpUtils.encodeURIComponent(objectId) : basePath;
+        final String path = objectId != null && !objectId.isEmpty()
+            ? basePath + "/" + HttpUtils.encodeURIComponent(objectId) : basePath;
 
         // RSO2d, RSO6 - every other param, such as path, goes in the query string unmodified; the
         // format is this method's, so a caller's compact param is dropped
@@ -130,9 +133,12 @@ public final class DefaultHttpObject implements HttpObject {
         if (client.options.addRequestIds) query.add(Crypto.generateRandomRequestId()); // RSC7c
         final Param[] queryParams = query.toArray(new Param[0]);
 
-        // RSO2e - the body is decoded per RSC8 before the decoder runs; no body is null
+        // RSO2e - the body is decoded per RSC8 before the decoder runs; no body is a null result
+        final HttpCore.ResponseHandler<T> handler = responseHandler(decoder);
         return client.http.request((http, callback) ->
-            http.get(path, HttpUtils.defaultAcceptHeaders(binary()), queryParams, responseHandler(decoder), true, callback));
+            http.get(path, HttpUtils.defaultAcceptHeaders(binary()), queryParams, (response, error) ->
+                error == null && (response.body == null || response.body.length == 0)
+                    ? null : handler.handleResponse(response, error), true, callback));
     }
 
     //endregion

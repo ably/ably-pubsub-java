@@ -70,7 +70,8 @@ public interface HttpObject {
      *
      * @param params the request params, built with {@link io.ably.pubsub.liveobjects.http.HttpObjectGetParams},
      *               or {@code null} to fetch the channel object.
-     * @return the compact representation, or {@code null} if the response has no body.
+     * @return the compact representation, or {@code null} if the response has no body; a JSON
+     *         {@code null} value is {@link com.google.gson.JsonNull}.
      * @throws AblyException if the request fails or the response can't be decoded.
      */
     @Blocking

@@ -23,7 +23,7 @@ public final class HttpObjectGetParams {
 
     /**
      * The key of the ID of the object to fetch. It's sent as a path segment, not in the query
-     * string. If it's absent, the channel object is the target.
+     * string. If it's absent or empty, the channel object is the target.
      * <p>Spec: RSO2a1a
      */
     public static final String OBJECT_ID = "objectId";
