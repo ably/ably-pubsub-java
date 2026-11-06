@@ -70,29 +70,34 @@ public final class PublishObjectData {
         return new PublishObjectData(null, null, null, null, null, objectId);
     }
 
+    /** @return the string value, or {@code null} if this holds another kind of value. */
     public @Nullable String getString() {
         return string;
     }
 
+    /** @return the number value, or {@code null} if this holds another kind of value. */
     public @Nullable Number getNumber() {
         return number;
     }
 
+    /** @return the boolean value, or {@code null} if this holds another kind of value. */
     public @Nullable Boolean getBoolean() {
         return bool;
     }
 
+    /** @return a copy of the binary value, or {@code null} if this holds another kind of value. */
     public byte @Nullable [] getBytes() {
         return bytes != null ? bytes.clone() : null;
     }
 
     /**
-     * @return the JSON value, a {@link JsonObject} or {@link JsonArray}, or {@code null}.
+     * @return a copy of the JSON value, a {@link JsonObject} or {@link JsonArray}, or {@code null}.
      */
     public @Nullable JsonElement getJson() {
         return json != null ? json.deepCopy() : null;
     }
 
+    /** @return the ID of the referenced object, or {@code null} if this holds another kind of value. */
     public @Nullable String getObjectId() {
         return objectId;
     }

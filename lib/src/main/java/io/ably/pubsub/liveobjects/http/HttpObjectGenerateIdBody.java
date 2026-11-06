@@ -49,10 +49,12 @@ public final class HttpObjectGenerateIdBody {
         return counterCreate(new HttpObjectOperation.CounterCreate(count));
     }
 
+    /** @return the map create body, or {@code null} if this is a counter create body. */
     public @Nullable HttpObjectOperation.MapCreate getMapCreate() {
         return mapCreate;
     }
 
+    /** @return the counter create body, or {@code null} if this is a map create body. */
     public @Nullable HttpObjectOperation.CounterCreate getCounterCreate() {
         return counterCreate;
     }

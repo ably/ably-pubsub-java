@@ -203,42 +203,52 @@ public final class HttpObjectOperation {
 
     //region Getters
 
+    /** @return the operation ID set with {@link #withId}, or {@code null}; the library never generates one. */
     public @Nullable String getId() {
         return id;
     }
 
+    /** @return the ID of the targeted or created object, or {@code null} if none is set. */
     public @Nullable String getObjectId() {
         return objectId;
     }
 
+    /** @return the targeted path, or {@code null} if none is set. */
     public @Nullable String getPath() {
         return path;
     }
 
+    /** @return the {@code mapCreate} body, or {@code null} if this is another kind of operation. */
     public @Nullable MapCreate getMapCreate() {
         return mapCreate;
     }
 
+    /** @return the {@code mapCreateWithObjectId} body, or {@code null} if this is another kind of operation. */
     public @Nullable CreateWithObjectId getMapCreateWithObjectId() {
         return mapCreateWithObjectId;
     }
 
+    /** @return the {@code mapSet} body, or {@code null} if this is another kind of operation. */
     public @Nullable MapSet getMapSet() {
         return mapSet;
     }
 
+    /** @return the {@code mapRemove} body, or {@code null} if this is another kind of operation. */
     public @Nullable MapRemove getMapRemove() {
         return mapRemove;
     }
 
+    /** @return the {@code counterCreate} body, or {@code null} if this is another kind of operation. */
     public @Nullable CounterCreate getCounterCreate() {
         return counterCreate;
     }
 
+    /** @return the {@code counterCreateWithObjectId} body, or {@code null} if this is another kind of operation. */
     public @Nullable CreateWithObjectId getCounterCreateWithObjectId() {
         return counterCreateWithObjectId;
     }
 
+    /** @return the {@code counterInc} body, or {@code null} if this is another kind of operation. */
     public @Nullable CounterInc getCounterInc() {
         return counterInc;
     }
@@ -265,10 +275,12 @@ public final class HttpObjectOperation {
             this.entries = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(entries, "entries")));
         }
 
+        /** @return the conflict-resolution semantics. */
         public @NotNull ObjectsMapSemantics getSemantics() {
             return semantics;
         }
 
+        /** @return an unmodifiable map of the initial entries, in the order given. */
         public @NotNull Map<String, PublishObjectData> getEntries() {
             return entries;
         }
@@ -282,6 +294,10 @@ public final class HttpObjectOperation {
         private final @NotNull String initialValue;
         private final @NotNull String nonce;
 
+        /**
+         * @param initialValue the JSON-encoded initial value returned by {@code generateObjectId}.
+         * @param nonce the nonce returned by {@code generateObjectId}.
+         */
         public CreateWithObjectId(@NotNull String initialValue, @NotNull String nonce) {
             this.initialValue = initialValue;
             this.nonce = nonce;
@@ -303,15 +319,21 @@ public final class HttpObjectOperation {
         private final @NotNull String key;
         private final @NotNull PublishObjectData value;
 
+        /**
+         * @param key the key to set.
+         * @param value the value to set it to.
+         */
         public MapSet(@NotNull String key, @NotNull PublishObjectData value) {
             this.key = key;
             this.value = value;
         }
 
+        /** @return the key to set. */
         public @NotNull String getKey() {
             return key;
         }
 
+        /** @return the value to set the key to. */
         public @NotNull PublishObjectData getValue() {
             return value;
         }
@@ -321,10 +343,12 @@ public final class HttpObjectOperation {
     public static final class MapRemove {
         private final @NotNull String key;
 
+        /** @param key the key to remove. */
         public MapRemove(@NotNull String key) {
             this.key = key;
         }
 
+        /** @return the key to remove. */
         public @NotNull String getKey() {
             return key;
         }
@@ -338,10 +362,12 @@ public final class HttpObjectOperation {
     public static final class CounterCreate {
         private final @NotNull Number count;
 
+        /** @param count the counter's initial value; must be finite. */
         public CounterCreate(@NotNull Number count) {
             this.count = count;
         }
 
+        /** @return the counter's initial value. */
         public @NotNull Number getCount() {
             return count;
         }
@@ -351,10 +377,12 @@ public final class HttpObjectOperation {
     public static final class CounterInc {
         private final @NotNull Number number;
 
+        /** @param number the amount to add, negative to decrement; must be finite. */
         public CounterInc(@NotNull Number number) {
             this.number = number;
         }
 
+        /** @return the amount to add. */
         public @NotNull Number getNumber() {
             return number;
         }

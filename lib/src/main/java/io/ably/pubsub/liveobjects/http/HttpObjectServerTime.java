@@ -41,6 +41,7 @@ public final class HttpObjectServerTime {
     /** Callers waiting for the in-flight request. */
     private final List<Callback<Long>> waiters = new ArrayList<>();
 
+    /** @param client the client whose {@code /time} endpoint is queried. */
     public HttpObjectServerTime(@NotNull PubSubBase client) {
         this.client = client;
     }
