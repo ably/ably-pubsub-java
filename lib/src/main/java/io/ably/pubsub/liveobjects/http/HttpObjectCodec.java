@@ -54,6 +54,12 @@ final class HttpObjectCodec {
      * field (RSO3d4).
      */
     static Map<String, Object> encodeOperation(HttpObjectOperation op, boolean binary) throws AblyException {
+        // RSO5b1 - the factories set exactly one body, but a null passed to one leaves none
+        int bodies = count(op.getMapCreate(), op.getMapCreateWithObjectId(), op.getMapSet(), op.getMapRemove(),
+            op.getCounterCreate(), op.getCounterCreateWithObjectId(), op.getCounterInc());
+        if (bodies != 1) {
+            throw invalidInput("An operation must have exactly one operation body, but it has " + bodies);
+        }
         Map<String, Object> wire = new LinkedHashMap<>();
         putIfNotNull(wire, "id", op.getId());
         putIfNotNull(wire, "objectId", op.getObjectId());
@@ -66,12 +72,12 @@ final class HttpObjectCodec {
         }
         if (op.getMapSet() != null) {
             Map<String, Object> mapSet = new LinkedHashMap<>();
-            mapSet.put("key", op.getMapSet().getKey());
+            mapSet.put("key", notNull(op.getMapSet().getKey(), "mapSet.key"));
             mapSet.put("value", encodeData(op.getMapSet().getValue(), binary));
             wire.put("mapSet", mapSet);
         }
         if (op.getMapRemove() != null) {
-            wire.put("mapRemove", singleton("key", op.getMapRemove().getKey()));
+            wire.put("mapRemove", singleton("key", notNull(op.getMapRemove().getKey(), "mapRemove.key")));
         }
         if (op.getCounterCreate() != null) {
             wire.put("counterCreate", encodeCounterCreate(op.getCounterCreate()));
@@ -89,7 +95,7 @@ final class HttpObjectCodec {
     static Map<String, Object> encodeMapCreate(HttpObjectOperation.MapCreate body, boolean binary) throws AblyException {
         Map<String, Object> entries = new LinkedHashMap<>();
         for (Map.Entry<String, PublishObjectData> entry : body.getEntries().entrySet()) {
-            entries.put(entry.getKey(), singleton("data", encodeData(entry.getValue(), binary)));
+            entries.put(notNull(entry.getKey(), "mapCreate.entries key"), singleton("data", encodeData(entry.getValue(), binary)));
         }
         Map<String, Object> mapCreate = new LinkedHashMap<>();
         mapCreate.put("semantics", encodeSemantics(body.getSemantics()));
@@ -101,7 +107,10 @@ final class HttpObjectCodec {
         return singleton("count", finite(body.getCount(), "counterCreate.count"));
     }
 
-    private static Map<String, Object> encodeCreateWithObjectId(HttpObjectOperation.CreateWithObjectId body) {
+    private static Map<String, Object> encodeCreateWithObjectId(HttpObjectOperation.CreateWithObjectId body) throws AblyException {
+        if (body.getInitialValue() == null || body.getNonce() == null) {
+            throw invalidInput("initialValue and nonce must not be null; use the values from generateObjectId");
+        }
         Map<String, Object> wire = new LinkedHashMap<>();
         wire.put("initialValue", body.getInitialValue());
         wire.put("nonce", body.getNonce());
@@ -462,6 +471,24 @@ final class HttpObjectCodec {
             throw invalidInput("Invalid " + field + ": " + number + " is not a finite number");
         }
         return number;
+    }
+
+    private static <V> V notNull(V value, String field) throws AblyException {
+        if (value == null) throw invalidInput("Invalid " + field + ": must not be null");
+        return value;
+    }
+
+    /** A short description of an unexpected exception for an invalid-input message. */
+    static String describe(RuntimeException e) {
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+    }
+
+    private static int count(Object... values) {
+        int count = 0;
+        for (Object value : values) {
+            if (value != null) count++;
+        }
+        return count;
     }
 
     private static String asString(Object value) {

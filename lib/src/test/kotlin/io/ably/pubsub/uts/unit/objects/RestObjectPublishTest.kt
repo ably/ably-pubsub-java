@@ -398,10 +398,17 @@ class RestObjectPublishTest {
      */
     @Test
     fun `RSO5b1 - operation with no body field rejected before any request`() = runTest {
-        // DEVIATION T-4 (not applicable, per the spec's own note): an HttpObjectOperation can only be
-        // built through a factory that sets exactly one body, so `RestObjectOperation(objectId: "root")`
-        // with no body is unrepresentable and the runtime check can't be reached. See deviations.md.
+        // Adapted (T-4): the factories always set a body, but a null passed to one from Java, which
+        // doesn't enforce @NotNull, leaves none. Kotlin can't pass that null, so call through reflection.
         val setup = setup("test-RSO5b1-none-" + randomId())
+        val noBody = HttpObjectOperation::class.java
+            .getMethod("mapCreate", HttpObjectOperation.MapCreate::class.java)
+            .invoke(null, *arrayOf<Any?>(null)) as HttpObjectOperation
+
+        val error = assertFailsWith<AblyException> { setup.channel.`object`.publish(noBody.withObjectId("root")) }
+
+        assertEquals(400, error.errorInfo.statusCode)
+        assertEquals(40003, error.errorInfo.code)
         assertEquals(0, setup.capturedRequests.size)
     }
 

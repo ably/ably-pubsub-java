@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * An operation published with {@link io.ably.pubsub.liveobjects.HttpObject#publish}.
@@ -261,7 +262,7 @@ public final class HttpObjectOperation {
          */
         public MapCreate(@NotNull ObjectsMapSemantics semantics, @NotNull Map<String, PublishObjectData> entries) {
             this.semantics = semantics;
-            this.entries = Collections.unmodifiableMap(new LinkedHashMap<>(entries));
+            this.entries = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(entries, "entries")));
         }
 
         public @NotNull ObjectsMapSemantics getSemantics() {

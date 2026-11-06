@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -222,6 +223,30 @@ class HttpObjectEdgeCasesTest {
     //region Errors and decoding
 
     @Test
+    fun `operations left without a body or with null create values are rejected with 40003 before any request`() {
+        val setup = setupRestObject("edge-null-bodies") { it.respondWithBody(201, emptyMap<String, Any?>(), false) }
+        val obj = setup.channel.`object`
+        // Kotlin can't pass null to these @NotNull parameters; Java callers can, so use reflection.
+        val type = HttpObjectOperation::class.java
+        val noMapCreate = type.getMethod("mapCreate", HttpObjectOperation.MapCreate::class.java).invoke(null, *arrayOf<Any?>(null)) as HttpObjectOperation
+        val noCounterCreate = type.getMethod("counterCreate", HttpObjectOperation.CounterCreate::class.java).invoke(null, *arrayOf<Any?>(null)) as HttpObjectOperation
+        val nullCreateValues = type.getMethod("mapCreateWithObjectId", String::class.java, String::class.java, String::class.java)
+            .invoke(null, "map:abc@1", null, null) as HttpObjectOperation
+
+        for (op in listOf(noMapCreate, noCounterCreate, nullCreateValues)) {
+            assertEquals(40003, assertFailsWith<AblyException> { obj.publish(op) }.errorInfo.code)
+            assertEquals(40003, awaitCallback<HttpObjectPublishResult> { obj.publishAsync(listOf(op), it) }.errorInfo().code)
+        }
+
+        // likewise a null generate-ID body, through the async variant (the blocking one is RSO4c)
+        val generateAsync = obj.javaClass.getMethod("generateObjectIdAsync", HttpObjectGenerateIdBody::class.java, Callback::class.java)
+        val nullBody = awaitCallback<HttpObjectGenerateIdResult> { generateAsync.invoke(obj, null, it) }.errorInfo()
+        assertEquals(400, nullBody.statusCode)
+        assertEquals(40003, nullBody.code)
+        assertEquals(0, setup.capturedRequests.size)
+    }
+
+    @Test
     fun `null values are rejected with 40003, also through the async callback`() {
         val setup = setupRestObject("edge-null-values") { req ->
             if (req.path == "/time") req.respondWith(200, listOf(1700000000000L)) else req.respondWithBody(201, emptyMap<String, Any?>(), false)
@@ -235,6 +260,17 @@ class HttpObjectEdgeCasesTest {
         assertEquals(40003, awaitCallback<HttpObjectPublishResult> { setup.channel.`object`.publishAsync(op, it) }.errorInfo().code)
         assertEquals(40003, assertFailsWith<AblyException> { setup.channel.`object`.generateObjectId(body) }.errorInfo.code)
         assertEquals(40003, awaitCallback<HttpObjectGenerateIdResult> { setup.channel.`object`.generateObjectIdAsync(body, it) }.errorInfo().code)
+
+        // null keys, which Java callers can pass, are rejected rather than sent as JSON null
+        @Suppress("UNCHECKED_CAST")
+        val nullKeyEntries = mapOf<String?, PublishObjectData>(null to PublishObjectData.string("x")) as Map<String, PublishObjectData>
+        val nullKeyRemove = HttpObjectOperation::class.java.getMethod("mapRemove", String::class.java)
+            .invoke(null, *arrayOf<Any?>(null)) as HttpObjectOperation
+        for (invalid in listOf(HttpObjectOperation.mapCreate(nullKeyEntries), nullKeyRemove.withObjectId("root"))) {
+            val error = assertFailsWith<AblyException> { setup.channel.`object`.publish(invalid) }
+            assertEquals(40003, error.errorInfo.code)
+            assertFalse(error.errorInfo.message.contains("java.lang."), error.errorInfo.message)
+        }
         assertEquals(0, setup.capturedRequests.count { it.method == "POST" })
     }
 

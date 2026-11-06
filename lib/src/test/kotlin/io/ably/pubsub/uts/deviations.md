@@ -125,13 +125,13 @@
 5. **Test impact:** adapted assertion on the actual header; passes.
 6. **Status:** intentional, SDK-wide.
 
-### T-4 (objects) — operation and generate-ID bodies are unrepresentable without exactly one body (`objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
+### T-4 (objects) — operation and generate-ID bodies can't be built with the wrong number of bodies (`objects.RestObjectPublishTest`, `objects.RestObjectGenerateIdTest`)
 
 1. **Spec point:** RSO5b1 (`objects/unit/RSO5b1/no-body-field-error-0`, `objects/unit/RSO5b1/multiple-body-fields-error-1`), RSO4c (`objects/unit/RSO4c/missing-create-body-error-0`).
 2. **What the spec says:** an operation with zero or several body fields, or a generate-ID body with neither `mapCreate` nor `counterCreate`, fails with 400 / 40003 before any request. Each test notes it is not applicable where the SDK makes these inputs unrepresentable.
-3. **What the SDK does:** `HttpObjectOperation` and `HttpObjectGenerateIdBody` can only be built through factories that set exactly one body, and the `with*` methods only change the common fields.
+3. **What the SDK does:** `HttpObjectOperation` and `HttpObjectGenerateIdBody` can only be built through factories that set one body, and the `with*` methods only change the common fields, so several bodies are unrepresentable. No body at all is reachable only through a `null` passed to a factory from Java (`HttpObjectOperation.mapCreate((MapCreate) null)`, `generateObjectId(null)`), and that fails with 400 / 40003 before any request, as the spec requires.
 4. **Root cause:** typed-SDK construction (the same T-4 pattern as the objects suite, `liveobjects/.../uts/deviations.md`).
-5. **Test impact:** the tests exist under their `@UTS` ids with a `// DEVIATION T-4` comment and assert only that no request was sent. The runtime-reachable 40003 case — an unrecognised semantics, `ObjectsMapSemantics.UNKNOWN` — is asserted for real in `RSO3d1/unrecognized-semantics-error-1` and `RSO4e1a/unrecognized-semantics-error-0`.
+5. **Test impact:** `RSO5b1/multiple-body-fields-error-1` exists under its `@UTS` id with a `// DEVIATION T-4` comment and asserts only that no request was sent. `RSO5b1/no-body-field-error-0` and `RSO4c/missing-create-body-error-0` assert the 400 / 40003 for real, passing the `null` through reflection because Kotlin can't. The other runtime-reachable 40003 case — an unrecognised semantics, `ObjectsMapSemantics.UNKNOWN` — is asserted in `RSO3d1/unrecognized-semantics-error-1` and `RSO4e1a/unrecognized-semantics-error-0`.
 6. **Status:** intentional — a typed-SDK adaptation, sanctioned by each spec test's own not-applicable note.
 
 ## Mock Infrastructure Limitations

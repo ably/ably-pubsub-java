@@ -192,7 +192,7 @@ public final class DefaultHttpObject implements HttpObject {
             return HttpObjectCodec.requestBody(wireOperations, binary());
         } catch (RuntimeException e) {
             // e.g. a null where the typed API expects a value; report it as invalid input
-            throw HttpObjectCodec.invalidInput("Invalid operation: " + e);
+            throw HttpObjectCodec.invalidInput("Invalid operation: " + HttpObjectCodec.describe(e));
         }
     }
 
@@ -253,7 +253,7 @@ public final class DefaultHttpObject implements HttpObject {
                 return encode(createBody);
             } catch (RuntimeException e) {
                 // e.g. a null entry value; report it as invalid input
-                throw HttpObjectCodec.invalidInput("Invalid create body: " + e);
+                throw HttpObjectCodec.invalidInput("Invalid create body: " + HttpObjectCodec.describe(e));
             }
         }
 
