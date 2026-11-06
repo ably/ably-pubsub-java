@@ -480,5 +480,37 @@ class HttpObjectEdgeCasesTest {
         assertEquals(2, timeRequests)
     }
 
+    @Test
+    fun `a malformed time response fails waiting generateObjectIdAsync calls and the next call retries`() {
+        // 200 responses whose body can't be read as [time] make the /time response handler throw
+        val malformed = ArrayDeque(listOf("[]", "[null]", "<html>captive portal</html>", ""))
+        val setup = setupRestObject("edge-time-malformed") { req ->
+            if (req.path == "/time") {
+                val body = synchronized(malformed) { malformed.removeFirstOrNull() }
+                if (body != null) req.respondWithDelay(100.milliseconds, 200, body) else req.respondWith(200, listOf(1700000000000L))
+            }
+        }
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        repeat(4) {
+            // two concurrent callers share each failing request; both must be called back
+            val first = CountDownLatch(1)
+            val errors = Collections.synchronizedList(mutableListOf<ErrorInfo?>())
+            val callback = object : Callback<HttpObjectGenerateIdResult> {
+                override fun onSuccess(result: HttpObjectGenerateIdResult) = fail("unexpected result $result")
+                override fun onError(reason: ErrorInfo?) { errors.add(reason); first.countDown() }
+            }
+            setup.channel.`object`.generateObjectIdAsync(body, callback)
+            setup.channel.`object`.generateObjectIdAsync(body, callback)
+            assertTrue(first.await(5, TimeUnit.SECONDS), "waiting callers were not released")
+            val deadline = System.currentTimeMillis() + 5000
+            while (errors.size < 2 && System.currentTimeMillis() < deadline) Thread.sleep(10)
+            assertEquals(2, errors.size)
+            assertTrue(errors.all { it != null })
+        }
+
+        assertTrue(awaitCallback<HttpObjectGenerateIdResult> { setup.channel.`object`.generateObjectIdAsync(body, it) }.result!!.objectId.endsWith("@1700000000000"))
+    }
+
     //endregion
 }

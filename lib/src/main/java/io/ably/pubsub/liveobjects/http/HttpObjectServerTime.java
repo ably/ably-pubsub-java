@@ -105,22 +105,26 @@ public final class HttpObjectServerTime {
             return;
         }
         try {
-            client.timeAsync(new Callback<Long>() {
-                @Override
-                public void onSuccess(Long serverTime) {
-                    storeOffset(serverTime);
-                    notifyWaiters(serverTime, null);
-                }
-
-                @Override
-                public void onError(ErrorInfo reason) {
-                    notifyWaiters(null, reason != null ? reason : new ErrorInfo("Failed to retrieve server time", 500, 50000));
-                }
-            });
+            // A blocking fetch on the scheduler rather than timeAsync, whose callback is never invoked
+            // if decoding the /time response throws (e.g. a 200 of [] or HTML), leaving the waiters hung.
+            client.http.<Void>request((http, ignored) -> http.execute(this::fetchForWaiters)).async(null);
         } catch (RuntimeException e) {
             // the request never started; release the waiters so later calls can try again
             notifyWaiters(null, AblyException.fromThrowable(e).errorInfo);
         }
+    }
+
+    /** The scheduled async fetch: always ends the in-flight request and notifies the waiters. */
+    private void fetchForWaiters() {
+        long serverTime;
+        try {
+            serverTime = client.time();
+        } catch (AblyException | RuntimeException e) {
+            notifyWaiters(null, e instanceof AblyException ? ((AblyException) e).errorInfo : AblyException.fromThrowable(e).errorInfo);
+            return;
+        }
+        storeOffset(serverTime);
+        notifyWaiters(serverTime, null);
     }
 
     /** A blocking caller waiting for another caller's request. */
