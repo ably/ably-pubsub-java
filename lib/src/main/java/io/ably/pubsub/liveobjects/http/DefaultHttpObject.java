@@ -219,15 +219,17 @@ public final class DefaultHttpObject implements HttpObject {
                 cb.onError(e.errorInfo);
                 return;
             }
+            // A waiter can be notified on the thread of a blocking generateObjectId that fetched the
+            // time, so both outcomes are handed back to the scheduler.
             serverTime.currentTimeMillisAsync(new Callback<Long>() {
                 @Override
                 public void onSuccess(Long timestamp) {
-                    cb.onSuccess(body.withTimestamp(timestamp));
+                    http.execute(() -> cb.onSuccess(body.withTimestamp(timestamp)));
                 }
 
                 @Override
                 public void onError(ErrorInfo reason) {
-                    cb.onError(reason);
+                    http.execute(() -> cb.onError(reason));
                 }
             });
         })).async(callback);

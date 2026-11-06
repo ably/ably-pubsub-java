@@ -18,6 +18,7 @@ import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -118,6 +119,42 @@ class HttpObjectEdgeCasesTest {
         assertTrue(callbackThread<HttpObjectGenerateIdResult> { obj.generateObjectIdAsync(HttpObjectGenerateIdBody.counterCreate(1), it) } != testThread)
         assertTrue(callbackThread<HttpObjectGenerateIdResult> { obj.generateObjectIdAsync(HttpObjectGenerateIdBody.counterCreate(Double.NaN), it) } != testThread)
         assertTrue(callbackThread<HttpObjectPublishResult> { obj.publishAsync(HttpObjectOperation.counterInc(Double.NaN), it) } != testThread)
+    }
+
+    @Test
+    fun `an async callback runs on a background thread while a blocking call is fetching the time`() {
+        val timeRequested = CountDownLatch(1)
+        val asyncRegistered = CountDownLatch(1)
+        val setup = setupRestObject("edge-async-thread-waiter") { req ->
+            if (req.path == "/time") {
+                timeRequested.countDown()
+                asyncRegistered.await(5, TimeUnit.SECONDS) // hold the blocking fetch until the async call waits on it
+                req.respondWith(200, listOf(1700000000000L))
+            }
+        }
+        val obj = setup.channel.`object`
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        var blockingThread: Thread? = null
+        val blocking = Thread { obj.generateObjectId(body) }.apply { blockingThread = this; start() }
+        assertTrue(timeRequested.await(5, TimeUnit.SECONDS))
+
+        val latch = CountDownLatch(1)
+        var callbackThread: Thread? = null
+        obj.generateObjectIdAsync(body, object : Callback<HttpObjectGenerateIdResult> {
+            override fun onSuccess(result: HttpObjectGenerateIdResult) { callbackThread = Thread.currentThread(); latch.countDown() }
+            override fun onError(reason: ErrorInfo?) { callbackThread = Thread.currentThread(); latch.countDown() }
+        })
+        // Let the async call register as a waiter on the blocking fetch. If it hasn't by then, the
+        // time is already known when it runs and the test passes vacuously; it can't fail spuriously.
+        Thread.sleep(200)
+        asyncRegistered.countDown()
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS))
+        blocking.join(5000)
+        assertTrue(callbackThread != blockingThread, "the async callback ran on the blocking caller's thread")
+        assertTrue(callbackThread != Thread.currentThread())
+        assertEquals(1, setup.capturedRequests.count { it.path == "/time" })
     }
 
     //endregion
@@ -476,6 +513,54 @@ class HttpObjectEdgeCasesTest {
         val body = HttpObjectGenerateIdBody.counterCreate(1)
 
         assertEquals(401, assertFailsWith<AblyException> { setup.channel.`object`.generateObjectId(body) }.errorInfo.statusCode)
+        assertTrue(setup.channel.`object`.generateObjectId(body).objectId.endsWith("@1700000000000"))
+        assertEquals(2, timeRequests)
+    }
+
+    @Test
+    fun `a malformed time response fails waiting generateObjectIdAsync calls and the next call retries`() {
+        // 200 responses whose body can't be read as [time] make the /time response handler throw
+        val malformed = ArrayDeque(listOf("[]", "[null]", "<html>captive portal</html>", ""))
+        val setup = setupRestObject("edge-time-malformed") { req ->
+            if (req.path == "/time") {
+                val body = synchronized(malformed) { malformed.removeFirstOrNull() }
+                if (body != null) req.respondWithDelay(100.milliseconds, 200, body) else req.respondWith(200, listOf(1700000000000L))
+            }
+        }
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        repeat(4) {
+            // two concurrent callers share each failing request; both must be called back
+            val first = CountDownLatch(1)
+            val errors = Collections.synchronizedList(mutableListOf<ErrorInfo?>())
+            val callback = object : Callback<HttpObjectGenerateIdResult> {
+                override fun onSuccess(result: HttpObjectGenerateIdResult) = fail("unexpected result $result")
+                override fun onError(reason: ErrorInfo?) { errors.add(reason); first.countDown() }
+            }
+            setup.channel.`object`.generateObjectIdAsync(body, callback)
+            setup.channel.`object`.generateObjectIdAsync(body, callback)
+            assertTrue(first.await(5, TimeUnit.SECONDS), "waiting callers were not released")
+            val deadline = System.currentTimeMillis() + 5000
+            while (errors.size < 2 && System.currentTimeMillis() < deadline) Thread.sleep(10)
+            assertEquals(2, errors.size)
+            assertTrue(errors.all { it != null })
+        }
+
+        assertTrue(awaitCallback<HttpObjectGenerateIdResult> { setup.channel.`object`.generateObjectIdAsync(body, it) }.result!!.objectId.endsWith("@1700000000000"))
+    }
+
+    @Test
+    fun `a malformed time response fails a blocking generateObjectId and the next call retries`() {
+        var timeRequests = 0
+        val setup = setupRestObject("edge-time-malformed-sync") { req ->
+            if (req.path == "/time") {
+                timeRequests++
+                if (timeRequests == 1) req.respondWith(200, "[]") else req.respondWith(200, listOf(1700000000000L))
+            }
+        }
+        val body = HttpObjectGenerateIdBody.counterCreate(1)
+
+        assertFails { setup.channel.`object`.generateObjectId(body) }
         assertTrue(setup.channel.`object`.generateObjectId(body).objectId.endsWith("@1700000000000"))
         assertEquals(2, timeRequests)
     }

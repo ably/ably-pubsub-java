@@ -73,9 +73,10 @@ public final class HttpObjectServerTime {
         long serverTime;
         try {
             serverTime = client.time();
-        } catch (AblyException | RuntimeException e) {
-            notifyWaiters(null, e instanceof AblyException ? ((AblyException) e).errorInfo : AblyException.fromThrowable(e).errorInfo);
-            throw e;
+        } catch (Throwable t) {
+            // any failure, even an Error, must end the in-flight request, or the waiters hang
+            notifyWaiters(null, errorInfo(t));
+            throw t;
         }
         storeOffset(serverTime);
         notifyWaiters(serverTime, null);
@@ -105,23 +106,42 @@ public final class HttpObjectServerTime {
             return;
         }
         try {
-            client.timeAsync(new Callback<Long>() {
-                @Override
-                public void onSuccess(Long serverTime) {
-                    storeOffset(serverTime);
-                    notifyWaiters(serverTime, null);
-                }
-
-                @Override
-                public void onError(ErrorInfo reason) {
-                    notifyWaiters(null, reason != null ? reason : new ErrorInfo("Failed to retrieve server time", 500, 50000));
-                }
-            });
+            // The fetch runs as a blocking request on the scheduler rather than through timeAsync,
+            // whose callback is never invoked if decoding the /time response throws (for example
+            // on a 200 response of [] or HTML); fetchForWaiters releases the waiters on every path.
+            client.http.<Void>request((http, ignored) -> http.execute(this::fetchForWaiters)).async(IGNORED);
         } catch (RuntimeException e) {
             // the request never started; release the waiters so later calls can try again
-            notifyWaiters(null, AblyException.fromThrowable(e).errorInfo);
+            notifyWaiters(null, errorInfo(e));
         }
     }
+
+    /** The scheduled async fetch: always ends the in-flight request and notifies the waiters. */
+    private void fetchForWaiters() {
+        long serverTime;
+        try {
+            serverTime = client.time();
+        } catch (Throwable t) {
+            notifyWaiters(null, errorInfo(t));
+            if (t instanceof Error) throw (Error) t;
+            return;
+        }
+        storeOffset(serverTime);
+        notifyWaiters(serverTime, null);
+    }
+
+    private static ErrorInfo errorInfo(Throwable t) {
+        return t instanceof AblyException ? ((AblyException) t).errorInfo : AblyException.fromThrowable(t).errorInfo;
+    }
+
+    /** The scheduled fetch reports through {@link #notifyWaiters}, not through its own callback. */
+    private static final Callback<Void> IGNORED = new Callback<Void>() {
+        @Override
+        public void onSuccess(Void result) {}
+
+        @Override
+        public void onError(ErrorInfo reason) {}
+    };
 
     /** A blocking caller waiting for another caller's request. */
     private static final class Waiter implements Callback<Long> {
