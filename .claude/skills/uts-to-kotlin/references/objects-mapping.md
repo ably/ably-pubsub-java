@@ -31,6 +31,7 @@ doubt, that IDL is the source of truth; this doc is the applied version of it fo
 15. [Worked example](#15-worked-example)
 16. [Quick symbol index](#16-symbol-index)
 17. [Internal-graph symbol map (unit specs → `:liveobjects`'s own tests)](#17-internal-mappings)
+18. [REST entry point: `RestObject` → `HttpObject`](#18-http-object)
 
 ---
 
@@ -896,3 +897,60 @@ tiers, and none of the 5 internal unit specs use it.)
 
 Keep the `uts` discipline in the migrated tests: one `@Test` per spec case, `/** @UTS objects/unit/… */`
 KDoc tags, and a module-local `deviations.md` recording every §17.9 deviation used.
+
+---
+
+## 18. REST entry point: `RestObject` → `HttpObject` <a id="18-http-object"></a>
+
+The `rest_object_*.md` unit specs and `rest_object_test.md` integration spec target the stateless REST
+API (RSL16, RSO*). ably-java follows ably-js's Rest → Http rename: spec `RestObject*` / `RestLive*` types
+are `HttpObject*` / `HttpLive*`. The entry point is in `io.ably.pubsub.liveobjects`; every other type is
+in `io.ably.pubsub.liveobjects.http`.
+
+**These specs live in `:core`, not `:liveobjects`.** `HttpObject` is part of the core HTTP client, so
+override the resolver's objects `targetDir` for the `rest_object_*` specs:
+
+| Tier | Directory | Package |
+|---|---|---|
+| unit | `lib/src/test/kotlin/io/ably/pubsub/uts/unit/objects` | `io.ably.pubsub.uts.unit.objects` |
+| integration | `lib/src/test/kotlin/io/ably/pubsub/uts/integration/standard/objects` | `io.ably.pubsub.uts.integration.standard.objects` |
+
+Run them with `./gradlew :core:runUtsUnitTests` / `:core:runUtsIntegrationTests`, and record their
+deviations in `lib/src/test/kotlin/io/ably/pubsub/uts/deviations.md`. The one exception is
+`objects/integration/RSL16/realtime-write-rest-read-0`: it writes through the realtime LiveObjects
+plugin, so it stays in `:liveobjects` as `uts/integration/RestObjectRealtimeInteropTest.kt`.
+
+Unit-tier helpers are in `lib/.../uts/unit/objects/HttpObjectHelpers.kt` (`setupRestObject`,
+`respondWithBody`, `parseJson`, `msgpackEncode`/`msgpackDecode`, `encodeUriComponent`, and
+`PendingRequest.path` / `.queryParams` / `.header`).
+
+| Spec | ably-java (Kotlin) |
+|---|---|
+| `Rest(options: …, plugins: { Objects })` | `TestHttpClient { … }` — `HttpObject` is built into the HTTP client (`lib`), no plugin |
+| `channel.object` (REST) | `` channel.`object` `` — field of type `HttpObject`, always available (RSL16b not applicable) |
+| `AWAIT channel.object.get(RestObjectGetParams(objectId:, path:))` (compact unset or `true`) | `` channel.`object`.getCompact(HttpObjectGetParams.of(objectId, path)) `` (or `ofObjectId(…)` / `ofPath(…)` when only one is set) → `JsonElement?` (blocking); `compact` is never sent |
+| `AWAIT channel.object.get(RestObjectGetParams(…, compact: false))` | `` channel.`object`.get(HttpObjectGetParams.of(…)) `` → `HttpObjectGetFullResult?` (blocking); sends `compact=false` |
+| compact result | Gson `JsonElement` (`JsonObject` for a map); binary values are Base64 strings for both protocols. Compare with spec literals via `fromJson(…)` from `HttpObjectHelpers.kt` (deviation RSO2a1c) |
+| narrowing a full result (`x.map…`, `x.counter…`, leaf fields) | `x.type` (`ValueType`) plus fail-fast casts like realtime `Instance`: `asLiveMap()`, `asLiveCounter()`, `asLiveObject()`, `asObjectData()`, and leaf values `asString()`, `asNumber()`, `asBoolean()`, `asBinary()`, `asJsonObject()`, `asJsonArray()`; prefer them over `assertIs` chains |
+| full result `RestLiveMap` / `RestLiveCounter` | `HttpLiveMap` (`objectId`, `semantics`, `entries`) / `HttpLiveCounter` (`objectId`, `count`) |
+| `x.map.semantics` / `x.map.entries[k].data` | `x.semantics` / `x.entries.getValue(k).data` |
+| `x.counter.data.number` | `x.count` (`Double`) |
+| full leaf `ObjectData` | `HttpObjectData` (extends `ObjectData`): `string`, `number` (`Double`), `boolean`, `bytes`, `json` (`JsonElement`); no `encoding` accessor |
+| unrecognised object `{ objectId, futureType }` | plain `HttpLiveObject`: `objectId` + `unrecognizedFields["futureType"]` (`JsonObject`; compare via `fromJson`) |
+| `RestObjectOperation(objectId: o, mapSet: RestObjectMapSet(key: k, value: v))` | `HttpObjectOperation.mapSet(k, v).withObjectId(o)` (also `withPath`, `withId`) |
+| `mapCreate: RestObjectMapCreate(semantics: "LWW", entries: { k: RestObjectMapEntry(data: v) })` | `HttpObjectOperation.mapCreate(ObjectsMapSemantics.LWW, mapOf(k to v))` — entries map straight to `PublishObjectData` |
+| `mapRemove` / `counterCreate` / `counterInc` | `HttpObjectOperation.mapRemove(k)` / `.counterCreate(n)` / `.counterInc(n)` |
+| `*CreateWithObjectId(initialValue:, nonce:)` + `objectId:` | `HttpObjectOperation.mapCreateWithObjectId(objectId, initialValue, nonce)` (or pass the `HttpObjectGenerateIdResult`) |
+| `PublishObjectData(string:/number:/boolean:/bytes:/json:/objectId:)` | `PublishObjectData.string/number/bool/bytes/json/objectId(…)` |
+| `semantics: "not-a-semantics"` | `ObjectsMapSemantics.UNKNOWN` |
+| `AWAIT channel.object.publish(op \| [ops])` | `` channel.`object`.publish(op) `` / `.publish(listOf(…))` → `HttpObjectPublishResult` (blocking) |
+| `AWAIT channel.object.generateObjectId(RestObjectGenerateIdBody(counterCreate: RestObjectCounterCreate(count: n)))` | `` channel.`object`.generateObjectId(HttpObjectGenerateIdBody.counterCreate(n)) `` (blocking) |
+
+**Async: not §3.** Unlike `RealtimeObject`, `HttpObject` follows the HTTP channel convention, not
+`CompletableFuture`: each method is blocking (returns the result, throws `AblyException`) and has an
+`…Async(…, Callback<T>)` twin. Translate spec `AWAIT` to the blocking call (no `.await()`), and
+`AWAIT x FAILS WITH error` to `assertFailsWith<AblyException> { x }`.
+
+Operations and generate-ID bodies with zero or several bodies are unrepresentable (T-4, in
+`deviations.md`). JSON leaves go on the wire in the OD2g `json` field (OD4c5/OD4d5), as the spec says.
+
