@@ -1,5 +1,21 @@
 # Change Log
 
+## [2.1.0](https://github.com/ably/ably-pubsub-java/tree/v2.1.0) (2026-11-11)
+
+[Full Changelog](https://github.com/ably/ably-pubsub-java/compare/v2.0.0...v2.1.0)
+
+You can now read and update LiveObjects from the HTTP client, with no realtime connection. This suits server code that needs to inspect or change object state in response to a request, such as seeding a counter or updating a map from a backend job.
+
+### LiveObjects over HTTP
+
+Every HTTP channel now has a `channel.object` property. It is built into the HTTP client, so you don't need the `liveobjects` plugin to use it. [#1259](https://github.com/ably/ably-pubsub-java/pull/1259)
+
+- `get()` returns the channel's objects as typed maps, counters and values. `getCompact()` returns the same state as plain JSON.
+- `publish()` applies one or more map and counter operations in a single request.
+- `generateObjectId()` creates the ID for a new map or counter before you publish it, so you can create an object and refer to it in the same batch.
+
+Each method has an `...Async` variant that takes a callback.
+
 ## [2.0.0](https://github.com/ably/ably-pubsub-java/tree/v2.0.0) (2026-10-30)
 
 The 2.0.0 release makes it clear what to use on a device and what to use on a server. The SDK is now split by where your code runs. Depend on `io.ably.pubsub:device` for code that runs on an end user's device, such as an Android app or a desktop client, or `io.ably.pubsub:server` for code that runs on your own infrastructure. Each artifact offers only the clients that make sense on its side. The artifact names are also what coding assistants see in the dependency declaration and the builder call, so they get the choice right too.
