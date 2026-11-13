@@ -32,7 +32,7 @@ Use exactly one of `io.ably.pubsub:server` or `io.ably.pubsub:device` in an app.
 
 ```kotlin
 dependencies {
-    implementation("io.ably.pubsub:server:2.1.0")
+    implementation("io.ably.pubsub:server:2.2.0")
 }
 ```
 
@@ -42,7 +42,7 @@ On Android and on the JVM, Gradle picks the right variant of `io.ably.pubsub:dev
 
 ```kotlin
 dependencies {
-    implementation("io.ably.pubsub:device:2.1.0")
+    implementation("io.ably.pubsub:device:2.2.0")
 }
 ```
 
@@ -52,7 +52,7 @@ Maven can't pick the variant, so a JVM desktop app names `device-jvm` directly:
 <dependency>
     <groupId>io.ably.pubsub</groupId>
     <artifactId>device-jvm</artifactId>
-    <version>2.1.0</version>
+    <version>2.2.0</version>
 </dependency>
 ```
 
@@ -238,10 +238,10 @@ The packages use OkHttp for HTTP and WebSocket connections. To use the built-in
 
 ```kotlin
 dependencies {
-    implementation("io.ably.pubsub:server:2.1.0") {
+    implementation("io.ably.pubsub:server:2.2.0") {
         exclude(group = "io.ably.pubsub", module = "network-client-okhttp")
     }
-    runtimeOnly("io.ably.pubsub:network-client-default:2.1.0")
+    runtimeOnly("io.ably.pubsub:network-client-default:2.2.0")
 }
 ```
 
@@ -293,7 +293,7 @@ it on the classpath.
 
 ```kotlin
 dependencies {
-    runtimeOnly("io.ably.pubsub:liveobjects:2.1.0")
+    runtimeOnly("io.ably.pubsub:liveobjects:2.2.0")
 }
 ```
 
