@@ -1,5 +1,28 @@
 # Change Log
 
+## [2.2.0](https://github.com/ably/ably-pubsub-java/tree/v2.2.0) (2026-11-13)
+
+[Full Changelog](https://github.com/ably/ably-pubsub-java/compare/v2.1.0...v2.2.0)
+
+You can now send push notifications to Android devices through FCM topics. FCM delivers one send to every device subscribed to a topic, so Ably doesn't make one FCM request per device. This suits broadcasts to large audiences, such as live match scores sent to every fan of a team.
+
+### FCM topics
+
+Push admins manage topics through `push.admin.fcmTopics`. Ably resolves devices to their FCM registration tokens and calls FCM with your app's service account, so your code never handles FCM credentials or tokens. [#1260](https://github.com/ably/ably-pubsub-java/pull/1260)
+
+- `get(topic)` subscribes and unsubscribes a single device. It can also subscribe every device registered for a clientId or subscribed to a set of channels, and unsubscribe a clientId's devices.
+- `list(deviceId)` returns the topics a device is subscribed to.
+- `publish(target, payload)` sends an FCM message and returns its message ID. Create the target with `FcmTopicTarget.topic(...)` for one topic, or `FcmTopicTarget.condition(...)` for a condition combining up to five topics, such as `'team-a' in topics || 'team-b' in topics`. FCM delivers a condition message once to each matching device, even if it is subscribed to more than one of the topics.
+
+On Android, `push.fcmTopics` lets an activated device subscribe itself to topics, unsubscribe and list its topics. These calls authenticate as the device, so they don't need the push-admin capability.
+
+Each method has an `...Async` variant that takes a callback.
+
+### Bug fixes
+
+- A failure handling a successful HTTP response no longer retries the request on a fallback host. Before, an error such as an unexpected response body could send the request again, so a non-idempotent request such as a message edit could run more than once. [#1260](https://github.com/ably/ably-pubsub-java/pull/1260)
+- An unexpected exception while handling an HTTP response is now reported as an `AblyException`. Before, an async request's callback was never called. [#1260](https://github.com/ably/ably-pubsub-java/pull/1260)
+
 ## [2.1.0](https://github.com/ably/ably-pubsub-java/tree/v2.1.0) (2026-11-11)
 
 [Full Changelog](https://github.com/ably/ably-pubsub-java/compare/v2.0.0...v2.1.0)
